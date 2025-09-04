@@ -89,7 +89,7 @@ export default function ProgressModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-card rounded-xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-hidden">
+      <div className="bg-card rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h3 className="text-xl font-semibold text-card-foreground">Update Layer Progress</h3>
           <button
@@ -101,7 +101,8 @@ export default function ProgressModal({
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+          <div className="p-6 space-y-6">
           <div>
             <Label className="block text-sm font-medium text-muted-foreground mb-2">Construction Layer</Label>
             <div className="w-full px-4 py-3 border border-input rounded-lg bg-muted text-card-foreground">
@@ -214,6 +215,7 @@ export default function ProgressModal({
             >
               {mutation.isPending ? "Updating..." : "Update Progress"}
             </Button>
+          </div>
           </div>
         </form>
       </div>
