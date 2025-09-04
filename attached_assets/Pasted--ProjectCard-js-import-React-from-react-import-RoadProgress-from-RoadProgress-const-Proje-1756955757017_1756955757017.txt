@@ -1,0 +1,127 @@
+// ProjectCard.js
+import React from 'react';
+import RoadProgress from './RoadProgress';
+
+const ProjectCard = ({ 
+  project, 
+  onEdit, 
+  onDelete, 
+  onDuplicate, 
+  onAddRoad, 
+  onEditRoad, 
+  onAddProgress 
+}) => {
+  // Calculate planned progress based on dates
+  const calculatePlannedProgress = () => {
+    if (!project.startDate || !project.endDate) return 0;
+    
+    const start = new Date(project.startDate);
+    const end = new Date(project.endDate);
+    const today = new Date();
+    
+    if (today < start) return 0;
+    if (today > end) return 100;
+    
+    const totalDuration = end - start;
+    const elapsed = today - start;
+    return Math.min(100, Math.round((elapsed / totalDuration) * 100));
+  };
+
+  // Calculate actual progress based on road layers
+  const calculateActualProgress = () => {
+    if (!project.roads || project.roads.length === 0) return 0;
+    
+    let totalProgress = 0;
+    project.roads.forEach(road => {
+      if (road.layers && road.layers.length > 0) {
+        const roadProgress = road.layers.reduce((sum, layer) => {
+          if (layer.completedChainages && layer.completedChainages.length > 0) {
+            const completedLength = layer.completedChainages.reduce((total, range) => {
+              return total + (range.end - range.start);
+            }, 0);
+            return sum + (completedLength / road.length * 100) * (layer.weight || 1);
+          }
+          return sum;
+        }, 0);
+        
+        totalProgress += roadProgress / project.roads.length;
+      }
+    });
+    
+    return Math.min(100, totalProgress);
+  };
+
+  const plannedProgress = calculatePlannedProgress();
+  const actualProgress = calculateActualProgress();
+
+  return (
+    <div className="project-card">
+      <div className="project-header">
+        <h3>{project.name}</h3>
+        <div className="project-actions">
+          <button onClick={onEdit} title="Edit Project">✏️</button>
+          <button onClick={onDuplicate} title="Duplicate Project">⎘</button>
+          <button onClick={onDelete} title="Delete Project">🗑️</button>
+        </div>
+      </div>
+      
+      <div className="project-details">
+        <p><strong>Client:</strong> {project.client}</p>
+        <p><strong>Location:</strong> {project.location}</p>
+        <p><strong>Duration:</strong> {project.startDate} to {project.endDate}</p>
+      </div>
+      
+      <div className="progress-bars">
+        <div className="progress-section">
+          <label>Planned Progress</label>
+          <div className="progress-bar">
+            <div 
+              className="progress-fill planned" 
+              style={{ width: `${plannedProgress}%` }}
+            >
+              <span>{plannedProgress}%</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="progress-section">
+          <label>Actual Progress</label>
+          <div className="progress-bar">
+            <div 
+              className="progress-fill actual" 
+              style={{ width: `${actualProgress}%` }}
+            >
+              <span>{actualProgress}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="roads-section">
+        <div className="roads-header">
+          <h4>Roads</h4>
+          <button className="btn-small" onClick={onAddRoad}>
+            Add Road
+          </button>
+        </div>
+        
+        {project.roads && project.roads.length > 0 ? (
+          <div className="roads-list">
+            {project.roads.map((road, index) => (
+              <RoadProgress
+                key={index}
+                road={road}
+                onEdit={() => onEditRoad(road)}
+                onAddProgress={() => onAddProgress(road)}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="no-roads">No roads added yet</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ProjectCard;
