@@ -57,6 +57,7 @@ export const roads = pgTable("roads", {
   name: varchar("name").notNull(),
   length: decimal("length", { precision: 10, scale: 2 }).notNull(),
   roadType: varchar("road_type").notNull(),
+  carriageway: varchar("carriageway").notNull().default("single"), // "single" or "dual"
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -76,6 +77,7 @@ export const layerProgress = pgTable("layer_progress", {
   layerId: varchar("layer_id").notNull(),
   startChainage: decimal("start_chainage", { precision: 10, scale: 2 }).notNull(),
   endChainage: decimal("end_chainage", { precision: 10, scale: 2 }).notNull(),
+  carriagewaySide: varchar("carriageway_side").default("both"), // "lhs", "rhs", or "both" for single carriageway
   completionDate: date("completion_date").notNull(),
   qualityStatus: varchar("quality_status").notNull(),
   notes: text("notes"),

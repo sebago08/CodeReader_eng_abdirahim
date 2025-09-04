@@ -175,7 +175,7 @@ export default function Dashboard() {
             
             <div className="flex items-center space-x-4">
               <span className="hidden md:inline text-primary-foreground/90" data-testid="text-user-email">
-                Welcome, {user?.email}
+                Welcome, {user?.email || 'User'}
               </span>
               <Button
                 onClick={handleLogout}

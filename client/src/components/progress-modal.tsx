@@ -29,6 +29,7 @@ export default function ProgressModal({
   const [formData, setFormData] = useState({
     startChainage: "",
     endChainage: "",
+    carriagewaySide: "both",
     completionDate: new Date().toISOString().split('T')[0],
     qualityStatus: "approved",
     notes: "",
@@ -72,6 +73,7 @@ export default function ProgressModal({
     mutation.mutate({
       startChainage: formData.startChainage,
       endChainage: formData.endChainage,
+      carriagewaySide: formData.carriagewaySide,
       completionDate: formData.completionDate,
       qualityStatus: formData.qualityStatus,
       notes: formData.notes,
@@ -138,6 +140,21 @@ export default function ProgressModal({
               />
             </div>
           </div>
+          
+          {road.carriageway === 'dual' && (
+            <div>
+              <Label className="block text-sm font-medium text-muted-foreground mb-2">Carriageway Side</Label>
+              <Select value={formData.carriagewaySide} onValueChange={(value) => setFormData(prev => ({ ...prev, carriagewaySide: value }))}>
+                <SelectTrigger className="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all" data-testid="select-carriageway-side">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lhs">Left Hand Side (LHS)</SelectItem>
+                  <SelectItem value="rhs">Right Hand Side (RHS)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           
           <div>
             <Label className="block text-sm font-medium text-muted-foreground mb-2">Completion Date</Label>
