@@ -210,6 +210,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/layers/:layerId/progress/reset', isAuthenticated, async (req: any, res) => {
+    try {
+      const { layerId } = req.params;
+      await storage.resetLayerProgress(layerId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error resetting layer progress:", error);
+      res.status(500).json({ message: "Failed to reset layer progress" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

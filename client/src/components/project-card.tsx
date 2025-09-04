@@ -9,6 +9,7 @@ interface ProjectCardProps {
   onAddRoad: () => void;
   onEditRoad: (road: any) => void;
   onAddProgress: (road: any, layerId: string) => void;
+  onResetProgress: (layerId: string) => void;
 }
 
 export default function ProjectCard({
@@ -19,6 +20,7 @@ export default function ProjectCard({
   onAddRoad,
   onEditRoad,
   onAddProgress,
+  onResetProgress,
 }: ProjectCardProps) {
   // Calculate planned progress based on dates
   const calculatePlannedProgress = () => {
@@ -213,33 +215,65 @@ export default function ProjectCard({
                             <div key={layer.id} className="space-y-2">
                               <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground font-medium">{layer.name}</span>
-                                <button
-                                  onClick={() => onAddProgress(road, layer.id)}
-                                  className="text-xs text-muted-foreground hover:text-success"
-                                  title="Add Progress"
-                                  data-testid="button-add-progress"
-                                >
-                                  <i className="fas fa-plus"></i>
-                                </button>
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => onResetProgress(layer.id)}
+                                    className="text-xs text-muted-foreground hover:text-destructive"
+                                    title="Reset Layer Progress"
+                                    data-testid="button-reset-progress"
+                                  >
+                                    <i className="fas fa-undo"></i>
+                                  </button>
+                                  <button
+                                    onClick={() => onAddProgress(road, layer.id)}
+                                    className="text-xs text-muted-foreground hover:text-success"
+                                    title="Add Progress"
+                                    data-testid="button-add-progress"
+                                  >
+                                    <i className="fas fa-plus"></i>
+                                  </button>
+                                </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2">
                                 <div className="bg-background p-2 rounded border-l-2 border-blue-500">
                                   <div className="text-xs text-muted-foreground mb-1">LHS</div>
-                                  <span className={`font-medium text-xs ${
-                                    lhsPercentage >= 100 ? 'text-green-600' : 
-                                    lhsPercentage >= 50 ? 'text-warning' : 'text-secondary'
-                                  }`} data-testid="text-layer-progress-lhs">
-                                    {lhsPercentage}%
-                                  </span>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className={`font-medium text-xs ${
+                                      lhsPercentage >= 100 ? 'text-green-600' : 
+                                      lhsPercentage >= 50 ? 'text-warning' : 'text-secondary'
+                                    }`} data-testid="text-layer-progress-lhs">
+                                      {lhsPercentage}%
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-muted rounded-full h-1.5">
+                                    <div 
+                                      className={`h-1.5 rounded-full transition-all ${
+                                        lhsPercentage >= 100 ? 'bg-green-600' : 
+                                        lhsPercentage >= 50 ? 'bg-warning' : 'bg-blue-500'
+                                      }`}
+                                      style={{ width: `${Math.min(lhsPercentage, 100)}%` }}
+                                    ></div>
+                                  </div>
                                 </div>
                                 <div className="bg-background p-2 rounded border-l-2 border-orange-500">
                                   <div className="text-xs text-muted-foreground mb-1">RHS</div>
-                                  <span className={`font-medium text-xs ${
-                                    rhsPercentage >= 100 ? 'text-green-600' : 
-                                    rhsPercentage >= 50 ? 'text-warning' : 'text-secondary'
-                                  }`} data-testid="text-layer-progress-rhs">
-                                    {rhsPercentage}%
-                                  </span>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className={`font-medium text-xs ${
+                                      rhsPercentage >= 100 ? 'text-green-600' : 
+                                      rhsPercentage >= 50 ? 'text-warning' : 'text-secondary'
+                                    }`} data-testid="text-layer-progress-rhs">
+                                      {rhsPercentage}%
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-muted rounded-full h-1.5">
+                                    <div 
+                                      className={`h-1.5 rounded-full transition-all ${
+                                        rhsPercentage >= 100 ? 'bg-green-600' : 
+                                        rhsPercentage >= 50 ? 'bg-warning' : 'bg-orange-500'
+                                      }`}
+                                      style={{ width: `${Math.min(rhsPercentage, 100)}%` }}
+                                    ></div>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -252,23 +286,44 @@ export default function ProjectCard({
                           const layerProgress = Math.round((completedLength / Number(road.length)) * 100);
                           
                           return (
-                            <div key={layer.id} className="flex justify-between items-center">
-                              <span className="text-muted-foreground">{layer.name}</span>
+                            <div key={layer.id} className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground font-medium">{layer.name}</span>
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => onResetProgress(layer.id)}
+                                    className="text-xs text-muted-foreground hover:text-destructive"
+                                    title="Reset Layer Progress"
+                                    data-testid="button-reset-progress"
+                                  >
+                                    <i className="fas fa-undo"></i>
+                                  </button>
+                                  <button
+                                    onClick={() => onAddProgress(road, layer.id)}
+                                    className="text-xs text-muted-foreground hover:text-success"
+                                    title="Add Progress"
+                                    data-testid="button-add-progress"
+                                  >
+                                    <i className="fas fa-plus"></i>
+                                  </button>
+                                </div>
+                              </div>
                               <div className="flex items-center space-x-2">
-                                <span className={`font-medium ${
+                                <span className={`font-medium text-xs min-w-[40px] ${
                                   layerProgress >= 100 ? 'text-green-600' : 
                                   layerProgress >= 50 ? 'text-warning' : 'text-secondary'
                                 }`} data-testid="text-layer-progress">
                                   {layerProgress}%
                                 </span>
-                                <button
-                                  onClick={() => onAddProgress(road, layer.id)}
-                                  className="text-xs text-muted-foreground hover:text-success"
-                                  title="Add Progress"
-                                  data-testid="button-add-progress"
-                                >
-                                  <i className="fas fa-plus"></i>
-                                </button>
+                                <div className="flex-1 bg-muted rounded-full h-1.5">
+                                  <div 
+                                    className={`h-1.5 rounded-full transition-all ${
+                                      layerProgress >= 100 ? 'bg-green-600' : 
+                                      layerProgress >= 50 ? 'bg-warning' : 'bg-primary'
+                                    }`}
+                                    style={{ width: `${Math.min(layerProgress, 100)}%` }}
+                                  ></div>
+                                </div>
                               </div>
                             </div>
                           );

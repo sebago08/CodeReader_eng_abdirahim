@@ -46,6 +46,7 @@ export interface IStorage {
   createLayerProgress(layerId: string, progress: InsertLayerProgress): Promise<LayerProgress>;
   updateLayerProgress(id: string, progress: Partial<InsertLayerProgress>): Promise<LayerProgress>;
   deleteLayerProgress(id: string): Promise<void>;
+  resetLayerProgress(layerId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -197,6 +198,10 @@ export class DatabaseStorage implements IStorage {
 
   async deleteLayerProgress(id: string): Promise<void> {
     await db.delete(layerProgress).where(eq(layerProgress.id, id));
+  }
+
+  async resetLayerProgress(layerId: string): Promise<void> {
+    await db.delete(layerProgress).where(eq(layerProgress.layerId, layerId));
   }
 }
 
