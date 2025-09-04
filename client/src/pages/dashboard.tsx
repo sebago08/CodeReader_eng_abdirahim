@@ -146,6 +146,38 @@ export default function Dashboard() {
     setActiveModal("progress");
   };
 
+  const handleResetProgress = async (layerId: string) => {
+    if (!confirm("Are you sure you want to reset all progress for this layer? This action cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      await apiRequest("DELETE", `/api/layers/${layerId}/progress/reset`);
+      toast({
+        title: "Success",
+        description: "Layer progress has been reset successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to reset layer progress",
+        variant: "destructive",
+      });
+    }
+  };
+
   const closeModal = () => {
     setActiveModal(null);
     setEditingProject(null);
@@ -226,6 +258,7 @@ export default function Dashboard() {
                 onAddRoad={() => handleAddRoad(project)}
                 onEditRoad={(road) => handleEditRoad(project, road)}
                 onAddProgress={(road, layerId) => handleAddProgress(project, road, layerId)}
+                onResetProgress={handleResetProgress}
               />
             ))}
           </div>
