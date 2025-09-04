@@ -133,6 +133,8 @@ export const insertRoadSchema = createInsertSchema(roads).omit({
   projectId: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  length: z.coerce.number(),
 });
 
 export const insertLayerSchema = createInsertSchema(constructionLayers).omit({
@@ -145,6 +147,9 @@ export const insertLayerProgressSchema = createInsertSchema(layerProgress).omit(
   id: true,
   layerId: true,
   createdAt: true,
+}).extend({
+  startChainage: z.coerce.number(),
+  endChainage: z.coerce.number(),
 });
 
 // Types

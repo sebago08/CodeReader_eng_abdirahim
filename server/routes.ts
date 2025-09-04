@@ -109,8 +109,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const road of originalProject.roads) {
         const newRoad = await storage.createRoad(duplicatedProject.id, {
           name: road.name,
-          length: road.length,
+          length: Number(road.length),
           roadType: road.roadType,
+          carriageway: road.carriageway || "single",
         });
         
         if (road.layers.length > 0) {
