@@ -197,32 +197,82 @@ export default function ProjectCard({
                   <div className="space-y-1 text-xs">
                     {road.layers && road.layers.length > 0 ? (
                       road.layers.map((layer) => {
-                        const completedLength = layer.progress?.reduce((sum, prog) => {
-                          return sum + (Number(prog.endChainage) - Number(prog.startChainage));
-                        }, 0) || 0;
-                        const layerProgress = Math.round((completedLength / Number(road.length)) * 100);
-                        
-                        return (
-                          <div key={layer.id} className="flex justify-between items-center">
-                            <span className="text-muted-foreground">{layer.name}</span>
-                            <div className="flex items-center space-x-2">
-                              <span className={`font-medium ${
-                                layerProgress >= 100 ? 'text-green-600' : 
-                                layerProgress >= 50 ? 'text-warning' : 'text-secondary'
-                              }`} data-testid="text-layer-progress">
-                                {layerProgress}%
-                              </span>
-                              <button
-                                onClick={() => onAddProgress(road, layer.id)}
-                                className="text-xs text-muted-foreground hover:text-success"
-                                title="Add Progress"
-                                data-testid="button-add-progress"
-                              >
-                                <i className="fas fa-plus"></i>
-                              </button>
+                        if (road.carriageway === 'dual') {
+                          // Calculate LHS and RHS progress separately
+                          const lhsProgress = layer.progress?.filter(p => p.carriagewaySide === 'lhs').reduce((sum, prog) => {
+                            return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+                          }, 0) || 0;
+                          const rhsProgress = layer.progress?.filter(p => p.carriagewaySide === 'rhs').reduce((sum, prog) => {
+                            return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+                          }, 0) || 0;
+                          
+                          const lhsPercentage = Math.round((lhsProgress / Number(road.length)) * 100);
+                          const rhsPercentage = Math.round((rhsProgress / Number(road.length)) * 100);
+                          
+                          return (
+                            <div key={layer.id} className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground font-medium">{layer.name}</span>
+                                <button
+                                  onClick={() => onAddProgress(road, layer.id)}
+                                  className="text-xs text-muted-foreground hover:text-success"
+                                  title="Add Progress"
+                                  data-testid="button-add-progress"
+                                >
+                                  <i className="fas fa-plus"></i>
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-background p-2 rounded border-l-2 border-blue-500">
+                                  <div className="text-xs text-muted-foreground mb-1">LHS</div>
+                                  <span className={`font-medium text-xs ${
+                                    lhsPercentage >= 100 ? 'text-green-600' : 
+                                    lhsPercentage >= 50 ? 'text-warning' : 'text-secondary'
+                                  }`} data-testid="text-layer-progress-lhs">
+                                    {lhsPercentage}%
+                                  </span>
+                                </div>
+                                <div className="bg-background p-2 rounded border-l-2 border-orange-500">
+                                  <div className="text-xs text-muted-foreground mb-1">RHS</div>
+                                  <span className={`font-medium text-xs ${
+                                    rhsPercentage >= 100 ? 'text-green-600' : 
+                                    rhsPercentage >= 50 ? 'text-warning' : 'text-secondary'
+                                  }`} data-testid="text-layer-progress-rhs">
+                                    {rhsPercentage}%
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        );
+                          );
+                        } else {
+                          // Single carriageway - show combined progress
+                          const completedLength = layer.progress?.reduce((sum, prog) => {
+                            return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+                          }, 0) || 0;
+                          const layerProgress = Math.round((completedLength / Number(road.length)) * 100);
+                          
+                          return (
+                            <div key={layer.id} className="flex justify-between items-center">
+                              <span className="text-muted-foreground">{layer.name}</span>
+                              <div className="flex items-center space-x-2">
+                                <span className={`font-medium ${
+                                  layerProgress >= 100 ? 'text-green-600' : 
+                                  layerProgress >= 50 ? 'text-warning' : 'text-secondary'
+                                }`} data-testid="text-layer-progress">
+                                  {layerProgress}%
+                                </span>
+                                <button
+                                  onClick={() => onAddProgress(road, layer.id)}
+                                  className="text-xs text-muted-foreground hover:text-success"
+                                  title="Add Progress"
+                                  data-testid="button-add-progress"
+                                >
+                                  <i className="fas fa-plus"></i>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
                       })
                     ) : (
                       <div className="text-muted-foreground text-center py-2">No layers defined</div>

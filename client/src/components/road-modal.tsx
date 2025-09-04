@@ -30,6 +30,7 @@ export default function RoadModal({ project, road, onClose, onSuccess }: RoadMod
     name: "",
     length: "",
     roadType: "",
+    carriageway: "single",
   });
   const [selectedLayers, setSelectedLayers] = useState<string[]>([]);
 
@@ -39,6 +40,7 @@ export default function RoadModal({ project, road, onClose, onSuccess }: RoadMod
         name: road.name || "",
         length: road.length?.toString() || "",
         roadType: road.roadType || "",
+        carriageway: road.carriageway || "single",
       });
       setSelectedLayers(road.layers?.map((l: any) => l.name) || []);
     } else {
@@ -160,19 +162,34 @@ export default function RoadModal({ project, road, onClose, onSuccess }: RoadMod
             />
           </div>
           
-          <div>
-            <Label className="block text-sm font-medium text-muted-foreground mb-2">Road Type</Label>
-            <Select value={formData.roadType} onValueChange={(value) => setFormData(prev => ({ ...prev, roadType: value }))}>
-              <SelectTrigger className="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all" data-testid="select-road-type">
-                <SelectValue placeholder="Select road type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="highway">Highway</SelectItem>
-                <SelectItem value="arterial">Arterial Road</SelectItem>
-                <SelectItem value="collector">Collector Road</SelectItem>
-                <SelectItem value="local">Local Road</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label className="block text-sm font-medium text-muted-foreground mb-2">Road Type</Label>
+              <Select value={formData.roadType} onValueChange={(value) => setFormData(prev => ({ ...prev, roadType: value }))}>
+                <SelectTrigger className="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all" data-testid="select-road-type">
+                  <SelectValue placeholder="Select road type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="highway">Highway</SelectItem>
+                  <SelectItem value="arterial">Arterial Road</SelectItem>
+                  <SelectItem value="collector">Collector Road</SelectItem>
+                  <SelectItem value="local">Local Road</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label className="block text-sm font-medium text-muted-foreground mb-2">Carriageway</Label>
+              <Select value={formData.carriageway} onValueChange={(value) => setFormData(prev => ({ ...prev, carriageway: value }))}>
+                <SelectTrigger className="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all" data-testid="select-carriageway">
+                  <SelectValue placeholder="Select carriageway type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="single">Single Carriageway</SelectItem>
+                  <SelectItem value="dual">Dual Carriageway</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
           {!road && (
