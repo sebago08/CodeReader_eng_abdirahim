@@ -71,8 +71,8 @@ export default function ProgressModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     mutation.mutate({
-      startChainage: formData.startChainage,
-      endChainage: formData.endChainage,
+      startChainage: Number(formData.startChainage),
+      endChainage: Number(formData.endChainage),
       carriagewaySide: formData.carriagewaySide,
       completionDate: formData.completionDate,
       qualityStatus: formData.qualityStatus,
