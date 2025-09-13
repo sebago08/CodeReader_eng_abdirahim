@@ -136,15 +136,19 @@ export class DatabaseStorage implements IStorage {
   async createRoad(projectId: string, road: InsertRoad): Promise<Road> {
     const [newRoad] = await db
       .insert(roads)
-      .values({ ...road, projectId })
+      .values({ ...road, projectId, length: road.length.toString() })
       .returning();
     return newRoad;
   }
 
   async updateRoad(id: string, road: Partial<InsertRoad>): Promise<Road> {
+    const roadUpdate: any = { ...road, updatedAt: new Date() };
+    if (road.length !== undefined) {
+      roadUpdate.length = road.length.toString();
+    }
     const [updatedRoad] = await db
       .update(roads)
-      .set({ ...road, updatedAt: new Date() })
+      .set(roadUpdate)
       .where(eq(roads.id, id))
       .returning();
     return updatedRoad;
@@ -182,15 +186,27 @@ export class DatabaseStorage implements IStorage {
   async createLayerProgress(layerId: string, progress: InsertLayerProgress): Promise<LayerProgress> {
     const [newProgress] = await db
       .insert(layerProgress)
-      .values({ ...progress, layerId })
+      .values({ 
+        ...progress, 
+        layerId, 
+        startChainage: progress.startChainage.toString(),
+        endChainage: progress.endChainage.toString()
+      })
       .returning();
     return newProgress;
   }
 
   async updateLayerProgress(id: string, progress: Partial<InsertLayerProgress>): Promise<LayerProgress> {
+    const progressUpdate: any = { ...progress };
+    if (progress.startChainage !== undefined) {
+      progressUpdate.startChainage = progress.startChainage.toString();
+    }
+    if (progress.endChainage !== undefined) {
+      progressUpdate.endChainage = progress.endChainage.toString();
+    }
     const [updatedProgress] = await db
       .update(layerProgress)
-      .set(progress)
+      .set(progressUpdate)
       .where(eq(layerProgress.id, id))
       .returning();
     return updatedProgress;
