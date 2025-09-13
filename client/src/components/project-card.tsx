@@ -210,11 +210,20 @@ export default function ProjectCard({
                           
                           const lhsPercentage = Math.round((lhsProgress / Number(road.length)) * 100);
                           const rhsPercentage = Math.round((rhsProgress / Number(road.length)) * 100);
+                          const averagePercentage = Math.round((lhsPercentage + rhsPercentage) / 2);
                           
                           return (
                             <div key={layer.id} className="space-y-2">
                               <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground font-medium">{layer.name}</span>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-muted-foreground font-medium">{layer.name}</span>
+                                  <span className={`font-semibold text-sm ${
+                                    averagePercentage >= 100 ? 'text-green-600' : 
+                                    averagePercentage >= 50 ? 'text-warning' : 'text-secondary'
+                                  }`} data-testid="text-layer-average-progress">
+                                    ({averagePercentage}%)
+                                  </span>
+                                </div>
                                 <div className="flex items-center space-x-2">
                                   <button
                                     onClick={() => onResetProgress(layer.id)}
