@@ -1,0 +1,150 @@
+import type { LayerProgress } from "@shared/schema";
+
+interface SegmentedProgressProps {
+  progress: LayerProgress[];
+  roadLength: number;
+  carriagewaySide?: 'lhs' | 'rhs' | 'both';
+  layerId: string;
+}
+
+export default function SegmentedProgress({ 
+  progress, 
+  roadLength, 
+  carriagewaySide = 'both',
+  layerId 
+}: SegmentedProgressProps) {
+  // Guard against invalid road length
+  if (!Number.isFinite(roadLength) || roadLength <= 0) {
+    return (
+      <div className="text-xs text-muted-foreground text-center py-2">
+        Invalid road length
+      </div>
+    );
+  }
+  // Filter progress based on carriageway side and validate numeric chainages
+  const filteredProgress = progress.filter(prog => {
+    // Check carriageway side
+    const sideMatch = carriagewaySide === 'both' 
+      ? prog.carriagewaySide === 'both' || !prog.carriagewaySide
+      : prog.carriagewaySide === carriagewaySide;
+    
+    // Ensure start and end chainages are valid finite numbers
+    const validChainages = Number.isFinite(+prog.startChainage) && Number.isFinite(+prog.endChainage);
+    
+    return sideMatch && validChainages;
+  });
+
+  // Sort progress segments by start chainage
+  const sortedProgress = [...filteredProgress].sort((a, b) => 
+    Number(a.startChainage) - Number(b.startChainage)
+  );
+
+  const getSegmentColor = (qualityStatus?: string | null) => {
+    if (!qualityStatus) return 'bg-blue-500';
+    
+    switch (qualityStatus.toLowerCase()) {
+      case 'approved':
+        return 'bg-green-500';
+      case 'pending':
+        return 'bg-yellow-500';
+      case 'rejected':
+        return 'bg-red-500';
+      default:
+        return 'bg-blue-500';
+    }
+  };
+
+  const getSegmentPosition = (startChainage: number, endChainage: number) => {
+    // Guard against invalid inputs
+    if (!Number.isFinite(roadLength) || roadLength <= 0 || !Number.isFinite(startChainage) || !Number.isFinite(endChainage)) {
+      return { left: '0%', width: '0%' };
+    }
+    
+    // Clamp values to valid range
+    const clampedStart = Math.max(0, Math.min(startChainage, roadLength));
+    const clampedEnd = Math.max(clampedStart, Math.min(endChainage, roadLength));
+    
+    const start = (clampedStart / roadLength) * 100;
+    const width = ((clampedEnd - clampedStart) / roadLength) * 100;
+    return { left: `${start}%`, width: `${width}%` };
+  };
+
+  return (
+    <div className="space-y-2">
+      {/* Road scale visualization */}
+      <div className="relative h-6 bg-muted rounded-md border">
+        {/* Road length markers */}
+        <div className="absolute inset-0 flex justify-between items-center px-1">
+          <span className="text-xs text-muted-foreground font-mono">0km</span>
+          <span className="text-xs text-muted-foreground font-mono">{Number.isFinite(roadLength) ? roadLength.toFixed(2) : '0'}km</span>
+        </div>
+        
+        {/* Progress segments */}
+        {sortedProgress.map((prog, index) => {
+          const startChainage = Number(prog.startChainage);
+          const endChainage = Number(prog.endChainage);
+          const position = getSegmentPosition(startChainage, endChainage);
+          
+          return (
+            <div
+              key={prog.id}
+              className={`absolute h-full ${getSegmentColor(prog.qualityStatus)} rounded-sm border border-white shadow-sm`}
+              style={position}
+              title={`${startChainage}km - ${endChainage}km (${prog.qualityStatus})`}
+              data-testid={`segment-${layerId}-${index}`}
+            />
+          );
+        })}
+      </div>
+
+      {/* Segment details */}
+      {sortedProgress.length > 0 && (
+        <div className="space-y-1">
+          {sortedProgress.map((prog, index) => (
+            <div key={prog.id} className="flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2">
+                <div 
+                  className={`w-3 h-3 rounded-sm ${getSegmentColor(prog.qualityStatus)}`}
+                  data-testid={`segment-indicator-${layerId}-${index}`}
+                />
+                <span className="font-mono text-muted-foreground">
+                  {Number(prog.startChainage).toFixed(2)}km - {Number(prog.endChainage).toFixed(2)}km
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                  (prog.qualityStatus || '').toLowerCase() === 'approved' ? 'bg-green-100 text-green-800' :
+                  (prog.qualityStatus || '').toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  (prog.qualityStatus || '').toLowerCase() === 'rejected' ? 'bg-red-100 text-red-800' :
+                  'bg-blue-100 text-blue-800'
+                }`}>
+                  {prog.qualityStatus || 'unknown'}
+                </span>
+                <span className="text-muted-foreground font-mono">
+                  {prog.completionDate}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Summary */}
+      <div className="flex justify-between items-center text-xs pt-2 border-t border-border">
+        <span className="text-muted-foreground">
+          {sortedProgress.length} segment{sortedProgress.length !== 1 ? 's' : ''}
+        </span>
+        <span className="font-medium">
+          {sortedProgress.reduce((sum, prog) => {
+            const start = Number(prog.startChainage);
+            const end = Number(prog.endChainage);
+            if (Number.isFinite(start) && Number.isFinite(end)) {
+              return sum + (end - start);
+            }
+            return sum;
+          }, 0).toFixed(2)}km completed
+        </span>
+      </div>
+    </div>
+  );
+}
