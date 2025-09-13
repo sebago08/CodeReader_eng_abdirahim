@@ -26,10 +26,13 @@ const getOidcConfig = memoize(
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   
-  // Always use memory store for now to avoid database connectivity issues
-  console.warn("Using memory store for sessions due to database connectivity issues");
+  let sessionStore: any;
+  
+  // For now, use memory store to ensure the app runs properly
+  // TODO: Enable PostgreSQL sessions once database connectivity issues are resolved
+  console.log("Using memory store for sessions (database connectivity issues being resolved)");
   const MemoryStore = memorystore(session);
-  const sessionStore = new MemoryStore({
+  sessionStore = new MemoryStore({
     checkPeriod: sessionTtl,
   });
   
