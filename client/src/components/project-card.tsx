@@ -71,7 +71,7 @@ export default function ProjectCard({
   const actualProgress = calculateActualProgress();
 
   return (
-    <div className="bg-card rounded-xl shadow-lg border border-border overflow-hidden card-hover" data-testid={`card-project-${project.id}`}>
+    <div className="w-full bg-card rounded-xl shadow-lg border border-border overflow-hidden card-hover" data-testid={`card-project-${project.id}`}>
       <div className="p-6">
         {/* Project Header */}
         <div className="flex justify-between items-start mb-4">
