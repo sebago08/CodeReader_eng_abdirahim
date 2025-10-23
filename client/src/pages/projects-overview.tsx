@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 import ProjectOverviewCard from "@/components/project-overview-card";
 import ProjectModal from "@/components/project-modal";
 import { queryClient } from "@/lib/queryClient";
@@ -21,6 +22,10 @@ export default function ProjectsOverview() {
     setShowProjectModal(false);
   };
 
+  const handleLogout = () => {
+    window.location.href = "/api/logout";
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -36,6 +41,15 @@ export default function ProjectsOverview() {
                 <p className="text-primary-foreground/80 text-sm">Professional Construction Management</p>
               </div>
             </div>
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              className="text-white hover:bg-white/10"
+              data-testid="button-logout"
+            >
+              <LogOut className="h-5 w-5 mr-2" />
+              Logout
+            </Button>
           </div>
         </div>
       </header>
