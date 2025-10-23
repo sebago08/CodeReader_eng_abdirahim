@@ -469,6 +469,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Temporarily using MemStorage due to database authentication issues
-// TODO: Fix DATABASE_URL password authentication error
-export const storage = new MemStorage();
+// Use DatabaseStorage for persistent data
+export const storage = new DatabaseStorage();
