@@ -4,6 +4,7 @@ import { useRoute, useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import ProjectCard from "@/components/project-card";
 import ProjectModal from "@/components/project-modal";
 import RoadModal from "@/components/road-modal";
@@ -13,6 +14,7 @@ import type { ProjectWithRoads } from "@shared/schema";
 
 export default function ProjectDetail() {
   const { toast } = useToast();
+  const { logoutMutation } = useAuth();
   const [, params] = useRoute("/projects/:id");
   const [, setLocation] = useLocation();
   const projectId = params?.id;
@@ -133,7 +135,7 @@ export default function ProjectDetail() {
   };
 
   const handleLogout = () => {
-    window.location.href = "/api/logout";
+    logoutMutation.mutate();
   };
 
   // Calculate overall completion

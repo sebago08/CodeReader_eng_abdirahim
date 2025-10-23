@@ -1,0 +1,326 @@
+// Based on blueprint:javascript_auth_all_persistance
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Redirect } from "wouter";
+import { Loader2, Building2 } from "lucide-react";
+
+const loginSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const registerSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>;
+
+export default function AuthPage() {
+  const { user, isLoading, loginMutation, registerMutation } = useAuth();
+
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
+
+  const registerForm = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      email: "",
+      firstName: "",
+      lastName: "",
+    },
+  });
+
+  const handleLogin = (data: LoginFormData) => {
+    loginMutation.mutate(data);
+  };
+
+  const handleRegister = (data: RegisterFormData) => {
+    registerMutation.mutate(data);
+  };
+
+  // Redirect if already logged in
+  if (user) {
+    return <Redirect to="/" />;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-border" data-testid="loading-spinner" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen grid lg:grid-cols-2">
+      {/* Left side - Auth Forms */}
+      <div className="flex items-center justify-center p-8">
+        <div className="w-full max-w-md space-y-6">
+          <div className="flex items-center gap-2 mb-8">
+            <Building2 className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold">ConstructTrack</h1>
+          </div>
+
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login" data-testid="tab-login">Sign In</TabsTrigger>
+              <TabsTrigger value="register" data-testid="tab-register">Sign Up</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="login">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Welcome Back</CardTitle>
+                  <CardDescription>Sign in to your account to continue</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...loginForm}>
+                    <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                      <FormField
+                        control={loginForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter your username"
+                                {...field}
+                                data-testid="input-login-username"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={loginForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                placeholder="Enter your password"
+                                {...field}
+                                data-testid="input-login-password"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={loginMutation.isPending}
+                        data-testid="button-login-submit"
+                      >
+                        {loginMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Signing in...
+                          </>
+                        ) : (
+                          "Sign In"
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="register">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Create Account</CardTitle>
+                  <CardDescription>Get started with ConstructTrack today</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...registerForm}>
+                    <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                      <FormField
+                        control={registerForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Choose a username"
+                                {...field}
+                                data-testid="input-register-username"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={registerForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                placeholder="Choose a password"
+                                {...field}
+                                data-testid="input-register-password"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={registerForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email (Optional)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder="your.email@example.com"
+                                {...field}
+                                data-testid="input-register-email"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={registerForm.control}
+                          name="firstName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>First Name (Optional)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="First name"
+                                  {...field}
+                                  data-testid="input-register-firstname"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="lastName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Last Name (Optional)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Last name"
+                                  {...field}
+                                  data-testid="input-register-lastname"
+                                />
+                            </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={registerMutation.isPending}
+                        data-testid="button-register-submit"
+                      >
+                        {registerMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating account...
+                          </>
+                        ) : (
+                          "Create Account"
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+
+      {/* Right side - Hero Section */}
+      <div className="hidden lg:flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5 p-12">
+        <div className="max-w-md space-y-6">
+          <div className="flex items-center gap-3">
+            <Building2 className="h-12 w-12 text-primary" />
+            <h2 className="text-4xl font-bold">ConstructTrack</h2>
+          </div>
+          <p className="text-lg text-muted-foreground">
+            Professional road construction project management system for tracking projects, managing roads,
+            and monitoring construction progress.
+          </p>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="bg-primary/10 rounded-full p-2">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Project Management</h3>
+                <p className="text-sm text-muted-foreground">
+                  Create and manage construction projects with comprehensive tracking
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="bg-primary/10 rounded-full p-2">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Progress Tracking</h3>
+                <p className="text-sm text-muted-foreground">
+                  Monitor construction layers and progress with visual indicators
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="bg-primary/10 rounded-full p-2">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Road Management</h3>
+                <p className="text-sm text-muted-foreground">
+                  Track multiple roads with dual carriageway support
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
