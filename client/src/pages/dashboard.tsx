@@ -132,7 +132,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg">
+      <header className="bg-black text-primary-foreground shadow-lg">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
