@@ -9,6 +9,7 @@ import {
   decimal,
   integer,
   date,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -28,11 +29,13 @@ export const sessions = pgTable(
 // User storage table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: varchar("username").unique(),
-  password: varchar("password"),
-  email: varchar("email"),
+  username: varchar("username").notNull().unique(),
+  password: varchar("password").notNull(),
+  email: varchar("email").notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
+  isAdmin: boolean("is_admin").default(false).notNull(),
+  isApproved: boolean("is_approved").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -30,6 +30,9 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
+  approveUser(userId: string): Promise<User>;
+  rejectUser(userId: string): Promise<void>;
   
   // Project operations
   getProjects(userId: string): Promise<ProjectWithRoads[]>;
@@ -85,19 +88,46 @@ export class MemStorage implements IStorage {
     const now = new Date();
     const id = Math.random().toString(36).substr(2, 9);
     
+    if (!userData.username || !userData.password || !userData.email) {
+      throw new Error('Username, password, and email are required');
+    }
+    
     const user: User = {
       id,
       username: userData.username,
       password: userData.password,
-      email: userData.email || null,
+      email: userData.email,
       firstName: userData.firstName || null,
       lastName: userData.lastName || null,
+      isAdmin: userData.isAdmin ?? false,
+      isApproved: userData.isApproved ?? false,
       createdAt: now,
       updatedAt: now,
     };
     
     this.users.set(id, user);
     return user;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
+  async approveUser(userId: string): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) throw new Error('User not found');
+    
+    const updatedUser: User = {
+      ...user,
+      isApproved: true,
+      updatedAt: new Date(),
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+
+  async rejectUser(userId: string): Promise<void> {
+    this.users.delete(userId);
   }
 
   // Project operations
@@ -347,6 +377,25 @@ export class DatabaseStorage implements IStorage {
       .values(userData)
       .returning();
     return user;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
+    return allUsers;
+  }
+
+  async approveUser(userId: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ isApproved: true, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!updatedUser) throw new Error('User not found');
+    return updatedUser;
+  }
+
+  async rejectUser(userId: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, userId));
   }
 
   // Project operations
