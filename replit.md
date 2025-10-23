@@ -2,9 +2,10 @@
 
 This is a full-stack road construction project management application built with React, Express.js, and PostgreSQL. The system enables construction professionals to track projects, manage roads, monitor construction layers, and record progress through an intuitive web interface. It features comprehensive project lifecycle management from planning to completion with real-time progress tracking and visual progress indicators.
 
-The application is split into two main pages:
-1. **Projects Overview** - Displays all projects in a grid with summary information
-2. **Project Detail** - Shows detailed view of a single project with roads, layers, and progress visualization
+The application features a landing page with ConstructTrack branding at `/` and authenticated pages:
+1. **Landing Page** - Professional homepage with authentication options (Sign In, Sign Up, Google, Microsoft)
+2. **Projects Overview** - Displays all projects in a grid with summary information (requires authentication)
+3. **Project Detail** - Shows detailed view of a single project with roads, layers, and progress visualization (requires authentication)
 
 # User Preferences
 
@@ -54,7 +55,18 @@ The schema uses foreign key relationships to maintain data integrity and support
 
 ## Authentication & Authorization
 
-**Note**: Authentication has been temporarily removed from the application. The system currently uses a default user for all operations. Replit Auth integration will be added back when needed.
+The application uses Replit Auth for secure user authentication:
+
+- **Authentication Provider**: Replit Auth with OpenID Connect
+- **Supported Login Methods**: Google, Microsoft, GitHub, X (Twitter), Apple, and email/password
+- **Session Management**: PostgreSQL-backed sessions with 1-week TTL
+- **Protected Routes**: All project and data routes require authentication
+- **Auth Flow**: 
+  - Unauthenticated users see landing page at `/`
+  - All sign-in/sign-up buttons redirect to `/api/login` 
+  - After authentication, users are redirected to `/projects`
+  - Logout available via `/api/logout` button in header
+- **User Data**: Each user can only access and manage their own projects and data
 
 ## Key Features
 
