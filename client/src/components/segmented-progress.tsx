@@ -39,6 +39,28 @@ export default function SegmentedProgress({
     Number(a.startChainage) - Number(b.startChainage)
   );
 
+  // Merge overlapping or contiguous segments
+  const mergedSegments = sortedProgress.reduce<Array<{ start: number; end: number; qualityStatus: string | null }>>((acc, prog) => {
+    const start = Number(prog.startChainage);
+    const end = Number(prog.endChainage);
+    
+    if (acc.length === 0) {
+      return [{ start, end, qualityStatus: prog.qualityStatus }];
+    }
+    
+    const lastSegment = acc[acc.length - 1];
+    
+    // Check if current segment overlaps or is contiguous with the last segment
+    if (start <= lastSegment.end) {
+      // Merge segments by extending the end if needed
+      lastSegment.end = Math.max(lastSegment.end, end);
+      return acc;
+    } else {
+      // Add new segment
+      return [...acc, { start, end, qualityStatus: prog.qualityStatus }];
+    }
+  }, []);
+
   const getSegmentColor = (qualityStatus?: string | null) => {
     if (!qualityStatus) return 'bg-blue-500';
     
@@ -80,17 +102,15 @@ export default function SegmentedProgress({
         </div>
         
         {/* Progress segments */}
-        {sortedProgress.map((prog, index) => {
-          const startChainage = Number(prog.startChainage);
-          const endChainage = Number(prog.endChainage);
-          const position = getSegmentPosition(startChainage, endChainage);
+        {mergedSegments.map((segment, index) => {
+          const position = getSegmentPosition(segment.start, segment.end);
           
           return (
             <div
-              key={prog.id}
-              className={`absolute h-full ${getSegmentColor(prog.qualityStatus)} rounded-sm border border-white shadow-sm`}
+              key={index}
+              className={`absolute h-full ${getSegmentColor(segment.qualityStatus)} rounded-sm border border-white shadow-sm`}
               style={position}
-              title={`${startChainage}km - ${endChainage}km (${prog.qualityStatus})`}
+              title={`${segment.start.toFixed(2)}km - ${segment.end.toFixed(2)}km`}
               data-testid={`segment-${layerId}-${index}`}
             />
           );
@@ -98,17 +118,17 @@ export default function SegmentedProgress({
       </div>
 
       {/* Segment details */}
-      {sortedProgress.length > 0 && (
+      {mergedSegments.length > 0 && (
         <div className="space-y-1">
-          {sortedProgress.map((prog, index) => (
-            <div key={prog.id} className="flex items-center text-xs">
+          {mergedSegments.map((segment, index) => (
+            <div key={index} className="flex items-center text-xs">
               <div className="flex items-center space-x-2">
                 <div 
-                  className={`w-3 h-3 rounded-sm ${getSegmentColor(prog.qualityStatus)}`}
+                  className={`w-3 h-3 rounded-sm ${getSegmentColor(segment.qualityStatus)}`}
                   data-testid={`segment-indicator-${layerId}-${index}`}
                 />
                 <span className="font-mono text-muted-foreground">
-                  {Number(prog.startChainage).toFixed(2)}km - {Number(prog.endChainage).toFixed(2)}km
+                  {segment.start.toFixed(2)}km - {segment.end.toFixed(2)}km
                 </span>
               </div>
             </div>
