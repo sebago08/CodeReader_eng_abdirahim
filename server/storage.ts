@@ -33,6 +33,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   approveUser(userId: string): Promise<User>;
   rejectUser(userId: string): Promise<void>;
+  promoteToAdmin(username: string): Promise<User>;
   
   // Project operations
   getProjects(userId: string): Promise<ProjectWithRoads[]>;
@@ -128,6 +129,20 @@ export class MemStorage implements IStorage {
 
   async rejectUser(userId: string): Promise<void> {
     this.users.delete(userId);
+  }
+
+  async promoteToAdmin(username: string): Promise<User> {
+    const user = Array.from(this.users.values()).find(u => u.username === username);
+    if (!user) throw new Error('User not found');
+    
+    const updatedUser: User = {
+      ...user,
+      isAdmin: true,
+      isApproved: true,
+      updatedAt: new Date(),
+    };
+    this.users.set(user.id, updatedUser);
+    return updatedUser;
   }
 
   // Project operations
@@ -396,6 +411,16 @@ export class DatabaseStorage implements IStorage {
 
   async rejectUser(userId: string): Promise<void> {
     await db.delete(users).where(eq(users.id, userId));
+  }
+
+  async promoteToAdmin(username: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ isAdmin: true, isApproved: true, updatedAt: new Date() })
+      .where(eq(users.username, username))
+      .returning();
+    if (!updatedUser) throw new Error('User not found');
+    return updatedUser;
   }
 
   // Project operations
