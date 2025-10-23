@@ -46,7 +46,7 @@ PostgreSQL database with normalized schema design:
 - **Users**: Authentication and profile information
 - **Projects**: Core project metadata with date ranges and client information
 - **Roads**: Individual road segments within projects with length and type classification
-- **Construction Layers**: Different construction phases (excavation, base, binder, surface) with weight-based progress calculation
+- **Construction Layers**: Different construction phases with weight-based progress calculation. Available layers: Excavation & Earthwork, Bottom Sub Grade, Top Sub Grade, Bottom Sub Base, Top Sub Base, Base, and Asphalt Concrete
 - **Layer Progress**: Granular progress tracking with chainage ranges, completion dates, and quality status
 - **Sessions**: Secure session storage for authentication
 

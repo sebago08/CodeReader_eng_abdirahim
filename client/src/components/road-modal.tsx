@@ -18,9 +18,12 @@ interface RoadModalProps {
 
 const LAYER_OPTIONS = [
   { id: "excavation", name: "Excavation & Earthwork", weight: 1 },
-  { id: "base", name: "Base Course", weight: 1 },
-  { id: "binder", name: "Binder Course", weight: 1 },
-  { id: "surface", name: "Surface Course", weight: 1 },
+  { id: "bottom-subgrade", name: "Bottom Sub Grade", weight: 1 },
+  { id: "top-subgrade", name: "Top Sub Grade", weight: 1 },
+  { id: "bottom-subbase", name: "Bottom Sub Base", weight: 1 },
+  { id: "top-subbase", name: "Top Sub Base", weight: 1 },
+  { id: "base", name: "Base", weight: 1 },
+  { id: "asphalt-concrete", name: "Asphalt Concrete", weight: 1 },
 ];
 
 export default function RoadModal({ project, road, onClose, onSuccess }: RoadModalProps) {
@@ -43,7 +46,7 @@ export default function RoadModal({ project, road, onClose, onSuccess }: RoadMod
       });
       setSelectedLayers(road.layers?.map((l: any) => l.name) || []);
     } else {
-      setSelectedLayers(["excavation", "base", "binder"]);
+      setSelectedLayers(["excavation", "bottom-subgrade", "top-subgrade", "bottom-subbase", "top-subbase", "base", "asphalt-concrete"]);
     }
   }, [road]);
 
