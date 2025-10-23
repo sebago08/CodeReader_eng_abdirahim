@@ -182,9 +182,9 @@ export default function ProjectCard({
           </div>
           
           {project.roads && project.roads.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 w-full" data-testid="roads-list">
+            <div className="space-y-4 w-full" data-testid="roads-list">
               {project.roads.map((road) => (
-                <div key={road.id} className="w-full max-w-none bg-muted/50 rounded-lg p-3" data-testid={`road-item-${road.id}`}>
+                <div key={road.id} className="w-full bg-muted/50 rounded-lg p-4" data-testid={`road-item-${road.id}`}>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium" data-testid="text-road-name">{road.name}</span>
                     <div className="flex space-x-1">
