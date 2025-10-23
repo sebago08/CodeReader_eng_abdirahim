@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
+import { useRoute, useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import ProjectCard from "@/components/project-card";
@@ -13,6 +13,7 @@ import type { ProjectWithRoads } from "@shared/schema";
 export default function ProjectDetail() {
   const { toast } = useToast();
   const [, params] = useRoute("/projects/:id");
+  const [, setLocation] = useLocation();
   const projectId = params?.id;
 
   const [activeModal, setActiveModal] = useState<string | null>(null);
@@ -37,7 +38,7 @@ export default function ProjectDetail() {
         description: "Project deleted successfully",
       });
       // Navigate back to overview
-      window.location.href = "/projects";
+      setLocation("/projects");
     },
     onError: () => {
       toast({
