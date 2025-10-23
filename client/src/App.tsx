@@ -11,6 +11,7 @@ import AuthPage from "@/pages/auth-page";
 import ProjectsOverview from "@/pages/projects-overview";
 import ProjectDetail from "@/pages/project-detail";
 import AdminDashboard from "@/pages/admin-dashboard";
+import Bootstrap from "@/pages/bootstrap";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
     <Switch>
       <Route path="/" component={HomeRoute} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/bootstrap" component={Bootstrap} />
       <AdminRoute path="/admin" component={AdminDashboard} />
       <ProtectedRoute path="/projects" component={ProjectsOverview} />
       <ProtectedRoute path="/projects/:id" component={ProjectDetail} />
