@@ -94,7 +94,7 @@ export default function SegmentedProgress({
   return (
     <div className="space-y-2">
       {/* Road scale visualization */}
-      <div className="relative h-6 bg-muted rounded-md border">
+      <div className="relative h-5 bg-muted rounded-md border">
         {/* Road length markers */}
         <div className="absolute inset-0 flex justify-between items-center px-1">
           <span className="text-xs text-muted-foreground font-mono">0km</span>
