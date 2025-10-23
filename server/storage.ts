@@ -5,7 +5,7 @@ import {
   constructionLayers,
   layerProgress,
   type User,
-  type UpsertUser,
+  type InsertUser,
   type Project,
   type InsertProject,
   type Road,
@@ -18,12 +18,18 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
 
 // Interface for storage operations
 export interface IStorage {
-  // User operations (required for Replit Auth)
+  // Session store
+  sessionStore: session.SessionStore;
+  
+  // User operations
   getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
   
   // Project operations
   getProjects(userId: string): Promise<ProjectWithRoads[]>;
@@ -51,32 +57,46 @@ export interface IStorage {
 
 // In-memory storage implementation
 export class MemStorage implements IStorage {
+  sessionStore: session.SessionStore;
   private users = new Map<string, User>();
   private projects = new Map<string, Project>();
   private roads = new Map<string, Road>();
   private layers = new Map<string, ConstructionLayer>();
   private progress = new Map<string, LayerProgress>();
 
-  // User operations (required for Replit Auth)
+  constructor() {
+    const createMemoryStore = require("memorystore");
+    const MemoryStore = createMemoryStore(session);
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000,
+    });
+  }
+
+  // User operations
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(u => u.username === username);
+  }
+
+  async createUser(userData: InsertUser): Promise<User> {
     const now = new Date();
-    const existingUser = this.users.get(userData.id!);
+    const id = Math.random().toString(36).substr(2, 9);
     
     const user: User = {
-      id: userData.id!,
+      id,
+      username: userData.username,
+      password: userData.password,
       email: userData.email || null,
       firstName: userData.firstName || null,
       lastName: userData.lastName || null,
-      profileImageUrl: userData.profileImageUrl || null,
-      createdAt: existingUser?.createdAt || now,
+      createdAt: now,
       updatedAt: now,
     };
     
-    this.users.set(userData.id!, user);
+    this.users.set(id, user);
     return user;
   }
 
@@ -298,23 +318,33 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations (required for Replit Auth)
+  sessionStore: session.SessionStore;
+
+  constructor() {
+    const PostgresSessionStore = connectPg(session);
+    this.sessionStore = new PostgresSessionStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: false,
+      ttl: 7 * 24 * 60 * 60, // 1 week in seconds
+      tableName: "sessions",
+    });
+  }
+
+  // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(userData: InsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
       .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
       .returning();
     return user;
   }
