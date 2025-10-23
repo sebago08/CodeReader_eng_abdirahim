@@ -130,10 +130,7 @@ export default function SegmentedProgress({
       )}
 
       {/* Summary */}
-      <div className="flex justify-between items-center text-xs pt-2 border-t border-border">
-        <span className="text-muted-foreground">
-          {sortedProgress.length} segment{sortedProgress.length !== 1 ? 's' : ''}
-        </span>
+      <div className="flex justify-end items-center text-xs pt-2 border-t border-border">
         <span className="font-medium">
           {sortedProgress.reduce((sum, prog) => {
             const start = Number(prog.startChainage);
