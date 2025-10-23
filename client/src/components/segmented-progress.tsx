@@ -97,6 +97,25 @@ export default function SegmentedProgress({
         })}
       </div>
 
+      {/* Segment details */}
+      {sortedProgress.length > 0 && (
+        <div className="space-y-1">
+          {sortedProgress.map((prog, index) => (
+            <div key={prog.id} className="flex items-center text-xs">
+              <div className="flex items-center space-x-2">
+                <div 
+                  className={`w-3 h-3 rounded-sm ${getSegmentColor(prog.qualityStatus)}`}
+                  data-testid={`segment-indicator-${layerId}-${index}`}
+                />
+                <span className="font-mono text-muted-foreground">
+                  {Number(prog.startChainage).toFixed(2)}km - {Number(prog.endChainage).toFixed(2)}km
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Summary */}
       <div className="flex justify-end items-center text-xs pt-2 border-t border-border">
         <span className="font-medium">
