@@ -2,10 +2,10 @@
 
 This is a full-stack road construction project management application built with React, Express.js, and PostgreSQL. The system enables construction professionals to track projects, manage roads, monitor construction layers, and record progress through an intuitive web interface. It features comprehensive project lifecycle management from planning to completion with real-time progress tracking and visual progress indicators.
 
-The application features a landing page with ConstructTrack branding at `/` and authenticated pages:
-1. **Landing Page** - Professional homepage with authentication options (Sign In, Sign Up, Google, Microsoft)
-2. **Projects Overview** - Displays all projects in a grid with summary information (requires authentication)
-3. **Project Detail** - Shows detailed view of a single project with roads, layers, and progress visualization (requires authentication)
+The application features an authentication page and protected dashboard:
+1. **Auth Page** (`/auth`) - Professional authentication page with tabbed interface for Sign In and Sign Up
+2. **Projects Overview** (`/`) - Displays all projects in a grid with summary information (requires authentication)
+3. **Project Detail** (`/projects/:id`) - Shows detailed view of a single project with roads, layers, and progress visualization (requires authentication)
 
 # User Preferences
 
@@ -55,17 +55,20 @@ The schema uses foreign key relationships to maintain data integrity and support
 
 ## Authentication & Authorization
 
-The application uses Replit Auth for secure user authentication:
+The application uses traditional username/password authentication with secure password hashing:
 
-- **Authentication Provider**: Replit Auth with OpenID Connect
-- **Supported Login Methods**: Google, Microsoft, GitHub, X (Twitter), Apple, and email/password
+- **Authentication Type**: Local username/password authentication
+- **Password Security**: Bcrypt password hashing with salt
 - **Session Management**: PostgreSQL-backed sessions with 1-week TTL
 - **Protected Routes**: All project and data routes require authentication
+- **User Registration**: New users can create accounts with username, password, and optional profile information
 - **Auth Flow**: 
-  - Unauthenticated users see landing page at `/`
-  - All sign-in/sign-up buttons redirect to `/api/login` 
-  - After authentication, users are redirected to `/projects`
-  - Logout available via `/api/logout` button in header
+  - Unauthenticated users are redirected to `/auth`
+  - Auth page provides both "Sign In" and "Sign Up" tabs
+  - Users must register with username (min 3 chars) and password (min 6 chars)
+  - Optional fields: email, first name, last name
+  - After successful authentication, users are redirected to Projects Dashboard (`/`)
+  - Logout button in header logs out user and redirects to `/auth`
 - **User Data**: Each user can only access and manage their own projects and data
 
 ## Key Features
