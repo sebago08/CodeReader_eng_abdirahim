@@ -2,18 +2,15 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import ProjectCard from "@/components/project-card";
 import ProjectModal from "@/components/project-modal";
 import RoadModal from "@/components/road-modal";
 import ProgressModal from "@/components/progress-modal";
 import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import type { ProjectWithRoads, Project } from "@shared/schema";
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   
   const [activeModal, setActiveModal] = useState<string | null>(null);
@@ -21,24 +18,8 @@ export default function Dashboard() {
   const [editingRoad, setEditingRoad] = useState<any>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, authLoading, toast]);
-
   const { data: projects, isLoading } = useQuery<ProjectWithRoads[]>({
     queryKey: ["/api/projects"],
-    enabled: isAuthenticated,
   });
 
   const deleteProjectMutation = useMutation({
@@ -53,17 +34,6 @@ export default function Dashboard() {
       });
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
       toast({
         title: "Error",
         description: "Failed to delete project",
@@ -84,17 +54,6 @@ export default function Dashboard() {
       });
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
       toast({
         title: "Error",
         description: "Failed to duplicate project",
@@ -102,10 +61,6 @@ export default function Dashboard() {
       });
     },
   });
-
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
-  };
 
   const handleAddProject = () => {
     setEditingProject(null);
@@ -159,17 +114,6 @@ export default function Dashboard() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
     } catch (error) {
-      if (isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
       toast({
         title: "Error",
         description: "Failed to reset layer progress",
@@ -185,10 +129,6 @@ export default function Dashboard() {
     setSelectedLayerId(null);
   };
 
-  if (authLoading || !isAuthenticated) {
-    return <div className="loading">Loading...</div>;
-  }
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -203,21 +143,6 @@ export default function Dashboard() {
                 <h1 className="text-xl font-bold">Road Construction Tracker</h1>
                 <p className="text-primary-foreground/80 text-sm">Professional Construction Management</p>
               </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <span className="hidden md:inline text-primary-foreground/90" data-testid="text-user-email">
-                Welcome, {user?.email || 'User'}
-              </span>
-              <Button
-                onClick={handleLogout}
-                variant="ghost"
-                className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors text-primary-foreground hover:text-primary-foreground"
-                data-testid="button-logout"
-              >
-                <i className="fas fa-sign-out-alt mr-2"></i>
-                Logout
-              </Button>
             </div>
           </div>
         </div>
