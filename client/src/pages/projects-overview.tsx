@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import ProjectOverviewCard from "@/components/project-overview-card";
 import ProjectModal from "@/components/project-modal";
 import { queryClient } from "@/lib/queryClient";
@@ -9,6 +10,7 @@ import type { ProjectWithRoads } from "@shared/schema";
 
 export default function ProjectsOverview() {
   const [showProjectModal, setShowProjectModal] = useState(false);
+  const { logoutMutation } = useAuth();
 
   const { data: projects, isLoading } = useQuery<ProjectWithRoads[]>({
     queryKey: ["/api/projects"],
@@ -23,7 +25,7 @@ export default function ProjectsOverview() {
   };
 
   const handleLogout = () => {
-    window.location.href = "/api/logout";
+    logoutMutation.mutate();
   };
 
   return (
