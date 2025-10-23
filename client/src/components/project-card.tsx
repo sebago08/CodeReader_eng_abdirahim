@@ -280,8 +280,8 @@ export default function ProjectCard({
                               </div>
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-background p-3 rounded border-l-2 border-blue-500">
-                                  <div className="text-xs text-muted-foreground mb-2 font-medium">LHS</div>
                                   <div className="flex items-center justify-between mb-2">
+                                    <div className="text-xs text-muted-foreground font-medium">LHS</div>
                                     <span className={`font-medium text-xs ${
                                       lhsPercentage >= 100 ? 'text-green-600' : 
                                       lhsPercentage >= 50 ? 'text-warning' : 'text-secondary'
@@ -297,8 +297,8 @@ export default function ProjectCard({
                                   />
                                 </div>
                                 <div className="bg-background p-3 rounded border-l-2 border-orange-500">
-                                  <div className="text-xs text-muted-foreground mb-2 font-medium">RHS</div>
                                   <div className="flex items-center justify-between mb-2">
+                                    <div className="text-xs text-muted-foreground font-medium">RHS</div>
                                     <span className={`font-medium text-xs ${
                                       rhsPercentage >= 100 ? 'text-green-600' : 
                                       rhsPercentage >= 50 ? 'text-warning' : 'text-secondary'
