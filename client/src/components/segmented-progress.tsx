@@ -97,38 +97,6 @@ export default function SegmentedProgress({
         })}
       </div>
 
-      {/* Segment details */}
-      {sortedProgress.length > 0 && (
-        <div className="space-y-1">
-          {sortedProgress.map((prog, index) => (
-            <div key={prog.id} className="flex items-center justify-between text-xs">
-              <div className="flex items-center space-x-2">
-                <div 
-                  className={`w-3 h-3 rounded-sm ${getSegmentColor(prog.qualityStatus)}`}
-                  data-testid={`segment-indicator-${layerId}-${index}`}
-                />
-                <span className="font-mono text-muted-foreground">
-                  {Number(prog.startChainage).toFixed(2)}km - {Number(prog.endChainage).toFixed(2)}km
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                  (prog.qualityStatus || '').toLowerCase() === 'approved' ? 'bg-green-100 text-green-800' :
-                  (prog.qualityStatus || '').toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  (prog.qualityStatus || '').toLowerCase() === 'rejected' ? 'bg-red-100 text-red-800' :
-                  'bg-blue-100 text-blue-800'
-                }`}>
-                  {prog.qualityStatus || 'unknown'}
-                </span>
-                <span className="text-muted-foreground font-mono">
-                  {prog.completionDate}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Summary */}
       <div className="flex justify-end items-center text-xs pt-2 border-t border-border">
         <span className="font-medium">
