@@ -164,7 +164,7 @@ export default function ProjectCard({
         </div>
 
         {/* Roads Section */}
-        <div className="border-t border-border pt-4">
+        <div className="w-full border-t border-border pt-4">
           <div className="flex justify-between items-center mb-3">
             <h4 className="font-semibold text-card-foreground flex items-center">
               <i className="fas fa-road mr-2 text-muted-foreground"></i>
@@ -182,9 +182,9 @@ export default function ProjectCard({
           </div>
           
           {project.roads && project.roads.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3" data-testid="roads-list">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 w-full" data-testid="roads-list">
               {project.roads.map((road) => (
-                <div key={road.id} className="bg-muted/50 rounded-lg p-3" data-testid={`road-item-${road.id}`}>
+                <div key={road.id} className="w-full max-w-none bg-muted/50 rounded-lg p-3" data-testid={`road-item-${road.id}`}>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium" data-testid="text-road-name">{road.name}</span>
                     <div className="flex space-x-1">
@@ -197,7 +197,7 @@ export default function ProjectCard({
                       </button>
                     </div>
                   </div>
-                  <div className="space-y-1 text-xs">
+                  <div className="flex flex-col gap-2 text-xs">
                     {road.layers && road.layers.length > 0 ? (
                       road.layers.map((layer) => {
                         if (road.carriageway === 'dual') {
