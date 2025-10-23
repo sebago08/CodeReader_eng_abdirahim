@@ -70,6 +70,30 @@ export default function ProjectCard({
   const plannedProgress = calculatePlannedProgress();
   const actualProgress = calculateActualProgress();
 
+  // Calculate progress for a specific road
+  const calculateRoadProgress = (road: any) => {
+    if (!road.layers || road.layers.length === 0) return 0;
+    
+    let totalProgress = 0;
+    let totalWeight = 0;
+    
+    road.layers.forEach((layer: any) => {
+      const layerWeight = layer.weight || 1;
+      totalWeight += layerWeight;
+      
+      if (layer.progress && layer.progress.length > 0) {
+        const completedLength = layer.progress.reduce((sum: number, prog: any) => {
+          return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+        }, 0);
+        
+        const layerProgress = (completedLength / Number(road.length)) * 100;
+        totalProgress += layerProgress * layerWeight;
+      }
+    });
+    
+    return totalWeight > 0 ? Math.min(100, Math.round(totalProgress / totalWeight)) : 0;
+  };
+
   return (
     <div className="w-full bg-card rounded-xl shadow-lg border border-border overflow-hidden card-hover" data-testid={`card-project-${project.id}`}>
       <div className="p-6">
@@ -183,10 +207,20 @@ export default function ProjectCard({
           
           {project.roads && project.roads.length > 0 ? (
             <div className="space-y-4 w-full" data-testid="roads-list">
-              {project.roads.map((road) => (
+              {project.roads.map((road) => {
+                const roadProgress = calculateRoadProgress(road);
+                return (
                 <div key={road.id} className="w-full bg-muted/50 rounded-lg p-4" data-testid={`road-item-${road.id}`}>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium" data-testid="text-road-name">{road.name}</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium" data-testid="text-road-name">{road.name}</span>
+                      <span className={`font-semibold text-sm ${
+                        roadProgress >= 100 ? 'text-green-600' : 
+                        roadProgress >= 50 ? 'text-warning' : 'text-secondary'
+                      }`} data-testid="text-road-progress">
+                        ({roadProgress}%)
+                      </span>
+                    </div>
                     <div className="flex space-x-1">
                       <button
                         onClick={() => onEditRoad(road)}
@@ -337,7 +371,8 @@ export default function ProjectCard({
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-muted-foreground text-center py-4" data-testid="text-no-roads">
