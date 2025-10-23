@@ -2,10 +2,11 @@
 
 This is a full-stack road construction project management application built with React, Express.js, and PostgreSQL. The system enables construction professionals to track projects, manage roads, monitor construction layers, and record progress through an intuitive web interface. It features comprehensive project lifecycle management from planning to completion with real-time progress tracking and visual progress indicators.
 
-The application features an authentication page and protected dashboard:
-1. **Auth Page** (`/auth`) - Professional authentication page with tabbed interface for Sign In and Sign Up
-2. **Projects Overview** (`/`) - Displays all projects in a grid with summary information (requires authentication)
-3. **Project Detail** (`/projects/:id`) - Shows detailed view of a single project with roads, layers, and progress visualization (requires authentication)
+The application features a landing page, authentication page, and protected dashboard:
+1. **Landing Page** (`/`) - Professional homepage with ConstructTrack branding and authentication buttons (Sign In, Sign Up)
+2. **Auth Page** (`/auth`) - Authentication page with tabbed interface for Sign In and Sign Up
+3. **Projects Overview** (`/projects`) - Displays all projects in a grid with summary information (requires authentication)
+4. **Project Detail** (`/projects/:id`) - Shows detailed view of a single project with roads, layers, and progress visualization (requires authentication)
 
 # User Preferences
 
@@ -63,12 +64,14 @@ The application uses traditional username/password authentication with secure pa
 - **Protected Routes**: All project and data routes require authentication
 - **User Registration**: New users can create accounts with username, password, and optional profile information
 - **Auth Flow**: 
-  - Unauthenticated users are redirected to `/auth`
+  - Unauthenticated users see the landing page at `/`
+  - Landing page has "Sign In" and "Sign Up" buttons that navigate to `/auth`
   - Auth page provides both "Sign In" and "Sign Up" tabs
   - Users must register with username (min 3 chars) and password (min 6 chars)
   - Optional fields: email, first name, last name
-  - After successful authentication, users are redirected to Projects Dashboard (`/`)
-  - Logout button in header logs out user and redirects to `/auth`
+  - After successful authentication, users are redirected to Projects Dashboard (`/projects`)
+  - Logout button in header logs out user and redirects to landing page (`/`)
+  - Authenticated users visiting `/` are automatically redirected to `/projects`
 - **User Data**: Each user can only access and manage their own projects and data
 
 ## Key Features

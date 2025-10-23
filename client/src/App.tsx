@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
-import Landing from "@/pages/landing";
+import { HomeRoute } from "@/lib/home-route";
 import AuthPage from "@/pages/auth-page";
 import ProjectsOverview from "@/pages/projects-overview";
 import ProjectDetail from "@/pages/project-detail";
@@ -14,8 +14,8 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
+      <Route path="/" component={HomeRoute} />
       <Route path="/auth" component={AuthPage} />
-      <ProtectedRoute path="/" component={ProjectsOverview} />
       <ProtectedRoute path="/projects" component={ProjectsOverview} />
       <ProtectedRoute path="/projects/:id" component={ProjectDetail} />
       <Route component={NotFound} />
