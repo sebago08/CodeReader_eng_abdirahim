@@ -12,6 +12,17 @@ const isAuthenticated: RequestHandler = (req, res, next) => {
   next();
 };
 
+// Middleware to check if user is admin
+const isAdmin: RequestHandler = (req: any, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!req.user?.isAdmin) {
+    return res.status(403).json({ message: "Forbidden - Admin access required" });
+  }
+  next();
+};
+
 export function registerRoutes(app: Express): Server {
   // Setup authentication (includes /api/register, /api/login, /api/logout, /api/user routes)
   setupAuth(app);
@@ -214,6 +225,39 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error resetting layer progress:", error);
       res.status(500).json({ message: "Failed to reset layer progress" });
+    }
+  });
+
+  // Admin routes
+  app.get('/api/admin/users', isAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post('/api/admin/users/:id/approve', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const user = await storage.approveUser(id);
+      res.json(user);
+    } catch (error) {
+      console.error("Error approving user:", error);
+      res.status(500).json({ message: "Failed to approve user" });
+    }
+  });
+
+  app.delete('/api/admin/users/:id', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.rejectUser(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error rejecting user:", error);
+      res.status(500).json({ message: "Failed to reject user" });
     }
   });
 

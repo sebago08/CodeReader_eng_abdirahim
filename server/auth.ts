@@ -54,6 +54,9 @@ export function setupAuth(app: Express) {
         if (!user || !user.password || !(await comparePasswords(password, user.password))) {
           return done(null, false);
         }
+        if (!user.isApproved) {
+          return done(null, false, { message: "Account pending admin approval" });
+        }
         return done(null, user);
       } catch (error) {
         return done(error);
@@ -75,8 +78,8 @@ export function setupAuth(app: Express) {
     try {
       const { username, password, email, firstName, lastName } = req.body;
 
-      if (!username || !password) {
-        return res.status(400).send("Username and password are required");
+      if (!username || !password || !email) {
+        return res.status(400).send("Username, password, and email are required");
       }
 
       const existingUser = await storage.getUserByUsername(username);
@@ -90,6 +93,8 @@ export function setupAuth(app: Express) {
         email,
         firstName,
         lastName,
+        isAdmin: false,
+        isApproved: false,
       });
 
       req.login(user, (err) => {
@@ -101,8 +106,19 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) return next(err);
+      if (!user) {
+        return res.status(401).json({ 
+          message: info?.message || "Invalid username or password" 
+        });
+      }
+      req.login(user, (err) => {
+        if (err) return next(err);
+        res.status(200).json(user);
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {

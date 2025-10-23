@@ -16,7 +16,7 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  email: z.string().email("Invalid email address").optional().or(z.literal("")),
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
 });
@@ -314,7 +314,7 @@ export default function Landing() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email (Optional)</FormLabel>
+                        <FormLabel>Email</FormLabel>
                         <FormControl>
                           <Input
                             type="email"
