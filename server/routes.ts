@@ -228,6 +228,30 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Bootstrap endpoint to create first admin (protected by secret key)
+  app.post('/api/bootstrap/promote-admin', async (req: any, res) => {
+    try {
+      const { username, secret } = req.body;
+      
+      // Check if secret matches
+      const BOOTSTRAP_SECRET = process.env.BOOTSTRAP_SECRET || 'constructtrack-admin-2024';
+      
+      if (secret !== BOOTSTRAP_SECRET) {
+        return res.status(403).json({ message: "Invalid secret" });
+      }
+      
+      if (!username) {
+        return res.status(400).json({ message: "Username is required" });
+      }
+      
+      const user = await storage.promoteToAdmin(username);
+      res.json({ message: "User promoted to admin successfully", user: { username: user.username, isAdmin: user.isAdmin } });
+    } catch (error: any) {
+      console.error("Error promoting user to admin:", error);
+      res.status(500).json({ message: error.message || "Failed to promote user" });
+    }
+  });
+
   // Admin routes
   app.get('/api/admin/users', isAdmin, async (req: any, res) => {
     try {
