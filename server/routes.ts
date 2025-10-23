@@ -1,18 +1,24 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertProjectSchema, insertRoadSchema, insertLayerSchema, insertLayerProgressSchema } from "@shared/schema";
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+// Default user ID for development (no authentication)
+const DEFAULT_USER_ID = "default-user";
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth routes (removed authentication)
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      let user = await storage.getUser(DEFAULT_USER_ID);
+      if (!user) {
+        user = await storage.upsertUser({
+          id: DEFAULT_USER_ID,
+          email: "user@example.com",
+          firstName: "Demo",
+          lastName: "User",
+        });
+      }
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -21,9 +27,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Project routes
-  app.get('/api/projects', isAuthenticated, async (req: any, res) => {
+  app.get('/api/projects', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = DEFAULT_USER_ID;
       const projects = await storage.getProjects(userId);
       res.json(projects);
     } catch (error) {
@@ -32,9 +38,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/projects/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/projects/:id', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = DEFAULT_USER_ID;
       const { id } = req.params;
       const project = await storage.getProject(id, userId);
       
@@ -49,9 +55,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/projects', isAuthenticated, async (req: any, res) => {
+  app.post('/api/projects',  async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = DEFAULT_USER_ID;
       const validatedData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject(userId, validatedData);
       res.status(201).json(project);
@@ -61,9 +67,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/projects/:id', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/projects/:id',  async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = DEFAULT_USER_ID;
       const { id } = req.params;
       const validatedData = insertProjectSchema.partial().parse(req.body);
       const project = await storage.updateProject(id, userId, validatedData);
@@ -74,9 +80,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/projects/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/projects/:id',  async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = DEFAULT_USER_ID;
       const { id } = req.params;
       await storage.deleteProject(id, userId);
       res.status(204).send();
@@ -86,9 +92,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/projects/:id/duplicate', isAuthenticated, async (req: any, res) => {
+  app.post('/api/projects/:id/duplicate',  async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = DEFAULT_USER_ID;
       const { id } = req.params;
       const originalProject = await storage.getProject(id, userId);
       
@@ -130,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Road routes
-  app.post('/api/projects/:projectId/roads', isAuthenticated, async (req: any, res) => {
+  app.post('/api/projects/:projectId/roads',  async (req: any, res) => {
     try {
       const { projectId } = req.params;
       const { layers, ...roadData } = req.body;
@@ -151,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/roads/:id', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/roads/:id',  async (req: any, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertRoadSchema.partial().parse(req.body);
@@ -163,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/roads/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/roads/:id',  async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteRoad(id);
@@ -175,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Progress routes
-  app.post('/api/layers/:layerId/progress', isAuthenticated, async (req: any, res) => {
+  app.post('/api/layers/:layerId/progress',  async (req: any, res) => {
     try {
       const { layerId } = req.params;
       const validatedData = insertLayerProgressSchema.parse(req.body);
@@ -187,7 +193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/progress/:id', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/progress/:id',  async (req: any, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertLayerProgressSchema.partial().parse(req.body);
@@ -199,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/progress/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/progress/:id',  async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteLayerProgress(id);
@@ -210,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/layers/:layerId/progress/reset', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/layers/:layerId/progress/reset',  async (req: any, res) => {
     try {
       const { layerId } = req.params;
       await storage.resetLayerProgress(layerId);
