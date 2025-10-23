@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ProjectCard from "@/components/project-card";
 import ProjectModal from "@/components/project-modal";
@@ -131,6 +132,10 @@ export default function ProjectDetail() {
     setSelectedLayerId(null);
   };
 
+  const handleLogout = () => {
+    window.location.href = "/api/logout";
+  };
+
   // Calculate overall completion
   const calculateOverallProgress = () => {
     if (!project?.roads || project.roads.length === 0) return 0;
@@ -204,6 +209,15 @@ export default function ProjectDetail() {
                 <p className="text-primary-foreground/80 text-sm">Professional Construction Management</p>
               </div>
             </div>
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              className="text-white hover:bg-white/10"
+              data-testid="button-logout"
+            >
+              <LogOut className="h-5 w-5 mr-2" />
+              Logout
+            </Button>
           </div>
         </div>
       </header>
