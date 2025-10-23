@@ -279,7 +279,7 @@ export default function ProjectCard({
                                 </div>
                               </div>
                               <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-background p-3 rounded border-l-2 border-blue-500">
+                                <div className="bg-white p-3 rounded border-l-2 border-blue-500">
                                   <div className="flex items-center gap-2 mb-2">
                                     <div className="text-xs text-muted-foreground font-medium">LHS</div>
                                     <span className={`font-medium text-xs ${
@@ -296,7 +296,7 @@ export default function ProjectCard({
                                     layerId={layer.id}
                                   />
                                 </div>
-                                <div className="bg-background p-3 rounded border-l-2 border-orange-500">
+                                <div className="bg-white p-3 rounded border-l-2 border-orange-500">
                                   <div className="flex items-center gap-2 mb-2">
                                     <div className="text-xs text-muted-foreground font-medium">RHS</div>
                                     <span className={`font-medium text-xs ${
