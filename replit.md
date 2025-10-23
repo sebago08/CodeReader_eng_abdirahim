@@ -2,6 +2,10 @@
 
 This is a full-stack road construction project management application built with React, Express.js, and PostgreSQL. The system enables construction professionals to track projects, manage roads, monitor construction layers, and record progress through an intuitive web interface. It features comprehensive project lifecycle management from planning to completion with real-time progress tracking and visual progress indicators.
 
+The application is split into two main pages:
+1. **Projects Overview** - Displays all projects in a grid with summary information
+2. **Project Detail** - Shows detailed view of a single project with roads, layers, and progress visualization
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -50,11 +54,7 @@ The schema uses foreign key relationships to maintain data integrity and support
 
 ## Authentication & Authorization
 
-- **Provider**: Replit Auth using OpenID Connect protocol
-- **Session Storage**: PostgreSQL-backed sessions with configurable TTL
-- **Security**: HTTP-only cookies, CSRF protection, and secure session handling
-- **Authorization**: Route-level middleware protecting API endpoints
-- **User Management**: Automatic user creation and profile synchronization
+**Note**: Authentication has been temporarily removed from the application. The system currently uses a default user for all operations. Replit Auth integration will be added back when needed.
 
 ## Key Features
 
