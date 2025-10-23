@@ -1,7 +1,7 @@
-import { useLocation } from "wouter";
-
 export default function Landing() {
-  const [, setLocation] = useLocation();
+  const handleLogin = () => {
+    window.location.href = "/api/login";
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -37,14 +37,14 @@ export default function Landing() {
           {/* Sign In / Sign Up Buttons */}
           <div className="grid grid-cols-2 gap-4">
             <button
-              onClick={() => setLocation("/projects")}
+              onClick={handleLogin}
               className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
               data-testid="button-sign-in"
             >
               Sign In
             </button>
             <button
-              onClick={() => setLocation("/projects")}
+              onClick={handleLogin}
               className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
               data-testid="button-sign-up"
             >
@@ -65,7 +65,7 @@ export default function Landing() {
           {/* Social Sign In Buttons */}
           <div className="space-y-4">
             <button
-              onClick={() => setLocation("/projects")}
+              onClick={handleLogin}
               className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-white border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               data-testid="button-google-signin"
             >
@@ -79,7 +79,7 @@ export default function Landing() {
             </button>
 
             <button
-              onClick={() => setLocation("/projects")}
+              onClick={handleLogin}
               className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-white border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               data-testid="button-microsoft-signin"
             >
