@@ -1,11 +1,28 @@
 import { Link } from "wouter";
+import { MoreVertical, Edit, Copy, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import type { ProjectWithRoads } from "@shared/schema";
 
 interface ProjectOverviewCardProps {
   project: ProjectWithRoads;
+  onEdit?: (project: ProjectWithRoads) => void;
+  onDuplicate?: (projectId: string) => void;
+  onDelete?: (projectId: string) => void;
 }
 
-export default function ProjectOverviewCard({ project }: ProjectOverviewCardProps) {
+export default function ProjectOverviewCard({ 
+  project, 
+  onEdit, 
+  onDuplicate, 
+  onDelete 
+}: ProjectOverviewCardProps) {
   // Calculate overall progress based on layer completion
   const calculateOverallProgress = () => {
     if (!project.roads || project.roads.length === 0) return 0;
@@ -88,30 +105,83 @@ export default function ProjectOverviewCard({ project }: ProjectOverviewCardProp
   };
 
   return (
-    <Link href={`/projects/${project.id}`}>
-      <div 
-        className="bg-card rounded-xl border border-border p-6 hover:shadow-lg transition-shadow cursor-pointer"
-        data-testid={`card-project-overview-${project.id}`}
-      >
-        {/* Header */}
-        <div className="flex justify-between items-start mb-4">
+    <div 
+      className="bg-card rounded-xl border border-border p-6 hover:shadow-lg transition-shadow relative"
+      data-testid={`card-project-overview-${project.id}`}
+    >
+      {/* Header */}
+      <div className="flex justify-between items-start mb-4">
+        <Link href={`/projects/${project.id}`} className="flex-1 cursor-pointer">
           <div>
-            <h3 className="text-lg font-semibold text-card-foreground mb-1" data-testid="text-project-name">
+            <h3 className="text-lg font-semibold text-card-foreground mb-1 hover:text-orange-500 transition-colors" data-testid="text-project-name">
               {project.name}
             </h3>
             <p className="text-sm text-muted-foreground" data-testid="text-project-id">
               Project ID: #{project.client}
             </p>
           </div>
+        </Link>
+        <div className="flex items-center gap-2">
           <span 
             className={`px-3 py-1 rounded-full text-xs font-medium ${status.color}`}
             data-testid="badge-project-status"
           >
             {status.label}
           </span>
+          
+          {/* Kebab Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 w-8 p-0"
+                data-testid={`button-menu-${project.id}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit?.(project);
+                }}
+                data-testid={`button-edit-${project.id}`}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Project
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDuplicate?.(project.id);
+                }}
+                data-testid={`button-duplicate-${project.id}`}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Duplicate Project
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete?.(project.id);
+                }}
+                className="text-red-600 focus:text-red-600"
+                data-testid={`button-delete-${project.id}`}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Project
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+      </div>
 
-        {/* Overall Progress */}
+      {/* Overall Progress */}
+      <Link href={`/projects/${project.id}`} className="block cursor-pointer">
         <div className="mb-5">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-medium text-muted-foreground">Overall Progress</span>
@@ -145,7 +215,7 @@ export default function ProjectOverviewCard({ project }: ProjectOverviewCardProp
             <p className="text-sm text-muted-foreground">No layers defined</p>
           )}
         </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
