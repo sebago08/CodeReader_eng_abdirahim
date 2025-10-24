@@ -213,25 +213,33 @@ export default function ProjectDetail() {
                 <p className="text-primary-foreground/80 text-sm">Professional Construction Management</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setShowTeamSection(!showTeamSection)}
-                variant="ghost"
-                className="text-white hover:bg-white/10"
-                data-testid="button-toggle-team"
-              >
-                <Users className="h-5 w-5 mr-2" />
-                Team
-              </Button>
-              <Button
-                onClick={handleLogout}
-                variant="ghost"
-                className="text-white hover:bg-white/10"
-                data-testid="button-logout"
-              >
-                <LogOut className="h-5 w-5 mr-2" />
-                Logout
-              </Button>
+            <div className="flex items-center gap-4">
+              {user && (
+                <div className="text-white" data-testid="text-current-username">
+                  <span className="text-sm text-white/60">Signed in as:</span>
+                  <span className="ml-2 font-medium">{user.username}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setShowTeamSection(!showTeamSection)}
+                  variant="ghost"
+                  className="text-white hover:bg-white/10"
+                  data-testid="button-toggle-team"
+                >
+                  <Users className="h-5 w-5 mr-2" />
+                  Team
+                </Button>
+                <Button
+                  onClick={handleLogout}
+                  variant="ghost"
+                  className="text-white hover:bg-white/10"
+                  data-testid="button-logout"
+                >
+                  <LogOut className="h-5 w-5 mr-2" />
+                  Logout
+                </Button>
+              </div>
             </div>
           </div>
         </div>
