@@ -285,6 +285,92 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Team collaboration routes
+  // Get project members
+  app.get('/api/projects/:projectId/members', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user.id;
+      
+      // Check if user has access to this project
+      const role = await storage.getUserProjectRole(userId, projectId);
+      if (!role) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const members = await storage.getProjectMembers(projectId);
+      
+      // Also get the project owner info
+      const project = await storage.getProject(projectId, userId);
+      const owner = project ? await storage.getUser(project.userId) : null;
+      
+      res.json({ members, owner });
+    } catch (error) {
+      console.error("Error fetching members:", error);
+      res.status(500).json({ message: "Failed to fetch members" });
+    }
+  });
+
+  // Invite user to project (by username)
+  app.post('/api/projects/:projectId/members/invite', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const { username } = req.body;
+      const userId = req.user.id;
+      
+      // Only owner can invite
+      const project = await storage.getProject(projectId, userId);
+      if (!project || project.userId !== userId) {
+        return res.status(403).json({ message: "Only project owner can invite members" });
+      }
+      
+      // Find user by username
+      const invitedUser = await storage.getUserByUsername(username);
+      if (!invitedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if already a member
+      const existingRole = await storage.getUserProjectRole(invitedUser.id, projectId);
+      if (existingRole) {
+        return res.status(400).json({ message: "User is already a member" });
+      }
+      
+      // Add user directly as collaborator (simplified - no invitation workflow)
+      const member = await storage.addProjectMember({
+        projectId,
+        userId: invitedUser.id,
+        role: 'collaborator',
+        addedBy: userId,
+      });
+      
+      res.status(201).json({ message: "User added successfully", member });
+    } catch (error: any) {
+      console.error("Error inviting user:", error);
+      res.status(500).json({ message: error.message || "Failed to invite user" });
+    }
+  });
+
+  // Remove member from project
+  app.delete('/api/projects/:projectId/members/:memberId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId, memberId } = req.params;
+      const userId = req.user.id;
+      
+      // Only owner can remove members
+      const project = await storage.getProject(projectId, userId);
+      if (!project || project.userId !== userId) {
+        return res.status(403).json({ message: "Only project owner can remove members" });
+      }
+      
+      await storage.removeProjectMember(memberId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error removing member:", error);
+      res.status(500).json({ message: "Failed to remove member" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
