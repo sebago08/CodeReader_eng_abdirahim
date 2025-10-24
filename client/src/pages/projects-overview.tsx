@@ -1,27 +1,92 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import ProjectOverviewCard from "@/components/project-overview-card";
 import ProjectModal from "@/components/project-modal";
-import { queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ProjectWithRoads } from "@shared/schema";
 
 export default function ProjectsOverview() {
   const [showProjectModal, setShowProjectModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectWithRoads | null>(null);
   const { logoutMutation, user } = useAuth();
+  const { toast } = useToast();
 
   const { data: projects, isLoading } = useQuery<ProjectWithRoads[]>({
     queryKey: ["/api/projects"],
   });
 
+  // Duplicate project mutation
+  const duplicateProjectMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      const res = await apiRequest("POST", `/api/projects/${projectId}/duplicate`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      toast({
+        title: "Success",
+        description: "Project duplicated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to duplicate project",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete project mutation
+  const deleteProjectMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      await apiRequest("DELETE", `/api/projects/${projectId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      toast({
+        title: "Success",
+        description: "Project deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete project",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAddProject = () => {
+    setEditingProject(null);
     setShowProjectModal(true);
+  };
+
+  const handleEditProject = (project: ProjectWithRoads) => {
+    setEditingProject(project);
+    setShowProjectModal(true);
+  };
+
+  const handleDuplicateProject = (projectId: string) => {
+    if (confirm("Are you sure you want to duplicate this project?")) {
+      duplicateProjectMutation.mutate(projectId);
+    }
+  };
+
+  const handleDeleteProject = (projectId: string) => {
+    if (confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
+      deleteProjectMutation.mutate(projectId);
+    }
   };
 
   const closeModal = () => {
     setShowProjectModal(false);
+    setEditingProject(null);
   };
 
   const handleLogout = () => {
@@ -90,7 +155,13 @@ export default function ProjectsOverview() {
         ) : projects && projects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" data-testid="projects-grid">
             {projects.map((project) => (
-              <ProjectOverviewCard key={project.id} project={project} />
+              <ProjectOverviewCard 
+                key={project.id} 
+                project={project}
+                onEdit={handleEditProject}
+                onDuplicate={handleDuplicateProject}
+                onDelete={handleDeleteProject}
+              />
             ))}
           </div>
         ) : (
@@ -115,6 +186,7 @@ export default function ProjectsOverview() {
       {/* Project Modal */}
       {showProjectModal && (
         <ProjectModal
+          project={editingProject}
           onClose={closeModal}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
