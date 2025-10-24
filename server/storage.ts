@@ -4,6 +4,8 @@ import {
   roads,
   constructionLayers,
   layerProgress,
+  projectMembers,
+  projectInvitations,
   type User,
   type InsertUser,
   type Project,
@@ -15,6 +17,12 @@ import {
   type LayerProgress,
   type InsertLayerProgress,
   type ProjectWithRoads,
+  type ProjectMember,
+  type InsertProjectMember,
+  type ProjectInvitation,
+  type InsertProjectInvitation,
+  type ProjectMemberWithUser,
+  type ProjectInvitationWithDetails,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -57,6 +65,20 @@ export interface IStorage {
   updateLayerProgress(id: string, progress: Partial<InsertLayerProgress>): Promise<LayerProgress>;
   deleteLayerProgress(id: string): Promise<void>;
   resetLayerProgress(layerId: string): Promise<void>;
+  
+  // Team collaboration operations
+  getUserProjectRole(userId: string, projectId: string): Promise<string | null>;
+  getProjectMembers(projectId: string): Promise<ProjectMemberWithUser[]>;
+  addProjectMember(member: InsertProjectMember): Promise<ProjectMember>;
+  updateProjectMemberRole(memberId: string, role: string): Promise<ProjectMember>;
+  removeProjectMember(memberId: string): Promise<void>;
+  createInvitation(invitation: InsertProjectInvitation): Promise<ProjectInvitation>;
+  getInvitationByToken(token: string): Promise<ProjectInvitation | undefined>;
+  getUserInvitations(userEmail: string): Promise<ProjectInvitationWithDetails[]>;
+  getProjectInvitations(projectId: string): Promise<ProjectInvitationWithDetails[]>;
+  acceptInvitation(token: string, userId: string): Promise<ProjectMember>;
+  declineInvitation(token: string): Promise<void>;
+  deleteInvitation(invitationId: string): Promise<void>;
 }
 
 // In-memory storage implementation
