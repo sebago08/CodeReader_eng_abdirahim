@@ -2,19 +2,20 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import ProjectCard from "@/components/project-card";
 import ProjectModal from "@/components/project-modal";
 import RoadModal from "@/components/road-modal";
 import ProgressModal from "@/components/progress-modal";
+import TeamTab from "@/components/team-tab";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ProjectWithRoads } from "@shared/schema";
 
 export default function ProjectDetail() {
   const { toast } = useToast();
-  const { logoutMutation } = useAuth();
+  const { logoutMutation, user } = useAuth();
   const [, params] = useRoute("/projects/:id");
   const [, setLocation] = useLocation();
   const projectId = params?.id;
@@ -23,6 +24,7 @@ export default function ProjectDetail() {
   const [editingProject, setEditingProject] = useState<ProjectWithRoads | null>(null);
   const [editingRoad, setEditingRoad] = useState<any>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [showTeamSection, setShowTeamSection] = useState(false);
 
   const { data: projects, isLoading } = useQuery<ProjectWithRoads[]>({
     queryKey: ["/api/projects"],
@@ -211,15 +213,26 @@ export default function ProjectDetail() {
                 <p className="text-primary-foreground/80 text-sm">Professional Construction Management</p>
               </div>
             </div>
-            <Button
-              onClick={handleLogout}
-              variant="ghost"
-              className="text-white hover:bg-white/10"
-              data-testid="button-logout"
-            >
-              <LogOut className="h-5 w-5 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setShowTeamSection(!showTeamSection)}
+                variant="ghost"
+                className="text-white hover:bg-white/10"
+                data-testid="button-toggle-team"
+              >
+                <Users className="h-5 w-5 mr-2" />
+                Team
+              </Button>
+              <Button
+                onClick={handleLogout}
+                variant="ghost"
+                className="text-white hover:bg-white/10"
+                data-testid="button-logout"
+              >
+                <LogOut className="h-5 w-5 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -288,18 +301,30 @@ export default function ProjectDetail() {
         </div>
 
         {/* Project Details Card */}
-        <div className="w-full lg:w-3/4 mx-auto">
-          <ProjectCard
-            project={project}
-            onEdit={() => handleEditProject(project)}
-            onDelete={() => handleDeleteProject(project.id)}
-            onDuplicate={() => handleDuplicateProject(project.id)}
-            onAddRoad={() => handleAddRoad(project)}
-            onEditRoad={(road) => handleEditRoad(project, road)}
-            onAddProgress={(road, layerId) => handleAddProgress(project, road, layerId)}
-            onResetProgress={handleResetProgress}
-          />
-        </div>
+        {!showTeamSection && (
+          <div className="w-full lg:w-3/4 mx-auto">
+            <ProjectCard
+              project={project}
+              onEdit={() => handleEditProject(project)}
+              onDelete={() => handleDeleteProject(project.id)}
+              onDuplicate={() => handleDuplicateProject(project.id)}
+              onAddRoad={() => handleAddRoad(project)}
+              onEditRoad={(road) => handleEditRoad(project, road)}
+              onAddProgress={(road, layerId) => handleAddProgress(project, road, layerId)}
+              onResetProgress={handleResetProgress}
+            />
+          </div>
+        )}
+
+        {/* Team Management Section */}
+        {showTeamSection && projectId && user && (
+          <div className="w-full lg:w-3/4 mx-auto">
+            <TeamTab 
+              projectId={projectId} 
+              isOwner={project.userId === user.id}
+            />
+          </div>
+        )}
       </main>
 
       {/* Modals */}
