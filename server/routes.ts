@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProjectSchema, insertRoadSchema, insertLayerSchema, insertLayerProgressSchema } from "@shared/schema";
 import { setupAuth } from "./auth";
+import multer from "multer";
+import { getStorageService, getMockStorage } from "./storage-service";
 
 // Middleware to check if user is authenticated
 const isAuthenticated: RequestHandler = (req, res, next) => {
@@ -368,6 +370,97 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error removing member:", error);
       res.status(500).json({ message: "Failed to remove member" });
+    }
+  });
+
+  // File storage routes
+  const upload = multer({ storage: multer.memoryStorage() });
+  const storageService = getStorageService();
+
+  // Upload file
+  app.post('/api/storage/:bucket/:path(*)', isAuthenticated, upload.single('file'), async (req, res) => {
+    try {
+      const { bucket, path } = req.params;
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "No file provided" });
+      }
+
+      const result = await storageService.uploadFile(
+        bucket,
+        path,
+        req.file.buffer,
+        req.file.mimetype
+      );
+
+      if (result.error) {
+        return res.status(500).json({ message: result.error });
+      }
+
+      res.json({ url: result.url });
+    } catch (error: any) {
+      console.error("Error uploading file:", error);
+      res.status(500).json({ message: error.message || "Failed to upload file" });
+    }
+  });
+
+  // Download/view file
+  app.get('/api/storage/:bucket/:path(*)', async (req, res) => {
+    try {
+      const { bucket, path } = req.params;
+      
+      // For mock storage in development
+      const mockStorage = getMockStorage();
+      const file = mockStorage.getFile(bucket, path);
+      
+      if (file) {
+        res.setHeader('Content-Type', file.contentType);
+        return res.send(file.buffer);
+      }
+      
+      // For Supabase storage, redirect to public URL
+      const url = storageService.getPublicUrl(bucket, path);
+      res.redirect(url);
+    } catch (error: any) {
+      console.error("Error retrieving file:", error);
+      res.status(500).json({ message: error.message || "Failed to retrieve file" });
+    }
+  });
+
+  // Delete file
+  app.delete('/api/storage/:bucket/:path(*)', isAuthenticated, async (req, res) => {
+    try {
+      const { bucket, path } = req.params;
+      
+      const result = await storageService.deleteFile(bucket, path);
+
+      if (result.error) {
+        return res.status(500).json({ message: result.error });
+      }
+
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting file:", error);
+      res.status(500).json({ message: error.message || "Failed to delete file" });
+    }
+  });
+
+  // List files in bucket
+  app.get('/api/storage/:bucket', isAuthenticated, async (req, res) => {
+    try {
+      const { bucket } = req.params;
+      const prefix = req.query.prefix as string | undefined;
+      
+      const result = await storageService.listFiles(bucket, prefix);
+
+      if (result.error) {
+        return res.status(500).json({ message: result.error });
+      }
+
+      res.json({ files: result.files });
+    } catch (error: any) {
+      console.error("Error listing files:", error);
+      res.status(500).json({ message: error.message || "Failed to list files" });
     }
   });
 
