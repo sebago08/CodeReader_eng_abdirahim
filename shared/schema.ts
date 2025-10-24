@@ -88,6 +88,36 @@ export const layerProgress = pgTable("layer_progress", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Project members table (for team collaboration)
+export const projectMembers = pgTable("project_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  role: varchar("role").notNull().default("viewer"), // "owner", "editor", or "viewer"
+  addedBy: varchar("added_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("project_members_project_idx").on(table.projectId),
+  index("project_members_user_idx").on(table.userId),
+]);
+
+// Project invitations table
+export const projectInvitations = pgTable("project_invitations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  invitedEmail: varchar("invited_email"),
+  invitedUserId: varchar("invited_user_id"),
+  invitedBy: varchar("invited_by").notNull(),
+  role: varchar("role").notNull().default("viewer"), // "editor" or "viewer"
+  status: varchar("status").notNull().default("pending"), // "pending", "accepted", "declined", "expired"
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("invitations_email_status_idx").on(table.invitedEmail, table.status),
+  index("invitations_token_idx").on(table.token),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
@@ -121,6 +151,32 @@ export const layerProgressRelations = relations(layerProgress, ({ one }) => ({
   layer: one(constructionLayers, {
     fields: [layerProgress.layerId],
     references: [constructionLayers.id],
+  }),
+}));
+
+export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectMembers.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [projectMembers.userId],
+    references: [users.id],
+  }),
+  addedByUser: one(users, {
+    fields: [projectMembers.addedBy],
+    references: [users.id],
+  }),
+}));
+
+export const projectInvitationsRelations = relations(projectInvitations, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectInvitations.projectId],
+    references: [projects.id],
+  }),
+  invitedByUser: one(users, {
+    fields: [projectInvitations.invitedBy],
+    references: [users.id],
   }),
 }));
 
@@ -163,6 +219,17 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
+// Team collaboration schemas
+export const insertProjectMemberSchema = createInsertSchema(projectMembers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertProjectInvitationSchema = createInsertSchema(projectInvitations).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
@@ -173,6 +240,10 @@ export type ConstructionLayer = typeof constructionLayers.$inferSelect;
 export type InsertLayer = z.infer<typeof insertLayerSchema>;
 export type LayerProgress = typeof layerProgress.$inferSelect;
 export type InsertLayerProgress = z.infer<typeof insertLayerProgressSchema>;
+export type ProjectMember = typeof projectMembers.$inferSelect;
+export type InsertProjectMember = z.infer<typeof insertProjectMemberSchema>;
+export type ProjectInvitation = typeof projectInvitations.$inferSelect;
+export type InsertProjectInvitation = z.infer<typeof insertProjectInvitationSchema>;
 
 // Extended types for frontend
 export type ProjectWithRoads = Project & {
@@ -181,4 +252,13 @@ export type ProjectWithRoads = Project & {
       progress: LayerProgress[];
     })[];
   })[];
+};
+
+export type ProjectMemberWithUser = ProjectMember & {
+  user: User;
+};
+
+export type ProjectInvitationWithDetails = ProjectInvitation & {
+  invitedByUser: User;
+  project: Project;
 };
