@@ -25,7 +25,7 @@ import {
   type ProjectInvitationWithDetails,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, or, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -382,6 +382,20 @@ export class MemStorage implements IStorage {
       this.progress.delete(prog.id);
     }
   }
+
+  // Team collaboration stubs (MemStorage doesn't support collaboration)
+  async getUserProjectRole(): Promise<string | null> { return null; }
+  async getProjectMembers(): Promise<ProjectMemberWithUser[]> { return []; }
+  async addProjectMember(): Promise<ProjectMember> { throw new Error('Not supported in MemStorage'); }
+  async updateProjectMemberRole(): Promise<ProjectMember> { throw new Error('Not supported in MemStorage'); }
+  async removeProjectMember(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+  async createInvitation(): Promise<ProjectInvitation> { throw new Error('Not supported in MemStorage'); }
+  async getInvitationByToken(): Promise<ProjectInvitation | undefined> { return undefined; }
+  async getUserInvitations(): Promise<ProjectInvitationWithDetails[]> { return []; }
+  async getProjectInvitations(): Promise<ProjectInvitationWithDetails[]> { return []; }
+  async acceptInvitation(): Promise<ProjectMember> { throw new Error('Not supported in MemStorage'); }
+  async declineInvitation(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+  async deleteInvitation(): Promise<void> { throw new Error('Not supported in MemStorage'); }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -447,8 +461,18 @@ export class DatabaseStorage implements IStorage {
 
   // Project operations
   async getProjects(userId: string): Promise<ProjectWithRoads[]> {
+    // Get projects where user is a member (collaborator)
+    const memberProjects = await db.select({ projectId: projectMembers.projectId })
+      .from(projectMembers)
+      .where(eq(projectMembers.userId, userId));
+    
+    const memberProjectIds = memberProjects.map(m => m.projectId);
+    
+    // Get all projects (owned or collaborated)
     const projectsData = await db.query.projects.findMany({
-      where: eq(projects.userId, userId),
+      where: memberProjectIds.length > 0 
+        ? or(eq(projects.userId, userId), inArray(projects.id, memberProjectIds))
+        : eq(projects.userId, userId),
       with: {
         roads: {
           with: {
@@ -467,8 +491,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProject(id: string, userId: string): Promise<ProjectWithRoads | undefined> {
+    // Check if user has access (owner or member)
+    const role = await this.getUserProjectRole(userId, id);
+    if (!role) return undefined;
+    
     const [project] = await db.query.projects.findMany({
-      where: and(eq(projects.id, id), eq(projects.userId, userId)),
+      where: eq(projects.id, id),
       with: {
         roads: {
           with: {
@@ -592,6 +620,155 @@ export class DatabaseStorage implements IStorage {
 
   async resetLayerProgress(layerId: string): Promise<void> {
     await db.delete(layerProgress).where(eq(layerProgress.layerId, layerId));
+  }
+
+  // Team collaboration operations (simplified - just "collaborator" role)
+  async getUserProjectRole(userId: string, projectId: string): Promise<string | null> {
+    // Check if user is the owner
+    const [project] = await db.select().from(projects).where(
+      and(eq(projects.id, projectId), eq(projects.userId, userId))
+    );
+    if (project) return 'owner';
+
+    // Check if user is a collaborator
+    const [member] = await db.select().from(projectMembers).where(
+      and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId))
+    );
+    if (member) return 'collaborator';
+
+    return null;
+  }
+
+  async getProjectMembers(projectId: string): Promise<ProjectMemberWithUser[]> {
+    const members = await db.select({
+      id: projectMembers.id,
+      projectId: projectMembers.projectId,
+      userId: projectMembers.userId,
+      role: projectMembers.role,
+      addedBy: projectMembers.addedBy,
+      createdAt: projectMembers.createdAt,
+      user: users,
+    })
+    .from(projectMembers)
+    .innerJoin(users, eq(projectMembers.userId, users.id))
+    .where(eq(projectMembers.projectId, projectId));
+    
+    return members as ProjectMemberWithUser[];
+  }
+
+  async addProjectMember(member: InsertProjectMember): Promise<ProjectMember> {
+    const [newMember] = await db
+      .insert(projectMembers)
+      .values({ ...member, role: 'collaborator' })
+      .returning();
+    return newMember;
+  }
+
+  async updateProjectMemberRole(memberId: string, role: string): Promise<ProjectMember> {
+    const [updated] = await db
+      .update(projectMembers)
+      .set({ role })
+      .where(eq(projectMembers.id, memberId))
+      .returning();
+    return updated;
+  }
+
+  async removeProjectMember(memberId: string): Promise<void> {
+    await db.delete(projectMembers).where(eq(projectMembers.id, memberId));
+  }
+
+  async createInvitation(invitation: InsertProjectInvitation): Promise<ProjectInvitation> {
+    const [newInvitation] = await db
+      .insert(projectInvitations)
+      .values(invitation)
+      .returning();
+    return newInvitation;
+  }
+
+  async getInvitationByToken(token: string): Promise<ProjectInvitation | undefined> {
+    const [invitation] = await db.select().from(projectInvitations).where(eq(projectInvitations.token, token));
+    return invitation;
+  }
+
+  async getUserInvitations(userEmail: string): Promise<ProjectInvitationWithDetails[]> {
+    const invitations = await db.select({
+      id: projectInvitations.id,
+      projectId: projectInvitations.projectId,
+      invitedEmail: projectInvitations.invitedEmail,
+      invitedUserId: projectInvitations.invitedUserId,
+      invitedBy: projectInvitations.invitedBy,
+      role: projectInvitations.role,
+      status: projectInvitations.status,
+      token: projectInvitations.token,
+      expiresAt: projectInvitations.expiresAt,
+      createdAt: projectInvitations.createdAt,
+      invitedByUser: users,
+      project: projects,
+    })
+    .from(projectInvitations)
+    .innerJoin(users, eq(projectInvitations.invitedBy, users.id))
+    .innerJoin(projects, eq(projectInvitations.projectId, projects.id))
+    .where(and(
+      eq(projectInvitations.invitedEmail, userEmail),
+      eq(projectInvitations.status, 'pending')
+    ));
+    
+    return invitations as ProjectInvitationWithDetails[];
+  }
+
+  async getProjectInvitations(projectId: string): Promise<ProjectInvitationWithDetails[]> {
+    const invitations = await db.select({
+      id: projectInvitations.id,
+      projectId: projectInvitations.projectId,
+      invitedEmail: projectInvitations.invitedEmail,
+      invitedUserId: projectInvitations.invitedUserId,
+      invitedBy: projectInvitations.invitedBy,
+      role: projectInvitations.role,
+      status: projectInvitations.status,
+      token: projectInvitations.token,
+      expiresAt: projectInvitations.expiresAt,
+      createdAt: projectInvitations.createdAt,
+      invitedByUser: users,
+      project: projects,
+    })
+    .from(projectInvitations)
+    .innerJoin(users, eq(projectInvitations.invitedBy, users.id))
+    .innerJoin(projects, eq(projectInvitations.projectId, projects.id))
+    .where(eq(projectInvitations.projectId, projectId));
+    
+    return invitations as ProjectInvitationWithDetails[];
+  }
+
+  async acceptInvitation(token: string, userId: string): Promise<ProjectMember> {
+    const invitation = await this.getInvitationByToken(token);
+    if (!invitation) throw new Error('Invitation not found');
+    if (invitation.status !== 'pending') throw new Error('Invitation already processed');
+    if (new Date() > new Date(invitation.expiresAt)) throw new Error('Invitation expired');
+
+    // Add user as member
+    const member = await this.addProjectMember({
+      projectId: invitation.projectId,
+      userId,
+      role: 'collaborator',
+      addedBy: invitation.invitedBy,
+    });
+
+    // Mark invitation as accepted
+    await db.update(projectInvitations)
+      .set({ status: 'accepted', invitedUserId: userId })
+      .where(eq(projectInvitations.id, invitation.id));
+
+    return member;
+  }
+
+  async declineInvitation(token: string): Promise<void> {
+    await db.update(projectInvitations)
+      .set({ status: 'declined' })
+      .where(eq(projectInvitations.token, token));
+  }
+
+  async deleteInvitation(invitationId: string): Promise<void> {
+    await db.delete(projectInvitations).where(eq(projectInvitations.id, invitationId));
   }
 }
 
