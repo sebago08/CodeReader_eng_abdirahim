@@ -2,17 +2,19 @@ import { createClient } from '@supabase/supabase-js';
 
 export function createSupabaseClient() {
   const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
     return null;
   }
 
-  return createClient(supabaseUrl, supabaseKey);
+  // Use service role key for server-side operations (allows file uploads/deletes)
+  // NEVER expose this key to the client
+  return createClient(supabaseUrl, supabaseServiceRoleKey);
 }
 
 export const supabase = createSupabaseClient();
 
 export function isSupabaseConfigured(): boolean {
-  return !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+  return !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }

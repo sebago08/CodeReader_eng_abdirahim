@@ -39,7 +39,10 @@ Once your project is ready:
 2. Click **API** tab
 3. Copy these values (you'll need them later):
    - **Project URL** (looks like: `https://xxxxx.supabase.co`)
-   - **anon public** key (long string starting with `eyJ...`)
+   - **anon public** key (long string starting with `eyJ...`) - for frontend
+   - **service_role** key (click "Reveal" - **KEEP THIS SECRET!**) - for backend file operations
+
+**SECURITY WARNING**: The `service_role` key bypasses Row Level Security. NEVER expose it to the frontend or commit it to Git!
 
 ### Set Up Your Database Schema
 
@@ -101,13 +104,13 @@ DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@[YOUR-PROJECT].pooler.supabas
 # Session Secret (generate with: openssl rand -base64 32)
 SESSION_SECRET=your-random-secret-key-here
 
-# Supabase Config
+# Supabase Config - Server Side (CRITICAL: Keep service role key secret!)
 SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_ANON_KEY=eyJhbGc...your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...your-service-role-key
 
-# Frontend Supabase Config (for client-side)
+# Supabase Config - Client Side (Frontend - safe to expose)
 VITE_SUPABASE_URL=https://xxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGc...your-anon-key
+VITE_SUPABASE_ANON_KEY=eyJhbGc...your-anon-public-key
 
 # Node Environment
 NODE_ENV=production
@@ -153,8 +156,9 @@ NODE_ENV=production
 ### File Upload Fails
 
 - Check that your Supabase storage bucket `construction-files` is set to **Public**
-- Verify `SUPABASE_URL` and `SUPABASE_ANON_KEY` are correctly set
-- Check both server and client-side environment variables (VITE_ prefix)
+- Verify `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are correctly set on the server (in Vercel environment variables)
+- Verify `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are correctly set for the frontend
+- **Critical**: Make sure you're using the service role key on the backend, not the anon key
 
 ### Build Failures
 
