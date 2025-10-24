@@ -158,6 +158,7 @@ export default function ProjectsOverview() {
               <ProjectOverviewCard 
                 key={project.id} 
                 project={project}
+                currentUserId={user?.id}
                 onEdit={handleEditProject}
                 onDuplicate={handleDuplicateProject}
                 onDelete={handleDeleteProject}
