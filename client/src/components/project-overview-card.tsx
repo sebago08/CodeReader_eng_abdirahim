@@ -12,6 +12,7 @@ import type { ProjectWithRoads } from "@shared/schema";
 
 interface ProjectOverviewCardProps {
   project: ProjectWithRoads;
+  currentUserId?: string;
   onEdit?: (project: ProjectWithRoads) => void;
   onDuplicate?: (projectId: string) => void;
   onDelete?: (projectId: string) => void;
@@ -19,10 +20,13 @@ interface ProjectOverviewCardProps {
 
 export default function ProjectOverviewCard({ 
   project, 
+  currentUserId,
   onEdit, 
   onDuplicate, 
   onDelete 
 }: ProjectOverviewCardProps) {
+  const isOwner = currentUserId && project.userId === currentUserId;
+  const isCollaborator = currentUserId && project.userId !== currentUserId;
   // Calculate overall progress based on layer completion
   const calculateOverallProgress = () => {
     if (!project.roads || project.roads.length === 0) return 0;
@@ -113,9 +117,19 @@ export default function ProjectOverviewCard({
       <div className="flex justify-between items-start mb-4">
         <Link href={`/projects/${project.id}`} className="flex-1 cursor-pointer">
           <div>
-            <h3 className="text-lg font-semibold text-card-foreground mb-1 hover:text-orange-500 transition-colors" data-testid="text-project-name">
-              {project.name}
-            </h3>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-lg font-semibold text-card-foreground hover:text-orange-500 transition-colors" data-testid="text-project-name">
+                {project.name}
+              </h3>
+              {isCollaborator && (
+                <span 
+                  className="px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800"
+                  data-testid="badge-collaborator"
+                >
+                  Collaborator
+                </span>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground" data-testid="text-project-id">
               Project ID: #{project.client}
             </p>
