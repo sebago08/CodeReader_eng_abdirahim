@@ -81,5 +81,67 @@ The application uses traditional username/password authentication with secure pa
 - **Layer Management**: Track different construction phases with weighted progress calculation
 - **Progress Recording**: Record completion by chainage ranges with date and quality tracking
 - **Visual Progress**: Real-time progress bars comparing planned vs actual completion
+- **Team Collaboration**: Project owners can invite collaborators by username, with role-based access (owner/collaborator)
+- **File Storage**: Support for uploading and managing construction files (photos, documents) via abstraction layer
 - **Data Validation**: Client and server-side validation using Zod schemas
 - **Responsive Design**: Mobile-friendly interface with touch-optimized interactions
+
+## Deployment & Environment Configuration
+
+The application is designed to work seamlessly in dual environments:
+
+### Development Environment (Replit)
+- **Database**: Replit's built-in PostgreSQL (via `DATABASE_URL` environment variable)
+- **File Storage**: Mock in-memory storage for quick development
+- **Session Storage**: PostgreSQL-backed sessions
+- **Build Tool**: Vite dev server with hot module replacement
+
+### Production Environment (Vercel + Supabase)
+- **Database**: Supabase PostgreSQL (connection string via `DATABASE_URL`)
+- **File Storage**: Supabase Storage for images and documents
+- **Session Storage**: Same PostgreSQL-backed sessions (works with Supabase)
+- **Hosting**: Vercel serverless deployment
+- **Build**: Static frontend + serverless API functions
+
+### Environment Variables
+
+**Required for Both Environments:**
+- `DATABASE_URL`: PostgreSQL connection string
+- `SESSION_SECRET`: Random secret for session encryption
+
+**Required for Production (Supabase):**
+
+*Server-side (Backend - KEEP SECRET):*
+- `SUPABASE_URL`: Your Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY`: Supabase service role key for file operations (**CRITICAL**: Never expose to frontend!)
+
+*Client-side (Frontend - Safe to expose):*
+- `VITE_SUPABASE_URL`: Frontend Supabase URL (must have VITE_ prefix)
+- `VITE_SUPABASE_ANON_KEY`: Frontend Supabase anonymous key (must have VITE_ prefix)
+
+### Storage Abstraction Layer
+
+The application uses a storage service abstraction (`server/storage-service.ts`) that automatically switches between:
+- **Development**: In-memory mock storage for quick testing
+- **Production**: Supabase Storage when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are configured
+
+This allows developers to work locally without Supabase while maintaining production-ready code.
+
+### Deployment Process
+
+1. **Push to GitHub**: Use Replit's Git integration to push code
+2. **Set up Supabase**: Create project, run `npm run db:push` to migrate schema
+3. **Deploy to Vercel**: Connect GitHub repo, configure environment variables
+4. **Configure Storage**: Create Supabase storage bucket named `construction-files`
+
+See `DEPLOYMENT.md` for detailed step-by-step instructions.
+
+## Recent Changes (October 2024)
+
+- Added Supabase SDK integration for production deployment
+- Created storage abstraction layer for file uploads
+- Added API routes for file upload/download/delete operations
+- Implemented team collaboration with owner/collaborator roles
+- Added username display to application headers
+- Created visual "Collaborator" badge for shared projects
+- Prepared Vercel deployment configuration
