@@ -167,7 +167,7 @@ export default function ProjectDetail() {
           <nav className="mb-6" data-testid="breadcrumb-nav">
             <ol className="flex items-center space-x-2 text-sm text-muted-foreground">
               <li>
-                <Link href="/projects" className="hover:text-foreground transition-colors" data-testid="link-projects">
+                <Link href="/dashboard" className="hover:text-foreground transition-colors" data-testid="link-projects">
                   Projects
                 </Link>
               </li>
