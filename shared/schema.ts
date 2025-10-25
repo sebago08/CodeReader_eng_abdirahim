@@ -74,6 +74,9 @@ export const projects = pgTable("projects", {
   // Project scope
   scopeOfWork: text("scope_of_work"),
   
+  // Client logo (file path)
+  clientLogo: varchar("client_logo"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -135,6 +138,43 @@ export const safetyIncidents = pgTable("safety_incidents", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Client personnel table
+export const clientPersonnel = pgTable("client_personnel", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  name: varchar("name").notNull(),
+  qualification: varchar("qualification"),
+  designation: varchar("designation"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("client_personnel_project_idx").on(table.projectId),
+]);
+
+// Contractor personnel table
+export const contractorPersonnel = pgTable("contractor_personnel", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  name: varchar("name").notNull(),
+  qualification: varchar("qualification"),
+  designation: varchar("designation"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("contractor_personnel_project_idx").on(table.projectId),
+]);
+
+// Contractor equipment table
+export const contractorEquipment = pgTable("contractor_equipment", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  equipmentName: varchar("equipment_name").notNull(),
+  type: varchar("type"),
+  quantity: integer("quantity").default(1),
+  condition: varchar("condition"), // "Excellent", "Good", "Fair", "Poor"
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("contractor_equipment_project_idx").on(table.projectId),
+]);
+
 // Project members table (for team collaboration)
 export const projectMembers = pgTable("project_members", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -178,6 +218,9 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   roads: many(roads),
   activities: many(activities),
   safetyIncidents: many(safetyIncidents),
+  clientPersonnel: many(clientPersonnel),
+  contractorPersonnel: many(contractorPersonnel),
+  contractorEquipment: many(contractorEquipment),
 }));
 
 export const roadsRelations = relations(roads, ({ one, many }) => ({
@@ -213,6 +256,27 @@ export const activitiesRelations = relations(activities, ({ one }) => ({
 export const safetyIncidentsRelations = relations(safetyIncidents, ({ one }) => ({
   project: one(projects, {
     fields: [safetyIncidents.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const clientPersonnelRelations = relations(clientPersonnel, ({ one }) => ({
+  project: one(projects, {
+    fields: [clientPersonnel.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const contractorPersonnelRelations = relations(contractorPersonnel, ({ one }) => ({
+  project: one(projects, {
+    fields: [contractorPersonnel.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const contractorEquipmentRelations = relations(contractorEquipment, ({ one }) => ({
+  project: one(projects, {
+    fields: [contractorEquipment.projectId],
     references: [projects.id],
   }),
 }));
@@ -308,6 +372,24 @@ export const insertProjectInvitationSchema = createInsertSchema(projectInvitatio
   createdAt: true,
 });
 
+export const insertClientPersonnelSchema = createInsertSchema(clientPersonnel).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+});
+
+export const insertContractorPersonnelSchema = createInsertSchema(contractorPersonnel).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+});
+
+export const insertContractorEquipmentSchema = createInsertSchema(contractorEquipment).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
@@ -335,6 +417,13 @@ export type ProjectWithRoads = Project & {
     })[];
   })[];
 };
+
+export type ClientPersonnel = typeof clientPersonnel.$inferSelect;
+export type InsertClientPersonnel = z.infer<typeof insertClientPersonnelSchema>;
+export type ContractorPersonnel = typeof contractorPersonnel.$inferSelect;
+export type InsertContractorPersonnel = z.infer<typeof insertContractorPersonnelSchema>;
+export type ContractorEquipment = typeof contractorEquipment.$inferSelect;
+export type InsertContractorEquipment = z.infer<typeof insertContractorEquipmentSchema>;
 
 export type ProjectMemberWithUser = ProjectMember & {
   user: User;
