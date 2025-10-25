@@ -14,7 +14,7 @@ export default function ProjectProgressTab({ projectId }: ProjectProgressTabProp
           <h2 className="text-2xl font-bold text-foreground">Progress Tracking</h2>
           <p className="text-muted-foreground text-sm mt-1">Monitor payments, personnel, equipment, and issues</p>
         </div>
-        <Button data-testid="button-add-progress-item">
+        <Button data-testid="button-add-progress-item" disabled>
           <Plus className="w-4 h-4 mr-2" />
           Add Item
         </Button>
@@ -33,8 +33,9 @@ export default function ProjectProgressTab({ projectId }: ProjectProgressTabProp
         </CardHeader>
         <CardContent>
           <div className="text-center py-12 text-muted-foreground">
-            <p>Progress tracking features will be implemented in Task 5</p>
-            <p className="text-sm mt-2">Features: Payment certificates, contractor personnel & equipment, client personnel, and issues tracking</p>
+            <p className="text-lg mb-2">Coming Soon</p>
+            <p className="text-sm">Progress tracking features will be available in the next release</p>
+            <p className="text-xs mt-4">Features: Payment certificates, contractor personnel & equipment, client personnel, and issues tracking</p>
           </div>
         </CardContent>
       </Card>
