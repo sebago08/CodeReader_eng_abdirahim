@@ -63,6 +63,11 @@ The application uses traditional username/password authentication with secure pa
 - **Session Management**: PostgreSQL-backed sessions with 1-week TTL
 - **Protected Routes**: All project and data routes require authentication
 - **User Registration**: New users can create accounts with username, password, and optional profile information
+- **Development Mode Bypass**: 
+  - In development (`NODE_ENV=development`), authentication is automatically bypassed
+  - A default "devuser" account is automatically created and used for all requests
+  - This eliminates the need to log in during development for faster iteration
+  - Production mode (`NODE_ENV=production`) always requires proper authentication
 - **Auth Flow**: 
   - Unauthenticated users see the landing page at `/`
   - Landing page has "Sign In" and "Sign Up" buttons that navigate to `/auth`
