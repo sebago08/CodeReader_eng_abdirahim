@@ -11,6 +11,8 @@ import {
   insertSummaryAdjustmentSchema,
   insertDocumentSchema,
   insertWorkAccomplishedSchema,
+  insertWorkPlanSchema,
+  insertPlannedActivitySchema,
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth } from "./auth";
@@ -510,6 +512,151 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Invalid data format", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to reorder work accomplished" });
+    }
+  });
+
+  // Work Plan routes
+  app.get('/api/projects/:projectId/work-plans', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const plans = await storage.getProjectWorkPlans(projectId);
+      res.json(plans);
+    } catch (error) {
+      console.error("Error fetching work plans:", error);
+      res.status(500).json({ message: "Failed to fetch work plans" });
+    }
+  });
+
+  app.get('/api/work-plans/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const plan = await storage.getWorkPlan(id);
+      
+      if (!plan) {
+        return res.status(404).json({ message: "Work plan not found" });
+      }
+      
+      // Fetch activities for this work plan
+      const activities = await storage.getWorkPlanActivities(id);
+      
+      res.json({ ...plan, activities });
+    } catch (error) {
+      console.error("Error fetching work plan:", error);
+      res.status(500).json({ message: "Failed to fetch work plan" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/work-plans', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const validatedData = insertWorkPlanSchema.parse(req.body);
+      const plan = await storage.createWorkPlan(projectId, validatedData);
+      res.status(201).json(plan);
+    } catch (error: any) {
+      console.error("Error creating work plan:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create work plan" });
+    }
+  });
+
+  app.patch('/api/work-plans/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertWorkPlanSchema.partial().parse(req.body);
+      const plan = await storage.updateWorkPlan(id, validatedData);
+      
+      if (!plan) {
+        return res.status(404).json({ message: "Work plan not found" });
+      }
+      
+      res.json(plan);
+    } catch (error: any) {
+      console.error("Error updating work plan:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update work plan" });
+    }
+  });
+
+  app.delete('/api/work-plans/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteWorkPlan(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting work plan:", error);
+      res.status(500).json({ message: "Failed to delete work plan" });
+    }
+  });
+
+  // Planned Activity routes
+  app.get('/api/work-plans/:workPlanId/activities', isAuthenticated, async (req: any, res) => {
+    try {
+      const { workPlanId } = req.params;
+      const activities = await storage.getWorkPlanActivities(workPlanId);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching work plan activities:", error);
+      res.status(500).json({ message: "Failed to fetch activities" });
+    }
+  });
+
+  app.get('/api/projects/:projectId/activities', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const activities = await storage.getProjectActivities(projectId);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching project activities:", error);
+      res.status(500).json({ message: "Failed to fetch activities" });
+    }
+  });
+
+  app.post('/api/activities', isAuthenticated, async (req: any, res) => {
+    try {
+      const validatedData = insertPlannedActivitySchema.parse(req.body);
+      const activity = await storage.createPlannedActivity(validatedData);
+      res.status(201).json(activity);
+    } catch (error: any) {
+      console.error("Error creating activity:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create activity" });
+    }
+  });
+
+  app.patch('/api/activities/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertPlannedActivitySchema.partial().parse(req.body);
+      const activity = await storage.updatePlannedActivity(id, validatedData);
+      
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      
+      res.json(activity);
+    } catch (error: any) {
+      console.error("Error updating activity:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update activity" });
+    }
+  });
+
+  app.delete('/api/activities/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePlannedActivity(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting activity:", error);
+      res.status(500).json({ message: "Failed to delete activity" });
     }
   });
 
