@@ -7,7 +7,6 @@ export function Sidebar() {
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
-    { path: "/projects", label: "Projects", icon: FolderKanban, testId: "nav-projects" },
     { path: "/reports", label: "Reports", icon: BarChart3, testId: "nav-reports" },
     { path: "/team", label: "Team", icon: Users, testId: "nav-team" },
   ];
