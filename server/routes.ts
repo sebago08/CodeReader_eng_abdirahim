@@ -510,6 +510,141 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Client personnel routes
+  app.get('/api/projects/:projectId/client-personnel', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const personnel = await storage.getClientPersonnel(projectId);
+      res.json(personnel);
+    } catch (error) {
+      console.error("Error fetching client personnel:", error);
+      res.status(500).json({ message: "Failed to fetch client personnel" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/client-personnel', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const personnel = await storage.createClientPersonnel(projectId, req.body);
+      res.status(201).json(personnel);
+    } catch (error) {
+      console.error("Error creating client personnel:", error);
+      res.status(500).json({ message: "Failed to create client personnel" });
+    }
+  });
+
+  app.patch('/api/client-personnel/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const personnel = await storage.updateClientPersonnel(id, req.body);
+      res.json(personnel);
+    } catch (error) {
+      console.error("Error updating client personnel:", error);
+      res.status(500).json({ message: "Failed to update client personnel" });
+    }
+  });
+
+  app.delete('/api/client-personnel/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteClientPersonnel(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting client personnel:", error);
+      res.status(500).json({ message: "Failed to delete client personnel" });
+    }
+  });
+
+  // Contractor personnel routes
+  app.get('/api/projects/:projectId/contractor-personnel', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const personnel = await storage.getContractorPersonnel(projectId);
+      res.json(personnel);
+    } catch (error) {
+      console.error("Error fetching contractor personnel:", error);
+      res.status(500).json({ message: "Failed to fetch contractor personnel" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/contractor-personnel', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const personnel = await storage.createContractorPersonnel(projectId, req.body);
+      res.status(201).json(personnel);
+    } catch (error) {
+      console.error("Error creating contractor personnel:", error);
+      res.status(500).json({ message: "Failed to create contractor personnel" });
+    }
+  });
+
+  app.patch('/api/contractor-personnel/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const personnel = await storage.updateContractorPersonnel(id, req.body);
+      res.json(personnel);
+    } catch (error) {
+      console.error("Error updating contractor personnel:", error);
+      res.status(500).json({ message: "Failed to update contractor personnel" });
+    }
+  });
+
+  app.delete('/api/contractor-personnel/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteContractorPersonnel(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting contractor personnel:", error);
+      res.status(500).json({ message: "Failed to delete contractor personnel" });
+    }
+  });
+
+  // Contractor equipment routes
+  app.get('/api/projects/:projectId/contractor-equipment', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const equipment = await storage.getContractorEquipment(projectId);
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error fetching contractor equipment:", error);
+      res.status(500).json({ message: "Failed to fetch contractor equipment" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/contractor-equipment', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const equipment = await storage.createContractorEquipment(projectId, req.body);
+      res.status(201).json(equipment);
+    } catch (error) {
+      console.error("Error creating contractor equipment:", error);
+      res.status(500).json({ message: "Failed to create contractor equipment" });
+    }
+  });
+
+  app.patch('/api/contractor-equipment/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const equipment = await storage.updateContractorEquipment(id, req.body);
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error updating contractor equipment:", error);
+      res.status(500).json({ message: "Failed to update contractor equipment" });
+    }
+  });
+
+  app.delete('/api/contractor-equipment/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteContractorEquipment(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting contractor equipment:", error);
+      res.status(500).json({ message: "Failed to delete contractor equipment" });
+    }
+  });
+
   // File storage routes
   const upload = multer({ storage: multer.memoryStorage() });
   const storageService = getStorageService();
