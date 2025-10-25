@@ -1,12 +1,20 @@
 # Overview
 
-This is a full-stack road construction project management application built with React, Express.js, and PostgreSQL. The system enables construction professionals to track projects, manage roads, monitor construction layers, and record progress through an intuitive web interface. It features comprehensive project lifecycle management from planning to completion with real-time progress tracking and visual progress indicators.
+This is a comprehensive construction management platform built with React, Express.js, and PostgreSQL. The system enables construction professionals to manage linear infrastructure projects (roads, drainage systems, railways, pipelines), track bills of quantities (BOQ), generate project documents, create work plans, monitor progress, and manage teams through an intuitive web interface.
+
+The platform combines specialized linear infrastructure tracking with comprehensive project management features:
+- **Linear Infrastructure Tracking**: Manage roads, drainage, rail, and pipeline segments with construction layers and progress monitoring
+- **BOQ Management**: Create and manage bills of quantities with hierarchical items, adjustments, and summaries
+- **Document Generation**: Generate progress reports, certificates, orders, letters, and meeting minutes
+- **Work Planning**: Schedule activities, set milestones, and track timeline progress
+- **Progress & Payment Tracking**: Monitor completion percentages and payment certificates
+- **Team Management**: Track contractor personnel, equipment, and client personnel
 
 The application features a landing page, authentication page, and protected dashboard:
 1. **Landing Page** (`/`) - Professional homepage with ConstructTrack branding and authentication buttons (Sign In, Sign Up)
 2. **Auth Page** (`/auth`) - Authentication page with tabbed interface for Sign In and Sign Up
 3. **Projects Overview** (`/projects`) - Displays all projects in a grid with summary information (requires authentication)
-4. **Project Detail** (`/projects/:id`) - Shows detailed view of a single project with roads, layers, and progress visualization (requires authentication)
+4. **Project Detail** (`/projects/:id`) - Shows detailed view of a single project with linear infrastructure, BOQ, work plans, documents, and progress visualization (requires authentication)
 
 # User Preferences
 
@@ -43,16 +51,39 @@ The server implements a layered architecture with separate concerns for routing,
 
 ## Database Design
 
-PostgreSQL database with normalized schema design:
+PostgreSQL database with normalized schema design supporting comprehensive construction management:
 
+**Core Tables:**
 - **Users**: Authentication and profile information
-- **Projects**: Core project metadata with date ranges and client information
-- **Roads**: Individual road segments within projects with length and type classification
+- **Projects**: Comprehensive project metadata including client info, contractor info, timeline, financials (contract amount, advance payment), and project details
+- **Roads** (Linear Infrastructure): Flexible infrastructure tracking supporting roads, drainage, rail, and pipelines. Each segment has infrastructure type, length, and type-specific fields (diameter for pipes, carriageway for roads, specifications)
 - **Construction Layers**: Different construction phases with weight-based progress calculation. Available layers: Excavation & Earthwork, Bottom Sub Grade, Top Sub Grade, Bottom Sub Base, Top Sub Base, Base, and Asphalt Concrete
 - **Layer Progress**: Granular progress tracking with chainage ranges, completion dates, and quality status
 - **Sessions**: Secure session storage for authentication
 
-The schema uses foreign key relationships to maintain data integrity and supports complex queries for progress calculation and reporting.
+**BOQ (Bill of Quantities) Module:**
+- **BOQs**: Top-level BOQ documents linked to projects
+- **BOQ Items**: Hierarchical structure supporting sections, subsections, items, subtotals, and grand totals
+- **Summary Adjustments**: BOQ and project-level adjustments (taxes, contingencies, discounts)
+
+**Project Management:**
+- **Work Plans**: Activity scheduling and timeline management
+- **Planned Activities**: Individual activities with dates, duration, milestones, and progress tracking
+- **Documents**: Project documents (progress reports, certificates, orders, letters, meeting minutes) with customizable content and snapshots
+- **Work Accomplished**: Ordered list of completed work items
+
+**Team & Progress:**
+- **Client Personnel**: Client team members with qualifications and designations
+- **Contractor Personnel**: Contractor team members with qualifications and designations
+- **Contractor Equipment**: Equipment inventory with type, quantity, and condition
+- **Payment Certificates**: Payment tracking with certificate numbers, amounts, and status
+- **Issues**: Project issues/concerns tracking with status and resolution notes
+
+**Collaboration:**
+- **Project Members**: Team collaboration with role-based access (owner/editor/viewer)
+- **Project Invitations**: Invitation system for adding collaborators
+
+The schema uses foreign key relationships to maintain data integrity and supports complex queries for progress calculation, financial reporting, and comprehensive project tracking.
 
 ## Authentication & Authorization
 
