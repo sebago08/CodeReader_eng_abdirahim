@@ -154,10 +154,12 @@ See `DEPLOYMENT.md` for detailed step-by-step instructions.
 - **Financial Progress tab**: New sub-tab in Progress section with elegant UI featuring:
   - Payment Certificates summary: 4-metric dashboard showing Contract Amount, Total Certified, Amount Left, and Financial Progress with real-time calculations
   - Advance Payment input: Auto-save on blur for seamless data entry
-  - Add Certificate form: 5-field inline form (Certificate No, Amount, Date Certified, Payment Status, Add button)
-  - Certificates table: Comprehensive view with columns for pending/in-process/paid amounts, color-coded status badges (green=Paid, yellow=In Process, gray=Pending), and delete functionality
+  - Add Certificate form: Single amount input with status selection (Submitted/In Process/Paid)
+  - Editable status workflow: Dropdown in table allows users to update certificate status, automatically moving amounts between columns
+  - Certificates table: Comprehensive view with columns for pending/in-process/paid amounts, color-coded status dropdowns (gray=Submitted, yellow=In Process, green=Paid), and delete functionality
   - Real-time totals row: Automatically calculates and displays sum totals for all amount columns
-- **API endpoints**: Full CRUD operations for payment certificates (GET, POST, DELETE) plus PATCH endpoint for advance payment updates
+- **API endpoints**: Full CRUD operations for payment certificates (GET, POST, DELETE), PATCH endpoint for status updates with automatic amount redistribution, and advance payment updates
+- **Status workflow**: Certificates progress through stages (Submitted → In Process → Paid) via dropdown, with amounts automatically moving to corresponding columns
 - **Financial calculations**: Automatic computation of Total Certified (sum of all paid amounts), Amount Left (contract - certified), and Financial Progress percentage
 - **Type safety**: Proper TypeScript types and null handling for all financial data with decimal precision
 
