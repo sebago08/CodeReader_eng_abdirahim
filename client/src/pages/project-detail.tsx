@@ -135,7 +135,7 @@ export default function ProjectDetail() {
                   <i className="fas fa-hard-hat text-lg"></i>
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold">Road Construction Tracker</h1>
+                  <h1 className="text-xl font-bold">ConstructTrack</h1>
                   <p className="text-primary-foreground/80 text-sm">Professional Construction Management</p>
                 </div>
               </div>
