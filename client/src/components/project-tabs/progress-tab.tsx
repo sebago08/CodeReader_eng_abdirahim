@@ -149,7 +149,10 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
     <div className="space-y-6">
       {/* Nested Sub-Tabs */}
       <Tabs defaultValue="progress-tracking" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-6" data-testid="progress-subtabs">
+        <TabsList 
+          className={`grid w-full mb-6 ${project.projectType === "Road" ? "grid-cols-5" : "grid-cols-4"}`} 
+          data-testid="progress-subtabs"
+        >
           <TabsTrigger value="progress-tracking" data-testid="tab-progress-tracking">
             Progress Tracking
           </TabsTrigger>
@@ -333,7 +336,6 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                 onEditRoad={(road) => onEditRoad(project, road)}
                 onAddProgress={(road, layerId) => onAddProgress(project, road, layerId)}
                 onResetProgress={onResetProgress}
-                showActions={false}
               />
             </div>
           </TabsContent>
