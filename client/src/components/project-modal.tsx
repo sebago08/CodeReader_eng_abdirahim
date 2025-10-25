@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { ProjectWithRoads, InsertProject } from "@shared/schema";
@@ -23,6 +24,10 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
     startDate: "",
     endDate: "",
     description: "",
+    projectType: "Road",
+    status: "Active",
+    totalBudget: "",
+    spentAmount: "",
   });
 
   useEffect(() => {
@@ -34,6 +39,10 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
         startDate: project.startDate || "",
         endDate: project.endDate || "",
         description: project.description || "",
+        projectType: project.projectType || "Road",
+        status: project.status || "Active",
+        totalBudget: project.totalBudget || "",
+        spentAmount: project.spentAmount || "",
       });
     }
   }, [project]);
@@ -174,6 +183,74 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
               placeholder="Enter project description"
               data-testid="textarea-project-description"
             />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label className="block text-sm font-medium text-muted-foreground mb-2">Project Type</Label>
+              <Select
+                value={formData.projectType}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, projectType: value }))}
+              >
+                <SelectTrigger className="w-full" data-testid="select-project-type">
+                  <SelectValue placeholder="Select project type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Road" data-testid="option-road">Road</SelectItem>
+                  <SelectItem value="Building" data-testid="option-building">Building</SelectItem>
+                  <SelectItem value="Infrastructure" data-testid="option-infrastructure">Infrastructure</SelectItem>
+                  <SelectItem value="Bridge" data-testid="option-bridge">Bridge</SelectItem>
+                  <SelectItem value="Other" data-testid="option-other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label className="block text-sm font-medium text-muted-foreground mb-2">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger className="w-full" data-testid="select-project-status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active" data-testid="option-active">Active</SelectItem>
+                  <SelectItem value="Completed" data-testid="option-completed">Completed</SelectItem>
+                  <SelectItem value="On Hold" data-testid="option-on-hold">On Hold</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label className="block text-sm font-medium text-muted-foreground mb-2">Total Budget ($)</Label>
+              <Input
+                type="number"
+                name="totalBudget"
+                value={formData.totalBudget}
+                onChange={handleChange}
+                step="0.01"
+                className="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                placeholder="Enter total budget"
+                data-testid="input-total-budget"
+              />
+            </div>
+            
+            <div>
+              <Label className="block text-sm font-medium text-muted-foreground mb-2">Spent Amount ($)</Label>
+              <Input
+                type="number"
+                name="spentAmount"
+                value={formData.spentAmount}
+                onChange={handleChange}
+                step="0.01"
+                className="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                placeholder="Enter spent amount"
+                data-testid="input-spent-amount"
+              />
+            </div>
           </div>
           
           <div className="flex justify-end space-x-4 pt-6 border-t border-border">
