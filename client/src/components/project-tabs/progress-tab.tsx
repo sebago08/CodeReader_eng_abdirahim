@@ -150,11 +150,9 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
   const [advancePayment, setAdvancePayment] = useState<string>(project.advancePayment || "0");
   const [newCertificate, setNewCertificate] = useState({
     certificateNo: "",
-    pendingAmount: "",
-    inProcessAmount: "",
-    amountPaid: "",
+    amount: "",
     dateCertified: "",
-    paymentStatus: "Pending",
+    paymentStatus: "Submitted",
   });
 
   const { data: paymentCertificates = [] } = useQuery<PaymentCertificate[]>({
@@ -178,11 +176,9 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
       toast({ title: "Success", description: "Payment certificate added successfully" });
       setNewCertificate({
         certificateNo: "",
-        pendingAmount: "",
-        inProcessAmount: "",
-        amountPaid: "",
+        amount: "",
         dateCertified: "",
-        paymentStatus: "Pending",
+        paymentStatus: "Submitted",
       });
     },
     onError: () => {
@@ -200,6 +196,19 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to delete certificate", variant: "destructive" });
+    },
+  });
+
+  const updateCertificateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      await apiRequest("PATCH", `/api/payment-certificates/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/payment-certificates`] });
+      toast({ title: "Success", description: "Certificate status updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update certificate status", variant: "destructive" });
     },
   });
 
@@ -221,11 +230,22 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
       toast({ title: "Error", description: "Certificate number is required", variant: "destructive" });
       return;
     }
+    if (!newCertificate.amount) {
+      toast({ title: "Error", description: "Amount is required", variant: "destructive" });
+      return;
+    }
+    
+    // Map amount to the correct column based on status
+    const amount = newCertificate.amount;
+    const pendingAmount = newCertificate.paymentStatus === "Submitted" ? amount : "0";
+    const inProcessAmount = newCertificate.paymentStatus === "In Process" ? amount : "0";
+    const amountPaid = newCertificate.paymentStatus === "Paid" ? amount : "0";
+    
     createCertificateMutation.mutate({
       certificateNo: newCertificate.certificateNo,
-      pendingAmount: newCertificate.pendingAmount || "0",
-      inProcessAmount: newCertificate.inProcessAmount || "0",
-      amountPaid: newCertificate.amountPaid || "0",
+      pendingAmount,
+      inProcessAmount,
+      amountPaid,
       dateCertified: newCertificate.dateCertified || null,
       paymentStatus: newCertificate.paymentStatus,
     });
@@ -479,8 +499,8 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    value={newCertificate.amountPaid}
-                    onChange={(e) => setNewCertificate({ ...newCertificate, amountPaid: e.target.value })}
+                    value={newCertificate.amount}
+                    onChange={(e) => setNewCertificate({ ...newCertificate, amount: e.target.value })}
                     data-testid="input-certificate-amount"
                   />
                 </div>
@@ -494,7 +514,7 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                   />
                 </div>
                 <div>
-                  <Label className="text-sm mb-2">Payment Status</Label>
+                  <Label className="text-sm mb-2">Payment Status *</Label>
                   <Select
                     value={newCertificate.paymentStatus}
                     onValueChange={(value) => setNewCertificate({ ...newCertificate, paymentStatus: value })}
@@ -503,7 +523,7 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Submitted">Submitted</SelectItem>
                       <SelectItem value="In Process">In Process</SelectItem>
                       <SelectItem value="Paid">Paid</SelectItem>
                     </SelectContent>
@@ -565,17 +585,29 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                             {parseFloat(certificate.amountPaid || "0").toLocaleString("en-US", { minimumFractionDigits: 2 })}
                           </TableCell>
                           <TableCell>
-                            <span
-                              className={`px-2 py-1 rounded text-xs font-medium ${
-                                certificate.paymentStatus === "Paid"
-                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                  : certificate.paymentStatus === "In Process"
-                                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                                  : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
-                              }`}
+                            <Select
+                              value={certificate.paymentStatus}
+                              onValueChange={(value) => updateCertificateStatusMutation.mutate({ id: certificate.id, status: value })}
+                              disabled={updateCertificateStatusMutation.isPending}
                             >
-                              {certificate.paymentStatus}
-                            </span>
+                              <SelectTrigger 
+                                className={`w-[140px] ${
+                                  certificate.paymentStatus === "Paid"
+                                    ? "bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700"
+                                    : certificate.paymentStatus === "In Process"
+                                    ? "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-700"
+                                    : "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600"
+                                }`}
+                                data-testid={`select-status-${certificate.id}`}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Submitted">Submitted</SelectItem>
+                                <SelectItem value="In Process">In Process</SelectItem>
+                                <SelectItem value="Paid">Paid</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell>
                             <Button
