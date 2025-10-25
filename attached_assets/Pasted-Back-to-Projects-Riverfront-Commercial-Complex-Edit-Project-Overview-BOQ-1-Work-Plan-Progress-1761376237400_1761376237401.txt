@@ -1,0 +1,190 @@
+Back to Projects
+Riverfront Commercial Complex
+Edit Project
+Overview
+BOQ
+1
+Work Plan
+Progress
+Documents
+2
+Back to BOQs
+construction of 2 classrooms
+Save BOQ
+Bill of Quantities (BOQ)
+$2,013,907.15
+21 line items
+Import BOQ
+Add Row
+Export to Excel
+Search items...
+21 Items
+Total: $2,013,907.15
+3 Sections, 8 Subsections
+No.
+Description
+Unit
+Quantity
+Rate
+Amount
+1.0
+DESCRIPTION
+$0.00
+2.0
+SUBSTRUCTURES (ALL PROVISIONAL)
+$0.00
+2.1
+Oversite excavation
+$245,800.00
+2.1.1
+Excavate oversite to remove top soil average 200mm deep and keep on site for later re-use for landscaping
+sm
+1229.00
+$200.00
+$245,800.00
+2.2
+Excavation
+$865,862.80
+2.2.1
+Excavate oversite to reduce levels commencing from stripped level not exceeding 1.50 meters deep.
+cm
+1843.50
+$300.00
+$553,050.00
+2.2.2
+Excavate foundation trench starting from reduced level not exceeding 1.50 meters deep.
+cm
+302.40
+$300.00
+$90,720.00
+2.2.3
+Ditto for column bases starting from reduced level not exceeding 1.50 meters deep.
+cm
+82.00
+$300.00
+$24,600.00
+2.2.4
+Extra-over all excavation for excavating rock irrespective of class.
+cm
+126.85
+$1,400.00
+$177,592.80
+2.2.5
+Return, fill-in and rum selected excavated materials around foundations
+cm
+12.00
+$100.00
+$1,200.00
+2.2.6
+Remove and cart away surplus excavated materials.
+cm
+34.00
+$550.00
+$18,700.00
+2.3
+Diposal of water
+$0.00
+2.3.1
+Keeping all excavations free from all water including spring or running water
+Item
+0.00
+$0.00
+$0.00
+2.4
+Planking and strutting
+$0.00
+2.4.1
+Uphold the sides of all excavations
+Item
+0.00
+$0.00
+$0.00
+2.5
+Filling
+$639,389.35
+2.5.1
+Hardcore filling in making up levels,exceeding 300mm thick in layers of 150mm maximum thickness
+cm
+368.70
+$1,400.00
+$516,180.00
+2.5.2
+50mm (average) thick quarry dust blinding to surfaces of hardcore
+sm
+1229.00
+$100.00
+$122,900.00
+2.5.3
+Column bases
+cm
+7.00
+$23.00
+$161.00
+2.5.4
+Foundations columns
+cm
+3.00
+$23.00
+$69.00
+2.5.5
+150mm thick bed
+sm
+23.00
+$3.45
+$79.35
+3.0
+FRAME
+$0.00
+3.1
+Concrete
+$13,275.00
+3.1.1
+Beams
+cm
+6.00
+$354.00
+$2,124.00
+3.1.2
+Columns
+cm
+9.00
+$354.00
+$3,186.00
+3.1.3
+150 mm thick suspended slab
+sm
+150.00
+$53.10
+$7,965.00
+3.2
+Reinforcement
+$940.00
+3.2.1
+Assorted bars
+kg
+235.00
+$4.00
+$940.00
+3.3
+Formwork
+$248,640.00
+3.3.1
+To sides and soffits of beams.
+sm
+369.60
+$400.00
+$147,840.00
+3.3.2
+Vertical sides of columns
+sm
+126.00
+$400.00
+$50,400.00
+3.3.3
+Soffites of 150 mm thick suspended slab
+sm
+126.00
+$400.00
+$50,400.00
+Keyboard shortcuts:
+Enter = Insert Line Item below • Shift+Enter = Insert Line Item above • Ctrl+Enter = Edit cell
