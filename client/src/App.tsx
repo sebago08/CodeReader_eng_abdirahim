@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import { AdminRoute } from "@/lib/admin-route";
 import { HomeRoute } from "@/lib/home-route";
 import AuthPage from "@/pages/auth-page";
+import Dashboard from "@/pages/dashboard";
 import ProjectsOverview from "@/pages/projects-overview";
 import ProjectDetail from "@/pages/project-detail";
 import AdminDashboard from "@/pages/admin-dashboard";
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/bootstrap" component={Bootstrap} />
       <AdminRoute path="/admin" component={AdminDashboard} />
+      <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/projects" component={ProjectsOverview} />
       <ProtectedRoute path="/projects/:id" component={ProjectDetail} />
       <Route component={NotFound} />
