@@ -73,7 +73,15 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    mutation.mutate(formData);
+    
+    // Clean up form data - convert empty strings to undefined for numeric fields
+    const cleanedData = {
+      ...formData,
+      totalBudget: formData.totalBudget === "" ? undefined : formData.totalBudget,
+      spentAmount: formData.spentAmount === "" ? undefined : formData.spentAmount,
+    };
+    
+    mutation.mutate(cleanedData as any);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
