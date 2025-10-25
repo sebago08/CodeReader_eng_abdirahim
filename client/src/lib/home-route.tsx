@@ -9,7 +9,7 @@ export function HomeRoute() {
 
   useEffect(() => {
     if (!isLoading && user) {
-      setLocation("/dashboard");
+      setLocation("/projects");
     }
   }, [user, isLoading, setLocation]);
 
