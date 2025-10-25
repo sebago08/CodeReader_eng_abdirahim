@@ -26,7 +26,7 @@ function Router() {
       <AdminRoute path="/admin" component={AdminDashboard} />
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/projects" component={ProjectsOverview} />
-      <ProtectedRoute path="/projects/:id" component={ProjectDetail} />
+      <ProtectedRoute path="/projects/:id/:tab?" component={ProjectDetail} />
       <ProtectedRoute path="/reports" component={Reports} />
       <ProtectedRoute path="/settings" component={Settings} />
       <Route component={NotFound} />
