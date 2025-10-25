@@ -60,17 +60,17 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
   // Fetch personnel and equipment if editing
   const { data: clientPersonnel = [] } = useQuery<ClientPersonnel[]>({
-    queryKey: ['/api/projects', project?.id, 'client-personnel'],
+    queryKey: [`/api/projects/${project?.id}/client-personnel`],
     enabled: !!project?.id,
   });
 
   const { data: contractorPersonnel = [] } = useQuery<ContractorPersonnel[]>({
-    queryKey: ['/api/projects', project?.id, 'contractor-personnel'],
+    queryKey: [`/api/projects/${project?.id}/contractor-personnel`],
     enabled: !!project?.id,
   });
 
   const { data: contractorEquipment = [] } = useQuery<ContractorEquipment[]>({
-    queryKey: ['/api/projects', project?.id, 'contractor-equipment'],
+    queryKey: [`/api/projects/${project?.id}/contractor-equipment`],
     enabled: !!project?.id,
   });
 
@@ -131,10 +131,13 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
   // Client personnel mutations
   const addClientPersonnelMutation = useMutation({
     mutationFn: async (data: any) => {
-      await apiRequest("POST", `/api/projects/${project?.id}/client-personnel`, data);
+      if (!project?.id) throw new Error("Project ID is required");
+      await apiRequest("POST", `/api/projects/${project.id}/client-personnel`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', project?.id, 'client-personnel'] });
+      if (project?.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/client-personnel`] });
+      }
       setNewClientPersonnel({ name: "", qualification: "", designation: "" });
       toast({ title: "Success", description: "Client personnel added successfully" });
     },
@@ -145,7 +148,9 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
       await apiRequest("DELETE", `/api/client-personnel/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', project?.id, 'client-personnel'] });
+      if (project?.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/client-personnel`] });
+      }
       toast({ title: "Success", description: "Client personnel deleted successfully" });
     },
   });
@@ -153,10 +158,13 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
   // Contractor personnel mutations
   const addContractorPersonnelMutation = useMutation({
     mutationFn: async (data: any) => {
-      await apiRequest("POST", `/api/projects/${project?.id}/contractor-personnel`, data);
+      if (!project?.id) throw new Error("Project ID is required");
+      await apiRequest("POST", `/api/projects/${project.id}/contractor-personnel`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', project?.id, 'contractor-personnel'] });
+      if (project?.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/contractor-personnel`] });
+      }
       setNewContractorPersonnel({ name: "", qualification: "", designation: "" });
       toast({ title: "Success", description: "Contractor personnel added successfully" });
     },
@@ -167,7 +175,9 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
       await apiRequest("DELETE", `/api/contractor-personnel/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', project?.id, 'contractor-personnel'] });
+      if (project?.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/contractor-personnel`] });
+      }
       toast({ title: "Success", description: "Contractor personnel deleted successfully" });
     },
   });
@@ -175,10 +185,13 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
   // Contractor equipment mutations
   const addContractorEquipmentMutation = useMutation({
     mutationFn: async (data: any) => {
-      await apiRequest("POST", `/api/projects/${project?.id}/contractor-equipment`, data);
+      if (!project?.id) throw new Error("Project ID is required");
+      await apiRequest("POST", `/api/projects/${project.id}/contractor-equipment`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', project?.id, 'contractor-equipment'] });
+      if (project?.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/contractor-equipment`] });
+      }
       setNewContractorEquipment({ equipmentName: "", type: "", quantity: "1", condition: "" });
       toast({ title: "Success", description: "Contractor equipment added successfully" });
     },
@@ -189,7 +202,9 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
       await apiRequest("DELETE", `/api/contractor-equipment/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', project?.id, 'contractor-equipment'] });
+      if (project?.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/contractor-equipment`] });
+      }
       toast({ title: "Success", description: "Contractor equipment deleted successfully" });
     },
   });
@@ -521,8 +536,15 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                 </div>
               )}
 
-              {clientSubTab === "personnel" && project && (
+              {clientSubTab === "personnel" && (
                 <div className="p-6 space-y-6">
+                  {!project && (
+                    <div className="text-center py-8 text-gray-500">
+                      Please save the project first before adding personnel
+                    </div>
+                  )}
+                  {project && (
+                    <>
                   <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
                     <table className="w-full">
                       <thead className="bg-gray-100">
@@ -590,6 +612,8 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                       </Button>
                     </div>
                   </div>
+                  </>
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -695,8 +719,15 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                 </div>
               )}
 
-              {contractorSubTab === "personnel" && project && (
+              {contractorSubTab === "personnel" && (
                 <div className="p-6 space-y-6">
+                  {!project && (
+                    <div className="text-center py-8 text-gray-500">
+                      Please save the project first before adding personnel
+                    </div>
+                  )}
+                  {project && (
+                    <>
                   <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
                     <table className="w-full">
                       <thead className="bg-gray-100">
@@ -764,12 +795,21 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                       </Button>
                     </div>
                   </div>
+                  </>
+                  )}
                 </div>
               )}
 
-              {contractorSubTab === "equipment" && project && (
+              {contractorSubTab === "equipment" && (
                 <div className="p-6 space-y-6">
-                  <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+                  {!project && (
+                    <div className="text-center py-8 text-gray-500">
+                      Please save the project first before adding equipment
+                    </div>
+                  )}
+                  {project && (
+                    <>
+                    <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
                     <table className="w-full">
                       <thead className="bg-gray-100">
                         <tr>
@@ -857,6 +897,8 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                       </Button>
                     </div>
                   </div>
+                  </>
+                  )}
                 </div>
               )}
             </TabsContent>
