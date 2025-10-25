@@ -194,6 +194,21 @@ export const paymentCertificates = pgTable("payment_certificates", {
   index("payment_certificates_project_idx").on(table.projectId),
 ]);
 
+// Work plan activities table (project schedule and planning)
+export const workPlanActivities = pgTable("work_plan_activities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  activityName: varchar("activity_name").notNull(),
+  startDate: date("start_date").notNull(),
+  duration: integer("duration").notNull(), // Duration in days
+  endDate: date("end_date").notNull(), // Calculated: startDate + duration
+  isMilestone: boolean("is_milestone").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("work_plan_activities_project_idx").on(table.projectId),
+]);
+
 // Project members table (for team collaboration)
 export const projectMembers = pgTable("project_members", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -304,6 +319,13 @@ export const contractorEquipmentRelations = relations(contractorEquipment, ({ on
 export const paymentCertificatesRelations = relations(paymentCertificates, ({ one }) => ({
   project: one(projects, {
     fields: [paymentCertificates.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const workPlanActivitiesRelations = relations(workPlanActivities, ({ one }) => ({
+  project: one(projects, {
+    fields: [workPlanActivities.projectId],
     references: [projects.id],
   }),
 }));
@@ -424,6 +446,15 @@ export const insertPaymentCertificateSchema = createInsertSchema(paymentCertific
   updatedAt: true,
 });
 
+export const insertWorkPlanActivitySchema = createInsertSchema(workPlanActivities).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  duration: z.coerce.number().int().min(1, "Duration must be at least 1 day"),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
@@ -460,6 +491,8 @@ export type ContractorEquipment = typeof contractorEquipment.$inferSelect;
 export type InsertContractorEquipment = z.infer<typeof insertContractorEquipmentSchema>;
 export type PaymentCertificate = typeof paymentCertificates.$inferSelect;
 export type InsertPaymentCertificate = z.infer<typeof insertPaymentCertificateSchema>;
+export type WorkPlanActivity = typeof workPlanActivities.$inferSelect;
+export type InsertWorkPlanActivity = z.infer<typeof insertWorkPlanActivitySchema>;
 
 export type ProjectMemberWithUser = ProjectMember & {
   user: User;

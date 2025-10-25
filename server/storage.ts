@@ -12,6 +12,7 @@ import {
   contractorPersonnel,
   contractorEquipment,
   paymentCertificates,
+  workPlanActivities,
   type User,
   type InsertUser,
   type Project,
@@ -41,6 +42,8 @@ import {
   type InsertContractorEquipment,
   type PaymentCertificate,
   type InsertPaymentCertificate,
+  type WorkPlanActivity,
+  type InsertWorkPlanActivity,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, inArray } from "drizzle-orm";
@@ -134,6 +137,13 @@ export interface IStorage {
   createPaymentCertificate(projectId: string, certificate: InsertPaymentCertificate): Promise<PaymentCertificate>;
   updatePaymentCertificate(id: string, certificate: Partial<InsertPaymentCertificate>): Promise<PaymentCertificate>;
   deletePaymentCertificate(id: string): Promise<void>;
+
+  // Work plan activity operations
+  getWorkPlanActivities(projectId: string): Promise<WorkPlanActivity[]>;
+  getWorkPlanActivityById(id: string): Promise<WorkPlanActivity | undefined>;
+  createWorkPlanActivity(projectId: string, activity: InsertWorkPlanActivity): Promise<WorkPlanActivity>;
+  deleteWorkPlanActivity(id: string): Promise<void>;
+  toggleWorkPlanMilestone(id: string, isMilestone: boolean): Promise<WorkPlanActivity>;
 }
 
 // In-memory storage implementation
@@ -1080,6 +1090,41 @@ export class DatabaseStorage implements IStorage {
 
   async deletePaymentCertificate(id: string): Promise<void> {
     await db.delete(paymentCertificates).where(eq(paymentCertificates.id, id));
+  }
+
+  // Work plan activity operations
+  async getWorkPlanActivities(projectId: string): Promise<WorkPlanActivity[]> {
+    return await db.select()
+      .from(workPlanActivities)
+      .where(eq(workPlanActivities.projectId, projectId))
+      .orderBy(workPlanActivities.startDate);
+  }
+
+  async getWorkPlanActivityById(id: string): Promise<WorkPlanActivity | undefined> {
+    const [result] = await db.select()
+      .from(workPlanActivities)
+      .where(eq(workPlanActivities.id, id))
+      .limit(1);
+    return result;
+  }
+
+  async createWorkPlanActivity(projectId: string, activity: InsertWorkPlanActivity): Promise<WorkPlanActivity> {
+    const [result] = await db.insert(workPlanActivities)
+      .values({ ...activity, projectId })
+      .returning();
+    return result;
+  }
+
+  async deleteWorkPlanActivity(id: string): Promise<void> {
+    await db.delete(workPlanActivities).where(eq(workPlanActivities.id, id));
+  }
+
+  async toggleWorkPlanMilestone(id: string, isMilestone: boolean): Promise<WorkPlanActivity> {
+    const [result] = await db.update(workPlanActivities)
+      .set({ isMilestone, updatedAt: new Date() })
+      .where(eq(workPlanActivities.id, id))
+      .returning();
+    return result;
   }
 }
 

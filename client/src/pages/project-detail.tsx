@@ -14,6 +14,7 @@ import ProgressTab from "@/components/project-tabs/progress-tab";
 import BudgetTab from "@/components/project-tabs/budget-tab";
 import SafetyTab from "@/components/project-tabs/safety-tab";
 import TeamTab from "@/components/project-tabs/team-tab";
+import WorkPlanTab from "@/components/project-tabs/work-plan-tab";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ProjectWithRoads } from "@shared/schema";
 
@@ -185,6 +186,9 @@ export default function ProjectDetail() {
               <TabsTrigger value="overview" data-testid="tab-overview">
                 Overview
               </TabsTrigger>
+              <TabsTrigger value="workplan" data-testid="tab-workplan">
+                Work Plan
+              </TabsTrigger>
               <TabsTrigger value="progress" data-testid="tab-progress">
                 Progress
               </TabsTrigger>
@@ -201,6 +205,10 @@ export default function ProjectDetail() {
 
             <TabsContent value="overview" data-testid="tab-content-overview">
               <OverviewTab project={project} />
+            </TabsContent>
+
+            <TabsContent value="workplan" data-testid="tab-content-workplan">
+              {projectId && <WorkPlanTab projectId={projectId} />}
             </TabsContent>
 
             <TabsContent value="progress" data-testid="tab-content-progress">
