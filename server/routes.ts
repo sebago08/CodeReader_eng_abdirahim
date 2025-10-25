@@ -1,7 +1,14 @@
 import type { Express, RequestHandler } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProjectSchema, insertRoadSchema, insertLayerSchema, insertLayerProgressSchema } from "@shared/schema";
+import { 
+  insertProjectSchema, 
+  insertRoadSchema, 
+  insertLayerSchema, 
+  insertLayerProgressSchema,
+  insertActivitySchema,
+  insertSafetyIncidentSchema 
+} from "@shared/schema";
 import { setupAuth } from "./auth";
 import multer from "multer";
 import { getStorageService, getMockStorage } from "./storage-service";
@@ -227,6 +234,100 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error resetting layer progress:", error);
       res.status(500).json({ message: "Failed to reset layer progress" });
+    }
+  });
+
+  // Activity routes
+  app.get('/api/projects/:projectId/activities', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const activities = await storage.getActivities(projectId);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+      res.status(500).json({ message: "Failed to fetch activities" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/activities', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const validatedData = insertActivitySchema.parse(req.body);
+      const activity = await storage.createActivity(projectId, validatedData);
+      res.status(201).json(activity);
+    } catch (error) {
+      console.error("Error creating activity:", error);
+      res.status(500).json({ message: "Failed to create activity" });
+    }
+  });
+
+  app.patch('/api/activities/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertActivitySchema.partial().parse(req.body);
+      const activity = await storage.updateActivity(id, validatedData);
+      res.json(activity);
+    } catch (error) {
+      console.error("Error updating activity:", error);
+      res.status(500).json({ message: "Failed to update activity" });
+    }
+  });
+
+  app.delete('/api/activities/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteActivity(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting activity:", error);
+      res.status(500).json({ message: "Failed to delete activity" });
+    }
+  });
+
+  // Safety incident routes
+  app.get('/api/projects/:projectId/safety-incidents', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const incidents = await storage.getSafetyIncidents(projectId);
+      res.json(incidents);
+    } catch (error) {
+      console.error("Error fetching safety incidents:", error);
+      res.status(500).json({ message: "Failed to fetch safety incidents" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/safety-incidents', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const validatedData = insertSafetyIncidentSchema.parse(req.body);
+      const incident = await storage.createSafetyIncident(projectId, validatedData);
+      res.status(201).json(incident);
+    } catch (error) {
+      console.error("Error creating safety incident:", error);
+      res.status(500).json({ message: "Failed to create safety incident" });
+    }
+  });
+
+  app.patch('/api/safety-incidents/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertSafetyIncidentSchema.partial().parse(req.body);
+      const incident = await storage.updateSafetyIncident(id, validatedData);
+      res.json(incident);
+    } catch (error) {
+      console.error("Error updating safety incident:", error);
+      res.status(500).json({ message: "Failed to update safety incident" });
+    }
+  });
+
+  app.delete('/api/safety-incidents/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteSafetyIncident(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting safety incident:", error);
+      res.status(500).json({ message: "Failed to delete safety incident" });
     }
   });
 
