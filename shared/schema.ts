@@ -92,14 +92,25 @@ export const projects = pgTable("projects", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Roads table
+// Linear infrastructure table (roads, drainage, rail, pipelines, etc.)
+// Note: Table name kept as "roads" for backward compatibility
 export const roads = pgTable("roads", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   projectId: varchar("project_id").notNull(),
+  
+  // Infrastructure identification
+  infrastructureType: varchar("infrastructure_type").default("road").notNull(), // 'road', 'drainage', 'rail', 'pipeline'
   name: varchar("name").notNull(),
   length: decimal("length", { precision: 10, scale: 2 }).notNull(),
-  roadType: varchar("road_type").notNull(),
-  carriageway: varchar("carriageway").notNull().default("single"), // "single" or "dual"
+  
+  // Road-specific fields (optional for other infrastructure types)
+  roadType: varchar("road_type"), // e.g., "Highway", "Urban Road" - optional for backward compatibility
+  carriageway: varchar("carriageway").default("single"), // "single" or "dual" - only relevant for roads
+  
+  // Additional infrastructure-specific metadata
+  diameter: varchar("diameter"), // for pipelines/drainage
+  specification: text("specification"), // general specs for any infrastructure type
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
