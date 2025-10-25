@@ -89,7 +89,7 @@ export default function Dashboard() {
 
     // Mock trend data (in a real app, you'd compare with previous period)
     const onScheduleChange = 9;
-    const budgetChange = -1.2;
+    const budgetChange = 1.2;
     const safetyChange = 2;
 
     return {
@@ -120,11 +120,11 @@ export default function Dashboard() {
     const daysUntilDeadline = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
     if (endDate < today) {
-      return { label: "Overdue", variant: "destructive" as const, color: "bg-red-100 text-red-700" };
+      return { label: "Overdue", color: "bg-red-50 text-red-700 border-red-200" };
     } else if (progress < 50 && daysUntilDeadline < 30) {
-      return { label: "At Risk", variant: "secondary" as const, color: "bg-yellow-100 text-yellow-700" };
+      return { label: "At Risk", color: "bg-yellow-50 text-yellow-700 border-yellow-200" };
     } else {
-      return { label: "On Track", variant: "default" as const, color: "bg-green-100 text-green-700" };
+      return { label: "On Track", color: "bg-green-50 text-green-700 border-green-200" };
     }
   };
 
@@ -167,13 +167,13 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-[#F9FAFB]">
       <Sidebar />
       
       {/* Main Content */}
       <div className="ml-64 flex-1">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-8 py-6">
+        <header className="bg-white border-b border-gray-200 px-8 py-5">
           <div className="flex justify-between items-center">
             <div className="flex-1 max-w-xl">
               <div className="relative">
@@ -190,7 +190,7 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-gray-600 hover:text-gray-900"
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 data-testid="button-notifications"
               >
                 <Bell className="w-5 h-5" />
@@ -198,7 +198,7 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-gray-600 hover:text-gray-900"
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 data-testid="button-help"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -207,7 +207,7 @@ export default function Dashboard() {
                   <circle cx="12" cy="17" r="0.5" fill="currentColor" strokeWidth="1"></circle>
                 </svg>
               </Button>
-              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+              <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                 {user?.firstName?.[0] || 'U'}
               </div>
             </div>
@@ -223,7 +223,7 @@ export default function Dashboard() {
           ) : (
             <>
               {/* Welcome Section */}
-              <div className="mb-8 flex justify-between items-center">
+              <div className="mb-8 flex justify-between items-start">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="page-title">
                     Welcome back, {user?.firstName || user?.username || 'User'}!
@@ -234,7 +234,7 @@ export default function Dashboard() {
                 </div>
                 <Button
                   onClick={() => setShowProjectModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white shadow-md"
                   data-testid="button-create-project"
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -245,12 +245,12 @@ export default function Dashboard() {
               {/* Metrics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 {/* Projects On Schedule */}
-                <Card className="border-none shadow-sm" data-testid="metric-projects-on-schedule">
+                <Card className="border-none shadow-sm bg-white" data-testid="metric-projects-on-schedule">
                   <CardContent className="p-6">
-                    <div className="text-sm font-medium text-gray-600 mb-2">
+                    <div className="text-sm font-medium text-gray-600 mb-3">
                       Projects On Schedule
                     </div>
-                    <div className="text-4xl font-bold text-gray-900 mb-2" data-testid="value-projects-on-schedule">
+                    <div className="text-4xl font-bold text-gray-900 mb-3" data-testid="value-projects-on-schedule">
                       {metrics.projectsOnSchedule}
                     </div>
                     <div className="flex items-center text-sm text-green-600">
@@ -261,12 +261,12 @@ export default function Dashboard() {
                 </Card>
 
                 {/* Budget Variance */}
-                <Card className="border-none shadow-sm" data-testid="metric-budget-variance">
+                <Card className="border-none shadow-sm bg-white" data-testid="metric-budget-variance">
                   <CardContent className="p-6">
-                    <div className="text-sm font-medium text-gray-600 mb-2">
+                    <div className="text-sm font-medium text-gray-600 mb-3">
                       Budget Variance
                     </div>
-                    <div className="text-4xl font-bold text-gray-900 mb-2" data-testid="value-budget-variance">
+                    <div className="text-4xl font-bold text-gray-900 mb-3" data-testid="value-budget-variance">
                       {metrics.budgetVariance >= 0 ? '+' : ''}{metrics.budgetVariance.toFixed(1)}%
                     </div>
                     <div className="flex items-center text-sm text-red-600">
@@ -277,12 +277,12 @@ export default function Dashboard() {
                 </Card>
 
                 {/* Open Safety Issues */}
-                <Card className="border-none shadow-sm" data-testid="metric-open-safety-issues">
+                <Card className="border-none shadow-sm bg-white" data-testid="metric-open-safety-issues">
                   <CardContent className="p-6">
-                    <div className="text-sm font-medium text-gray-600 mb-2">
+                    <div className="text-sm font-medium text-gray-600 mb-3">
                       Open Safety Issues
                     </div>
-                    <div className="text-4xl font-bold text-gray-900 mb-2" data-testid="value-open-safety-issues">
+                    <div className="text-4xl font-bold text-gray-900 mb-3" data-testid="value-open-safety-issues">
                       {metrics.openSafetyIssues}
                     </div>
                     <div className="flex items-center text-sm text-orange-600">
@@ -294,22 +294,22 @@ export default function Dashboard() {
               </div>
 
               {/* Active Projects Section */}
-              <Card className="border-none shadow-sm mb-8">
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold text-gray-900">
+              <Card className="border-none shadow-sm bg-white mb-8">
+                <CardHeader className="border-b border-gray-100 px-6 py-4">
+                  <CardTitle className="text-xl font-bold text-gray-900">
                     Active Projects
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {projects && projects.length > 0 ? (
+                <CardContent className="p-0">
+                  {projects && projects.filter(p => p.status === "Active").length > 0 ? (
                     <Table data-testid="projects-table">
                       <TableHeader>
-                        <TableRow className="border-b border-gray-200">
-                          <TableHead className="text-sm font-semibold text-gray-700">PROJECT NAME</TableHead>
-                          <TableHead className="text-sm font-semibold text-gray-700">PROGRESS</TableHead>
-                          <TableHead className="text-sm font-semibold text-gray-700">STATUS</TableHead>
-                          <TableHead className="text-sm font-semibold text-gray-700">DEADLINE</TableHead>
-                          <TableHead className="text-sm font-semibold text-gray-700"></TableHead>
+                        <TableRow className="border-b border-gray-100 hover:bg-transparent">
+                          <TableHead className="text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">PROJECT NAME</TableHead>
+                          <TableHead className="text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">PROGRESS</TableHead>
+                          <TableHead className="text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">STATUS</TableHead>
+                          <TableHead className="text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">DEADLINE</TableHead>
+                          <TableHead className="text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -320,51 +320,50 @@ export default function Dashboard() {
                             const progress = calculateProjectProgress(project.id);
                             const status = getProjectStatus(project, progress);
                             return (
-                              <TableRow key={project.id} className="border-b border-gray-100" data-testid={`project-row-${project.id}`}>
-                                <TableCell>
+                              <TableRow key={project.id} className="border-b border-gray-50 hover:bg-gray-50/50" data-testid={`project-row-${project.id}`}>
+                                <TableCell className="px-6 py-4">
                                   <Link href={`/projects/${project.id}`}>
-                                    <span className="font-medium text-gray-900 hover:text-blue-600 cursor-pointer" data-testid={`link-project-name-${project.id}`}>
+                                    <span className="font-medium text-gray-900 hover:text-[#0EA5E9] cursor-pointer transition-colors" data-testid={`link-project-name-${project.id}`}>
                                       {project.name}
                                     </span>
                                   </Link>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="px-6 py-4">
                                   <div className="flex items-center gap-3" data-testid="progress-container">
                                     <div className="flex-1 bg-gray-200 rounded-full h-2 w-32">
                                       <div 
                                         className={`h-2 rounded-full transition-all ${
-                                          progress >= 75 ? 'bg-blue-600' :
-                                          progress >= 50 ? 'bg-blue-500' :
-                                          progress >= 25 ? 'bg-yellow-500' :
-                                          'bg-red-500'
+                                          progress >= 75 ? 'bg-[#0EA5E9]' :
+                                          progress >= 50 ? 'bg-[#F59E0B]' :
+                                          'bg-[#EF4444]'
                                         }`}
                                         style={{ width: `${progress}%` }}
                                         data-testid="progress-bar"
                                       ></div>
                                     </div>
-                                    <span className="text-sm font-medium text-gray-700 w-12" data-testid="text-progress-value">
+                                    <span className="text-sm font-medium text-gray-600 w-12" data-testid="text-progress-value">
                                       {progress}%
                                     </span>
                                   </div>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="px-6 py-4">
                                   <Badge 
-                                    className={`${status.color} hover:${status.color} border-none`}
+                                    className={`${status.color} border font-medium px-3 py-1`}
                                     data-testid="badge-project-status"
                                   >
                                     {status.label}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="text-gray-600" data-testid="text-project-deadline">
+                                <TableCell className="px-6 py-4 text-gray-600 text-sm" data-testid="text-project-deadline">
                                   {new Date(project.endDate).toLocaleDateString('en-US', { 
                                     month: 'short', 
                                     day: 'numeric', 
                                     year: 'numeric' 
                                   })}
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="px-6 py-4 text-right">
                                   <Link href={`/projects/${project.id}`}>
-                                    <span className="text-blue-600 hover:text-blue-800 text-sm font-medium cursor-pointer" data-testid={`link-view-project-${project.id}`}>
+                                    <span className="text-[#0EA5E9] hover:text-[#0284C7] text-sm font-medium cursor-pointer transition-colors" data-testid={`link-view-project-${project.id}`}>
                                       View
                                     </span>
                                   </Link>
@@ -375,15 +374,15 @@ export default function Dashboard() {
                       </TableBody>
                     </Table>
                   ) : (
-                    <div className="text-center py-12" data-testid="empty-state">
+                    <div className="text-center py-16 px-6" data-testid="empty-state">
                       <div className="text-gray-400 mb-4">
                         <FileText className="w-16 h-16 mx-auto" />
                       </div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Projects</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No Active Projects</h3>
                       <p className="text-gray-500 mb-6">Get started by creating your first construction project.</p>
                       <Button 
                         onClick={() => setShowProjectModal(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Create First Project
@@ -396,27 +395,26 @@ export default function Dashboard() {
               {/* Bottom Section - Budget Allocation & Recent Activity */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Budget Allocation */}
-                <Card className="border-none shadow-sm" data-testid="card-budget-allocation">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold text-gray-900">
+                <Card className="border-none shadow-sm bg-white" data-testid="card-budget-allocation">
+                  <CardHeader className="border-b border-gray-100 px-6 py-4">
+                    <CardTitle className="text-xl font-bold text-gray-900">
                       Budget Allocation
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="h-64 flex items-end justify-between gap-2 px-4">
+                  <CardContent className="p-6">
+                    <div className="h-64 flex items-end justify-between gap-4 px-4">
                       {/* Simple bar chart visualization */}
                       {projects && projects.slice(0, 6).map((project, idx) => {
                         const budgetPercent = project.totalBudget 
                           ? Math.min(100, (Number(project.spentAmount || 0) / Number(project.totalBudget)) * 100)
                           : 0;
+                        const height = Math.max(20, budgetPercent * 2);
                         return (
-                          <div key={project.id} className="flex-1 flex flex-col items-center">
-                            <div className="w-full bg-gray-200 rounded-t" style={{ height: `${budgetPercent * 2}px` }}>
-                              <div 
-                                className="w-full bg-blue-400 rounded-t transition-all" 
-                                style={{ height: '100%' }}
-                              ></div>
-                            </div>
+                          <div key={project.id} className="flex-1 flex flex-col items-center gap-2">
+                            <div 
+                              className="w-full bg-gradient-to-t from-[#60A5FA] to-[#93C5FD] rounded-t-lg transition-all" 
+                              style={{ height: `${height}px` }}
+                            ></div>
                           </div>
                         );
                       })}
@@ -425,32 +423,32 @@ export default function Dashboard() {
                 </Card>
 
                 {/* Recent Activity */}
-                <Card className="border-none shadow-sm" data-testid="card-recent-activity">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold text-gray-900">
+                <Card className="border-none shadow-sm bg-white" data-testid="card-recent-activity">
+                  <CardHeader className="border-b border-gray-100 px-6 py-4">
+                    <CardTitle className="text-xl font-bold text-gray-900">
                       Recent Activity
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
+                  <CardContent className="p-6">
+                    <div className="space-y-5">
                       {recentActivities.length > 0 ? (
                         recentActivities.map((item, idx) => (
                           <div key={idx} className="flex items-start gap-3" data-testid={`activity-item-${idx}`}>
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                               idx === 0 ? 'bg-blue-100' :
                               idx === 1 ? 'bg-yellow-100' :
                               idx === 2 ? 'bg-green-100' :
                               'bg-gray-100'
                             }`}>
-                              {idx === 0 && <FileText className="w-4 h-4 text-blue-600" />}
-                              {idx === 1 && <AlertTriangle className="w-4 h-4 text-yellow-600" />}
-                              {idx === 2 && <CheckCircle className="w-4 h-4 text-green-600" />}
-                              {idx === 3 && <MessageSquare className="w-4 h-4 text-gray-600" />}
+                              {idx === 0 && <FileText className="w-5 h-5 text-blue-600" />}
+                              {idx === 1 && <AlertTriangle className="w-5 h-5 text-yellow-600" />}
+                              {idx === 2 && <CheckCircle className="w-5 h-5 text-green-600" />}
+                              {idx === 3 && <MessageSquare className="w-5 h-5 text-gray-600" />}
                             </div>
-                            <div className="flex-1">
-                              <p className="text-sm text-gray-900">
-                                <span className="font-medium">{item.activity.name}</span> for{' '}
-                                <span className="font-medium">{item.projectName}</span>.
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900 font-medium">
+                                {item.activity.name} for{' '}
+                                <span className="font-semibold">{item.projectName}</span>.
                               </p>
                               <p className="text-xs text-gray-500 mt-1">
                                 {formatTimeAgo(item.activity.createdAt)}
@@ -459,7 +457,7 @@ export default function Dashboard() {
                           </div>
                         ))
                       ) : (
-                        <p className="text-gray-500 text-sm">No recent activity</p>
+                        <p className="text-gray-500 text-sm text-center py-8">No recent activity</p>
                       )}
                     </div>
                   </CardContent>
