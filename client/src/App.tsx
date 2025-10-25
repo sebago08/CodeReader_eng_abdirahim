@@ -8,11 +8,8 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import { AdminRoute } from "@/lib/admin-route";
 import { HomeRoute } from "@/lib/home-route";
 import AuthPage from "@/pages/auth-page";
-import Dashboard from "@/pages/dashboard";
 import ProjectsOverview from "@/pages/projects-overview";
 import ProjectDetail from "@/pages/project-detail";
-import Reports from "@/pages/reports";
-import Settings from "@/pages/settings";
 import AdminDashboard from "@/pages/admin-dashboard";
 import Bootstrap from "@/pages/bootstrap";
 import NotFound from "@/pages/not-found";
@@ -24,11 +21,8 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/bootstrap" component={Bootstrap} />
       <AdminRoute path="/admin" component={AdminDashboard} />
-      <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/projects" component={ProjectsOverview} />
-      <ProtectedRoute path="/projects/:id/:tab?" component={ProjectDetail} />
-      <ProtectedRoute path="/reports" component={Reports} />
-      <ProtectedRoute path="/settings" component={Settings} />
+      <ProtectedRoute path="/projects/:id" component={ProjectDetail} />
       <Route component={NotFound} />
     </Switch>
   );
