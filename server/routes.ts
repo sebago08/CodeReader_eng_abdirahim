@@ -645,6 +645,65 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Payment certificates routes
+  app.get('/api/projects/:projectId/payment-certificates', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const certificates = await storage.getPaymentCertificates(projectId);
+      res.json(certificates);
+    } catch (error) {
+      console.error("Error fetching payment certificates:", error);
+      res.status(500).json({ message: "Failed to fetch payment certificates" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/payment-certificates', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const certificate = await storage.createPaymentCertificate(projectId, req.body);
+      res.status(201).json(certificate);
+    } catch (error) {
+      console.error("Error creating payment certificate:", error);
+      res.status(500).json({ message: "Failed to create payment certificate" });
+    }
+  });
+
+  app.patch('/api/payment-certificates/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const certificate = await storage.updatePaymentCertificate(id, req.body);
+      res.json(certificate);
+    } catch (error) {
+      console.error("Error updating payment certificate:", error);
+      res.status(500).json({ message: "Failed to update payment certificate" });
+    }
+  });
+
+  app.delete('/api/payment-certificates/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePaymentCertificate(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting payment certificate:", error);
+      res.status(500).json({ message: "Failed to delete payment certificate" });
+    }
+  });
+
+  // Update advance payment
+  app.patch('/api/projects/:projectId/advance-payment', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const { advancePayment } = req.body;
+      const userId = req.user!.id;
+      const project = await storage.updateProject(projectId, userId, { advancePayment });
+      res.json(project);
+    } catch (error) {
+      console.error("Error updating advance payment:", error);
+      res.status(500).json({ message: "Failed to update advance payment" });
+    }
+  });
+
   // File storage routes
   const upload = multer({ storage: multer.memoryStorage() });
   const storageService = getStorageService();

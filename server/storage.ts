@@ -11,6 +11,7 @@ import {
   clientPersonnel,
   contractorPersonnel,
   contractorEquipment,
+  paymentCertificates,
   type User,
   type InsertUser,
   type Project,
@@ -38,6 +39,8 @@ import {
   type InsertContractorPersonnel,
   type ContractorEquipment,
   type InsertContractorEquipment,
+  type PaymentCertificate,
+  type InsertPaymentCertificate,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, inArray } from "drizzle-orm";
@@ -124,6 +127,12 @@ export interface IStorage {
   createContractorEquipment(projectId: string, equipment: InsertContractorEquipment): Promise<ContractorEquipment>;
   updateContractorEquipment(id: string, equipment: Partial<InsertContractorEquipment>): Promise<ContractorEquipment>;
   deleteContractorEquipment(id: string): Promise<void>;
+  
+  // Payment certificate operations
+  getPaymentCertificates(projectId: string): Promise<PaymentCertificate[]>;
+  createPaymentCertificate(projectId: string, certificate: InsertPaymentCertificate): Promise<PaymentCertificate>;
+  updatePaymentCertificate(id: string, certificate: Partial<InsertPaymentCertificate>): Promise<PaymentCertificate>;
+  deletePaymentCertificate(id: string): Promise<void>;
 }
 
 // In-memory storage implementation
@@ -1035,6 +1044,33 @@ export class DatabaseStorage implements IStorage {
 
   async deleteContractorEquipment(id: string): Promise<void> {
     await db.delete(contractorEquipment).where(eq(contractorEquipment.id, id));
+  }
+
+  // Payment certificate operations
+  async getPaymentCertificates(projectId: string): Promise<PaymentCertificate[]> {
+    return await db.select()
+      .from(paymentCertificates)
+      .where(eq(paymentCertificates.projectId, projectId))
+      .orderBy(desc(paymentCertificates.createdAt));
+  }
+
+  async createPaymentCertificate(projectId: string, certificate: InsertPaymentCertificate): Promise<PaymentCertificate> {
+    const [result] = await db.insert(paymentCertificates)
+      .values({ ...certificate, projectId })
+      .returning();
+    return result;
+  }
+
+  async updatePaymentCertificate(id: string, certificate: Partial<InsertPaymentCertificate>): Promise<PaymentCertificate> {
+    const [result] = await db.update(paymentCertificates)
+      .set({ ...certificate, updatedAt: new Date() })
+      .where(eq(paymentCertificates.id, id))
+      .returning();
+    return result;
+  }
+
+  async deletePaymentCertificate(id: string): Promise<void> {
+    await db.delete(paymentCertificates).where(eq(paymentCertificates.id, id));
   }
 }
 
