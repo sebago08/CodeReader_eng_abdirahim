@@ -8,14 +8,15 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { insertActivitySchema } from "@shared/schema";
-import type { Activity, ProjectWithRoads } from "@shared/schema";
+import type { Activity, ProjectWithRoads, PaymentCertificate } from "@shared/schema";
 import { z } from "zod";
 import ProjectCard from "@/components/project-card";
 import RoadModal from "@/components/road-modal";
@@ -144,6 +145,99 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
     setEditingActivity(null);
     form.reset();
   };
+
+  // Financial tab state and queries
+  const [advancePayment, setAdvancePayment] = useState<string>(project.advancePayment || "0");
+  const [newCertificate, setNewCertificate] = useState({
+    certificateNo: "",
+    pendingAmount: "",
+    inProcessAmount: "",
+    amountPaid: "",
+    dateCertified: "",
+    paymentStatus: "Pending",
+  });
+
+  const { data: paymentCertificates = [] } = useQuery<PaymentCertificate[]>({
+    queryKey: [`/api/projects/${project.id}/payment-certificates`],
+  });
+
+  const contractAmount = parseFloat(project.contractAmount || "0");
+  const totalCertified = paymentCertificates.reduce(
+    (sum, cert) => sum + parseFloat(cert.amountPaid || "0"),
+    0
+  );
+  const amountLeft = contractAmount - totalCertified;
+  const financialProgress = contractAmount > 0 ? (totalCertified / contractAmount) * 100 : 0;
+
+  const createCertificateMutation = useMutation({
+    mutationFn: async (certificate: any) => {
+      await apiRequest("POST", `/api/projects/${project.id}/payment-certificates`, certificate);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/payment-certificates`] });
+      toast({ title: "Success", description: "Payment certificate added successfully" });
+      setNewCertificate({
+        certificateNo: "",
+        pendingAmount: "",
+        inProcessAmount: "",
+        amountPaid: "",
+        dateCertified: "",
+        paymentStatus: "Pending",
+      });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to add payment certificate", variant: "destructive" });
+    },
+  });
+
+  const deleteCertificateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/payment-certificates/${id}`, null);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/payment-certificates`] });
+      toast({ title: "Success", description: "Certificate deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete certificate", variant: "destructive" });
+    },
+  });
+
+  const updateAdvancePaymentMutation = useMutation({
+    mutationFn: async (advancePayment: string) => {
+      await apiRequest("PATCH", `/api/projects/${project.id}/advance-payment`, { advancePayment });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/projects`] });
+      toast({ title: "Success", description: "Advance payment updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update advance payment", variant: "destructive" });
+    },
+  });
+
+  const handleAddCertificate = () => {
+    if (!newCertificate.certificateNo) {
+      toast({ title: "Error", description: "Certificate number is required", variant: "destructive" });
+      return;
+    }
+    createCertificateMutation.mutate({
+      certificateNo: newCertificate.certificateNo,
+      pendingAmount: newCertificate.pendingAmount || "0",
+      inProcessAmount: newCertificate.inProcessAmount || "0",
+      amountPaid: newCertificate.amountPaid || "0",
+      dateCertified: newCertificate.dateCertified || null,
+      paymentStatus: newCertificate.paymentStatus,
+    });
+  };
+
+  const handleAdvancePaymentBlur = () => {
+    updateAdvancePaymentMutation.mutate(advancePayment);
+  };
+
+  const totalPending = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.pendingAmount || "0"), 0);
+  const totalInProcess = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.inProcessAmount || "0"), 0);
+  const totalPaid = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.amountPaid || "0"), 0);
 
   return (
     <div className="space-y-6">
@@ -292,15 +386,227 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
 
         {/* Financial Sub-Tab */}
         <TabsContent value="financial" className="space-y-6">
+          {/* Payment Certificates Summary */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-blue-500 text-white rounded-lg">
+                <DollarSign className="h-6 w-6" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Payment Certificates</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                <CardContent className="pt-6">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Contract Amount</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    ${contractAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                <CardContent className="pt-6">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Certified</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    ${totalCertified.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                <CardContent className="pt-6">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Amount Left</div>
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    ${amountLeft.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                <CardContent className="pt-6">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Financial Progress</div>
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+                    {financialProgress.toFixed(1)}%
+                  </div>
+                  <Progress value={financialProgress} className="h-2" />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Advance Payment */}
           <Card>
             <CardHeader>
-              <CardTitle data-testid="heading-financial">Financial</CardTitle>
-              <CardDescription>Track project costs and expenses</CardDescription>
+              <CardTitle>Advance Payment (USD)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <p>Financial tracking feature coming soon.</p>
+              <div className="space-y-2">
+                <Input
+                  type="number"
+                  value={advancePayment}
+                  onChange={(e) => setAdvancePayment(e.target.value)}
+                  onBlur={handleAdvancePaymentBlur}
+                  placeholder="Enter advance payment amount"
+                  className="max-w-md"
+                  data-testid="input-advance-payment"
+                />
+                <p className="text-sm text-gray-500">Enter the advance payment amount received for this project</p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Add Certificate Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Add Certificate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                <div>
+                  <Label className="text-sm mb-2">Certificate No. *</Label>
+                  <Input
+                    type="text"
+                    placeholder="e.g., IPC01"
+                    value={newCertificate.certificateNo}
+                    onChange={(e) => setNewCertificate({ ...newCertificate, certificateNo: e.target.value })}
+                    data-testid="input-certificate-no"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm mb-2">Amount (USD) *</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={newCertificate.amountPaid}
+                    onChange={(e) => setNewCertificate({ ...newCertificate, amountPaid: e.target.value })}
+                    data-testid="input-certificate-amount"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm mb-2">Date Certified</Label>
+                  <Input
+                    type="date"
+                    value={newCertificate.dateCertified}
+                    onChange={(e) => setNewCertificate({ ...newCertificate, dateCertified: e.target.value })}
+                    data-testid="input-certificate-date"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm mb-2">Payment Status</Label>
+                  <Select
+                    value={newCertificate.paymentStatus}
+                    onValueChange={(value) => setNewCertificate({ ...newCertificate, paymentStatus: value })}
+                  >
+                    <SelectTrigger data-testid="select-certificate-status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="In Process">In Process</SelectItem>
+                      <SelectItem value="Paid">Paid</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    onClick={handleAddCertificate}
+                    disabled={createCertificateMutation.isPending}
+                    className="w-full bg-[#0EA5E9] hover:bg-[#0284C7] text-white"
+                    data-testid="button-add-certificate"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Certificate
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Certificates Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Certificates</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {paymentCertificates.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>No payment certificates added yet.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Certificate No.</TableHead>
+                        <TableHead>Pending Amount (USD)</TableHead>
+                        <TableHead>In Process Amount (USD)</TableHead>
+                        <TableHead>Amount Paid (USD)</TableHead>
+                        <TableHead>Payment Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paymentCertificates.map((certificate) => (
+                        <TableRow key={certificate.id}>
+                          <TableCell className="font-medium">{certificate.certificateNo}</TableCell>
+                          <TableCell>
+                            {parseFloat(certificate.pendingAmount || "0") > 0
+                              ? parseFloat(certificate.pendingAmount || "0").toLocaleString("en-US", { minimumFractionDigits: 2 })
+                              : "-"}
+                          </TableCell>
+                          <TableCell>
+                            {parseFloat(certificate.inProcessAmount || "0") > 0
+                              ? parseFloat(certificate.inProcessAmount || "0").toLocaleString("en-US", { minimumFractionDigits: 2 })
+                              : "-"}
+                          </TableCell>
+                          <TableCell>
+                            {parseFloat(certificate.amountPaid || "0").toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-medium ${
+                                certificate.paymentStatus === "Paid"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                  : certificate.paymentStatus === "In Process"
+                                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                  : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                              }`}
+                            >
+                              {certificate.paymentStatus}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteCertificateMutation.mutate(certificate.id)}
+                              disabled={deleteCertificateMutation.isPending}
+                              data-testid={`button-delete-certificate-${certificate.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="bg-gray-50 dark:bg-gray-800 font-semibold">
+                        <TableCell>Total</TableCell>
+                        <TableCell>
+                          ${totalPending.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell>
+                          ${totalInProcess.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell>
+                          ${totalPaid.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell colSpan={2}></TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
