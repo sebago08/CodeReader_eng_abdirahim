@@ -8,6 +8,9 @@ import {
   safetyIncidents,
   projectMembers,
   projectInvitations,
+  clientPersonnel,
+  contractorPersonnel,
+  contractorEquipment,
   type User,
   type InsertUser,
   type Project,
@@ -29,6 +32,12 @@ import {
   type InsertProjectInvitation,
   type ProjectMemberWithUser,
   type ProjectInvitationWithDetails,
+  type ClientPersonnel,
+  type InsertClientPersonnel,
+  type ContractorPersonnel,
+  type InsertContractorPersonnel,
+  type ContractorEquipment,
+  type InsertContractorEquipment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, inArray } from "drizzle-orm";
@@ -97,6 +106,24 @@ export interface IStorage {
   acceptInvitation(token: string, userId: string): Promise<ProjectMember>;
   declineInvitation(token: string): Promise<void>;
   deleteInvitation(invitationId: string): Promise<void>;
+  
+  // Client personnel operations
+  getClientPersonnel(projectId: string): Promise<ClientPersonnel[]>;
+  createClientPersonnel(projectId: string, personnel: InsertClientPersonnel): Promise<ClientPersonnel>;
+  updateClientPersonnel(id: string, personnel: Partial<InsertClientPersonnel>): Promise<ClientPersonnel>;
+  deleteClientPersonnel(id: string): Promise<void>;
+  
+  // Contractor personnel operations
+  getContractorPersonnel(projectId: string): Promise<ContractorPersonnel[]>;
+  createContractorPersonnel(projectId: string, personnel: InsertContractorPersonnel): Promise<ContractorPersonnel>;
+  updateContractorPersonnel(id: string, personnel: Partial<InsertContractorPersonnel>): Promise<ContractorPersonnel>;
+  deleteContractorPersonnel(id: string): Promise<void>;
+  
+  // Contractor equipment operations
+  getContractorEquipment(projectId: string): Promise<ContractorEquipment[]>;
+  createContractorEquipment(projectId: string, equipment: InsertContractorEquipment): Promise<ContractorEquipment>;
+  updateContractorEquipment(id: string, equipment: Partial<InsertContractorEquipment>): Promise<ContractorEquipment>;
+  deleteContractorEquipment(id: string): Promise<void>;
 }
 
 // In-memory storage implementation
@@ -927,6 +954,87 @@ export class DatabaseStorage implements IStorage {
 
   async deleteInvitation(invitationId: string): Promise<void> {
     await db.delete(projectInvitations).where(eq(projectInvitations.id, invitationId));
+  }
+
+  // Client personnel operations
+  async getClientPersonnel(projectId: string): Promise<ClientPersonnel[]> {
+    return await db.select()
+      .from(clientPersonnel)
+      .where(eq(clientPersonnel.projectId, projectId))
+      .orderBy(desc(clientPersonnel.createdAt));
+  }
+
+  async createClientPersonnel(projectId: string, personnel: InsertClientPersonnel): Promise<ClientPersonnel> {
+    const [result] = await db.insert(clientPersonnel)
+      .values({ ...personnel, projectId })
+      .returning();
+    return result;
+  }
+
+  async updateClientPersonnel(id: string, personnel: Partial<InsertClientPersonnel>): Promise<ClientPersonnel> {
+    const [result] = await db.update(clientPersonnel)
+      .set(personnel)
+      .where(eq(clientPersonnel.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteClientPersonnel(id: string): Promise<void> {
+    await db.delete(clientPersonnel).where(eq(clientPersonnel.id, id));
+  }
+
+  // Contractor personnel operations
+  async getContractorPersonnel(projectId: string): Promise<ContractorPersonnel[]> {
+    return await db.select()
+      .from(contractorPersonnel)
+      .where(eq(contractorPersonnel.projectId, projectId))
+      .orderBy(desc(contractorPersonnel.createdAt));
+  }
+
+  async createContractorPersonnel(projectId: string, personnel: InsertContractorPersonnel): Promise<ContractorPersonnel> {
+    const [result] = await db.insert(contractorPersonnel)
+      .values({ ...personnel, projectId })
+      .returning();
+    return result;
+  }
+
+  async updateContractorPersonnel(id: string, personnel: Partial<InsertContractorPersonnel>): Promise<ContractorPersonnel> {
+    const [result] = await db.update(contractorPersonnel)
+      .set(personnel)
+      .where(eq(contractorPersonnel.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteContractorPersonnel(id: string): Promise<void> {
+    await db.delete(contractorPersonnel).where(eq(contractorPersonnel.id, id));
+  }
+
+  // Contractor equipment operations
+  async getContractorEquipment(projectId: string): Promise<ContractorEquipment[]> {
+    return await db.select()
+      .from(contractorEquipment)
+      .where(eq(contractorEquipment.projectId, projectId))
+      .orderBy(desc(contractorEquipment.createdAt));
+  }
+
+  async createContractorEquipment(projectId: string, equipment: InsertContractorEquipment): Promise<ContractorEquipment> {
+    const [result] = await db.insert(contractorEquipment)
+      .values({ ...equipment, projectId })
+      .returning();
+    return result;
+  }
+
+  async updateContractorEquipment(id: string, equipment: Partial<InsertContractorEquipment>): Promise<ContractorEquipment> {
+    const [result] = await db.update(contractorEquipment)
+      .set(equipment)
+      .where(eq(contractorEquipment.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteContractorEquipment(id: string): Promise<void> {
+    await db.delete(contractorEquipment).where(eq(contractorEquipment.id, id));
   }
 }
 
