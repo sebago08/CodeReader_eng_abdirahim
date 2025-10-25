@@ -13,8 +13,44 @@ import { setupAuth } from "./auth";
 import multer from "multer";
 import { getStorageService, getMockStorage } from "./storage-service";
 
+// Development mode auto-login user
+let devUser: any = null;
+
 // Middleware to check if user is authenticated
-const isAuthenticated: RequestHandler = (req, res, next) => {
+const isAuthenticated: RequestHandler = async (req: any, res, next) => {
+  // In development mode, bypass authentication and auto-login as a default user
+  if (process.env.NODE_ENV === 'development') {
+    // Create or fetch a development user
+    if (!devUser) {
+      try {
+        // Try to get existing dev user
+        devUser = await storage.getUserByUsername('devuser');
+        
+        // If no dev user exists, create one
+        if (!devUser) {
+          devUser = await storage.createUser({
+            username: 'devuser',
+            email: 'dev@example.com',
+            password: 'hashed_password_placeholder', // Won't be used in dev mode
+            firstName: 'Dev',
+            lastName: 'User',
+            isAdmin: true,
+            isApproved: true,
+          });
+        }
+      } catch (error) {
+        console.error("Error setting up dev user:", error);
+      }
+    }
+    
+    // Automatically authenticate as dev user
+    if (devUser) {
+      req.user = devUser;
+      return next();
+    }
+  }
+  
+  // Production mode - require actual authentication
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
   }
