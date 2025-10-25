@@ -9,6 +9,8 @@ import {
   boqs,
   boqItems,
   summaryAdjustments,
+  documents,
+  workAccomplished,
   type User,
   type InsertUser,
   type Project,
@@ -32,6 +34,10 @@ import {
   type InsertBOQItem,
   type SummaryAdjustment,
   type InsertSummaryAdjustment,
+  type Document,
+  type InsertDocument,
+  type WorkAccomplished,
+  type InsertWorkAccomplished,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, inArray, asc } from "drizzle-orm";
@@ -109,6 +115,20 @@ export interface IStorage {
   updateSummaryAdjustment(id: string, adjustment: Partial<InsertSummaryAdjustment>): Promise<SummaryAdjustment>;
   deleteSummaryAdjustment(id: string): Promise<void>;
   bulkUpsertAdjustments(boqId: string, adjustments: SummaryAdjustment[]): Promise<SummaryAdjustment[]>;
+  
+  // Document operations
+  getProjectDocuments(projectId: string): Promise<Document[]>;
+  getDocument(id: string): Promise<Document | undefined>;
+  createDocument(projectId: string, document: InsertDocument): Promise<Document>;
+  updateDocument(id: string, document: Partial<InsertDocument>): Promise<Document | undefined>;
+  deleteDocument(id: string): Promise<void>;
+  
+  // Work Accomplished operations
+  getProjectWorkAccomplished(projectId: string): Promise<WorkAccomplished[]>;
+  createWorkAccomplished(projectId: string, work: InsertWorkAccomplished): Promise<WorkAccomplished>;
+  updateWorkAccomplished(id: string, work: Partial<InsertWorkAccomplished>): Promise<WorkAccomplished | undefined>;
+  deleteWorkAccomplished(id: string): Promise<void>;
+  reorderWorkAccomplished(projectId: string, items: Array<{id: string; order: number}>): Promise<void>;
 }
 
 // In-memory storage implementation
@@ -942,6 +962,104 @@ export class DatabaseStorage implements IStorage {
       .values(adjustments.map(adj => ({ ...adj, boqId })))
       .returning();
     return newAdjustments;
+  }
+
+  // Document operations
+  async getProjectDocuments(projectId: string): Promise<Document[]> {
+    const docs = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.projectId, projectId))
+      .orderBy(desc(documents.createdAt));
+    return docs;
+  }
+
+  async getDocument(id: string): Promise<Document | undefined> {
+    const [document] = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.id, id));
+    return document;
+  }
+
+  async createDocument(projectId: string, document: InsertDocument): Promise<Document> {
+    const [newDocument] = await db
+      .insert(documents)
+      .values({ ...document, projectId })
+      .returning();
+    return newDocument;
+  }
+
+  async updateDocument(id: string, document: Partial<InsertDocument>): Promise<Document | undefined> {
+    const [updatedDocument] = await db
+      .update(documents)
+      .set(document)
+      .where(eq(documents.id, id))
+      .returning();
+    return updatedDocument;
+  }
+
+  async deleteDocument(id: string): Promise<void> {
+    await db.delete(documents).where(eq(documents.id, id));
+  }
+
+  // Work Accomplished operations
+  async getProjectWorkAccomplished(projectId: string): Promise<WorkAccomplished[]> {
+    const work = await db
+      .select()
+      .from(workAccomplished)
+      .where(eq(workAccomplished.projectId, projectId))
+      .orderBy(asc(workAccomplished.order));
+    return work;
+  }
+
+  async createWorkAccomplished(projectId: string, work: InsertWorkAccomplished): Promise<WorkAccomplished> {
+    const [newWork] = await db
+      .insert(workAccomplished)
+      .values({ ...work, projectId })
+      .returning();
+    return newWork;
+  }
+
+  async updateWorkAccomplished(id: string, work: Partial<InsertWorkAccomplished>): Promise<WorkAccomplished | undefined> {
+    const [updatedWork] = await db
+      .update(workAccomplished)
+      .set(work)
+      .where(eq(workAccomplished.id, id))
+      .returning();
+    return updatedWork;
+  }
+
+  async deleteWorkAccomplished(id: string): Promise<void> {
+    await db.delete(workAccomplished).where(eq(workAccomplished.id, id));
+  }
+
+  async reorderWorkAccomplished(projectId: string, items: Array<{id: string; order: number}>): Promise<void> {
+    // Verify all items belong to this project before updating
+    const itemIds = items.map(item => item.id);
+    const existingItems = await db
+      .select()
+      .from(workAccomplished)
+      .where(and(
+        inArray(workAccomplished.id, itemIds),
+        eq(workAccomplished.projectId, projectId)
+      ));
+    
+    // If any items don't belong to this project, throw an error
+    if (existingItems.length !== items.length) {
+      throw new Error("Some work accomplished items do not belong to this project");
+    }
+    
+    // Update each item's order
+    for (const item of items) {
+      await db
+        .update(workAccomplished)
+        .set({ order: item.order })
+        .where(and(
+          eq(workAccomplished.id, item.id),
+          eq(workAccomplished.projectId, projectId)
+        ));
+    }
   }
 }
 

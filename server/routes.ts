@@ -9,10 +9,23 @@ import {
   insertBOQSchema,
   insertBOQItemSchema,
   insertSummaryAdjustmentSchema,
+  insertDocumentSchema,
+  insertWorkAccomplishedSchema,
 } from "@shared/schema";
+import { z } from "zod";
 import { setupAuth } from "./auth";
 import multer from "multer";
 import { getStorageService, getMockStorage } from "./storage-service";
+
+// Validation schema for reorder requests
+const reorderItemSchema = z.object({
+  id: z.string(),
+  order: z.number().int().min(0),
+});
+
+const reorderRequestSchema = z.object({
+  items: z.array(reorderItemSchema).min(1),
+});
 
 // Middleware to check if user is authenticated
 const isAuthenticated: RequestHandler = (req, res, next) => {
@@ -349,6 +362,154 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error deleting BOQ:", error);
       res.status(500).json({ message: "Failed to delete BOQ" });
+    }
+  });
+
+  // Document routes
+  app.get('/api/projects/:projectId/documents', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const docs = await storage.getProjectDocuments(projectId);
+      res.json(docs);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
+  app.get('/api/documents/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const document = await storage.getDocument(id);
+      
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      res.json(document);
+    } catch (error) {
+      console.error("Error fetching document:", error);
+      res.status(500).json({ message: "Failed to fetch document" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/documents', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const validatedData = insertDocumentSchema.parse(req.body);
+      const document = await storage.createDocument(projectId, validatedData);
+      res.status(201).json(document);
+    } catch (error: any) {
+      console.error("Error creating document:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create document" });
+    }
+  });
+
+  app.patch('/api/documents/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertDocumentSchema.partial().parse(req.body);
+      const document = await storage.updateDocument(id, validatedData);
+      
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      res.json(document);
+    } catch (error: any) {
+      console.error("Error updating document:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update document" });
+    }
+  });
+
+  app.delete('/api/documents/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteDocument(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ message: "Failed to delete document" });
+    }
+  });
+
+  // Work Accomplished routes
+  app.get('/api/projects/:projectId/work-accomplished', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const work = await storage.getProjectWorkAccomplished(projectId);
+      res.json(work);
+    } catch (error) {
+      console.error("Error fetching work accomplished:", error);
+      res.status(500).json({ message: "Failed to fetch work accomplished" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/work-accomplished', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const validatedData = insertWorkAccomplishedSchema.parse(req.body);
+      const work = await storage.createWorkAccomplished(projectId, validatedData);
+      res.status(201).json(work);
+    } catch (error: any) {
+      console.error("Error creating work accomplished:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create work accomplished" });
+    }
+  });
+
+  app.patch('/api/work-accomplished/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertWorkAccomplishedSchema.partial().parse(req.body);
+      const work = await storage.updateWorkAccomplished(id, validatedData);
+      
+      if (!work) {
+        return res.status(404).json({ message: "Work accomplished item not found" });
+      }
+      
+      res.json(work);
+    } catch (error: any) {
+      console.error("Error updating work accomplished:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update work accomplished" });
+    }
+  });
+
+  app.delete('/api/work-accomplished/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteWorkAccomplished(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting work accomplished:", error);
+      res.status(500).json({ message: "Failed to delete work accomplished" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/work-accomplished/reorder', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const validatedData = reorderRequestSchema.parse(req.body);
+      
+      await storage.reorderWorkAccomplished(projectId, validatedData.items);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error reordering work accomplished:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to reorder work accomplished" });
     }
   });
 
