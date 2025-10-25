@@ -45,9 +45,13 @@ export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
   name: varchar("name").notNull(),
+  projectType: varchar("project_type").notNull().default("Road"), // "Road", "Building", "Infrastructure", etc.
   client: varchar("client").notNull(),
   location: varchar("location").notNull(),
   description: text("description"),
+  status: varchar("status").notNull().default("Active"), // "Active", "Completed", "On Hold"
+  totalBudget: decimal("total_budget", { precision: 15, scale: 2 }),
+  spentAmount: decimal("spent_amount", { precision: 15, scale: 2 }).default("0"),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -86,6 +90,29 @@ export const layerProgress = pgTable("layer_progress", {
   qualityStatus: varchar("quality_status").notNull(),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Activities table (standard progress tracker for all project types)
+export const activities = pgTable("activities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  name: varchar("name").notNull(),
+  progress: integer("progress").notNull().default(0), // 0-100 percentage
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Safety incidents table (project-level safety tracking)
+export const safetyIncidents = pgTable("safety_incidents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  incidentDate: date("incident_date").notNull(),
+  description: text("description").notNull(),
+  severity: varchar("severity").notNull(), // "Low", "Medium", "High", "Critical"
+  status: varchar("status").notNull().default("Open"), // "Open", "Under Investigation", "Resolved", "Closed"
+  reportedBy: varchar("reported_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Project members table (for team collaboration)
@@ -129,6 +156,8 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     references: [users.id],
   }),
   roads: many(roads),
+  activities: many(activities),
+  safetyIncidents: many(safetyIncidents),
 }));
 
 export const roadsRelations = relations(roads, ({ one, many }) => ({
@@ -151,6 +180,20 @@ export const layerProgressRelations = relations(layerProgress, ({ one }) => ({
   layer: one(constructionLayers, {
     fields: [layerProgress.layerId],
     references: [constructionLayers.id],
+  }),
+}));
+
+export const activitiesRelations = relations(activities, ({ one }) => ({
+  project: one(projects, {
+    fields: [activities.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const safetyIncidentsRelations = relations(safetyIncidents, ({ one }) => ({
+  project: one(projects, {
+    fields: [safetyIncidents.projectId],
+    references: [projects.id],
   }),
 }));
 
@@ -212,6 +255,21 @@ export const insertLayerProgressSchema = createInsertSchema(layerProgress).omit(
   endChainage: z.coerce.number(),
 });
 
+// Activity and safety incident schemas
+export const insertActivitySchema = createInsertSchema(activities).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSafetyIncidentSchema = createInsertSchema(safetyIncidents).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // User schemas and types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -240,6 +298,10 @@ export type ConstructionLayer = typeof constructionLayers.$inferSelect;
 export type InsertLayer = z.infer<typeof insertLayerSchema>;
 export type LayerProgress = typeof layerProgress.$inferSelect;
 export type InsertLayerProgress = z.infer<typeof insertLayerProgressSchema>;
+export type Activity = typeof activities.$inferSelect;
+export type InsertActivity = z.infer<typeof insertActivitySchema>;
+export type SafetyIncident = typeof safetyIncidents.$inferSelect;
+export type InsertSafetyIncident = z.infer<typeof insertSafetyIncidentSchema>;
 export type ProjectMember = typeof projectMembers.$inferSelect;
 export type InsertProjectMember = z.infer<typeof insertProjectMemberSchema>;
 export type ProjectInvitation = typeof projectInvitations.$inferSelect;

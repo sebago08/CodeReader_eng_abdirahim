@@ -4,6 +4,8 @@ import {
   roads,
   constructionLayers,
   layerProgress,
+  activities,
+  safetyIncidents,
   projectMembers,
   projectInvitations,
   type User,
@@ -16,6 +18,10 @@ import {
   type InsertLayer,
   type LayerProgress,
   type InsertLayerProgress,
+  type Activity,
+  type InsertActivity,
+  type SafetyIncident,
+  type InsertSafetyIncident,
   type ProjectWithRoads,
   type ProjectMember,
   type InsertProjectMember,
@@ -66,6 +72,18 @@ export interface IStorage {
   deleteLayerProgress(id: string): Promise<void>;
   resetLayerProgress(layerId: string): Promise<void>;
   
+  // Activity operations
+  getActivities(projectId: string): Promise<Activity[]>;
+  createActivity(projectId: string, activity: InsertActivity): Promise<Activity>;
+  updateActivity(id: string, activity: Partial<InsertActivity>): Promise<Activity>;
+  deleteActivity(id: string): Promise<void>;
+  
+  // Safety incident operations
+  getSafetyIncidents(projectId: string): Promise<SafetyIncident[]>;
+  createSafetyIncident(projectId: string, incident: InsertSafetyIncident): Promise<SafetyIncident>;
+  updateSafetyIncident(id: string, incident: Partial<InsertSafetyIncident>): Promise<SafetyIncident>;
+  deleteSafetyIncident(id: string): Promise<void>;
+  
   // Team collaboration operations
   getUserProjectRole(userId: string, projectId: string): Promise<string | null>;
   getProjectMembers(projectId: string): Promise<ProjectMemberWithUser[]>;
@@ -89,6 +107,8 @@ export class MemStorage implements IStorage {
   private roads = new Map<string, Road>();
   private layers = new Map<string, ConstructionLayer>();
   private progress = new Map<string, LayerProgress>();
+  private activities = new Map<string, Activity>();
+  private safetyIncidents = new Map<string, SafetyIncident>();
 
   constructor() {
     const createMemoryStore = require("memorystore");
@@ -383,6 +403,82 @@ export class MemStorage implements IStorage {
     }
   }
 
+  // Activity operations
+  async getActivities(projectId: string): Promise<Activity[]> {
+    return Array.from(this.activities.values()).filter(a => a.projectId === projectId);
+  }
+
+  async createActivity(projectId: string, activity: InsertActivity): Promise<Activity> {
+    const id = Math.random().toString(36).substr(2, 9);
+    const now = new Date();
+    const newActivity: Activity = {
+      ...activity,
+      id,
+      projectId,
+      progress: activity.progress || 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.activities.set(id, newActivity);
+    return newActivity;
+  }
+
+  async updateActivity(id: string, activity: Partial<InsertActivity>): Promise<Activity> {
+    const existingActivity = this.activities.get(id);
+    if (!existingActivity) throw new Error('Activity not found');
+    
+    const updatedActivity: Activity = {
+      ...existingActivity,
+      ...activity,
+      updatedAt: new Date(),
+    };
+    this.activities.set(id, updatedActivity);
+    return updatedActivity;
+  }
+
+  async deleteActivity(id: string): Promise<void> {
+    this.activities.delete(id);
+  }
+
+  // Safety incident operations
+  async getSafetyIncidents(projectId: string): Promise<SafetyIncident[]> {
+    return Array.from(this.safetyIncidents.values()).filter(s => s.projectId === projectId);
+  }
+
+  async createSafetyIncident(projectId: string, incident: InsertSafetyIncident): Promise<SafetyIncident> {
+    const id = Math.random().toString(36).substr(2, 9);
+    const now = new Date();
+    const newIncident: SafetyIncident = {
+      ...incident,
+      id,
+      projectId,
+      status: incident.status || "Open",
+      reportedBy: incident.reportedBy || null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.safetyIncidents.set(id, newIncident);
+    return newIncident;
+  }
+
+  async updateSafetyIncident(id: string, incident: Partial<InsertSafetyIncident>): Promise<SafetyIncident> {
+    const existingIncident = this.safetyIncidents.get(id);
+    if (!existingIncident) throw new Error('Safety incident not found');
+    
+    const updatedIncident: SafetyIncident = {
+      ...existingIncident,
+      ...incident,
+      reportedBy: incident.reportedBy !== undefined ? incident.reportedBy || null : existingIncident.reportedBy,
+      updatedAt: new Date(),
+    };
+    this.safetyIncidents.set(id, updatedIncident);
+    return updatedIncident;
+  }
+
+  async deleteSafetyIncident(id: string): Promise<void> {
+    this.safetyIncidents.delete(id);
+  }
+
   // Team collaboration stubs (MemStorage doesn't support collaboration)
   async getUserProjectRole(): Promise<string | null> { return null; }
   async getProjectMembers(): Promise<ProjectMemberWithUser[]> { return []; }
@@ -620,6 +716,68 @@ export class DatabaseStorage implements IStorage {
 
   async resetLayerProgress(layerId: string): Promise<void> {
     await db.delete(layerProgress).where(eq(layerProgress.layerId, layerId));
+  }
+
+  // Activity operations
+  async getActivities(projectId: string): Promise<Activity[]> {
+    const projectActivities = await db
+      .select()
+      .from(activities)
+      .where(eq(activities.projectId, projectId))
+      .orderBy(desc(activities.createdAt));
+    return projectActivities;
+  }
+
+  async createActivity(projectId: string, activity: InsertActivity): Promise<Activity> {
+    const [newActivity] = await db
+      .insert(activities)
+      .values({ ...activity, projectId })
+      .returning();
+    return newActivity;
+  }
+
+  async updateActivity(id: string, activity: Partial<InsertActivity>): Promise<Activity> {
+    const [updatedActivity] = await db
+      .update(activities)
+      .set({ ...activity, updatedAt: new Date() })
+      .where(eq(activities.id, id))
+      .returning();
+    return updatedActivity;
+  }
+
+  async deleteActivity(id: string): Promise<void> {
+    await db.delete(activities).where(eq(activities.id, id));
+  }
+
+  // Safety incident operations
+  async getSafetyIncidents(projectId: string): Promise<SafetyIncident[]> {
+    const incidents = await db
+      .select()
+      .from(safetyIncidents)
+      .where(eq(safetyIncidents.projectId, projectId))
+      .orderBy(desc(safetyIncidents.incidentDate));
+    return incidents;
+  }
+
+  async createSafetyIncident(projectId: string, incident: InsertSafetyIncident): Promise<SafetyIncident> {
+    const [newIncident] = await db
+      .insert(safetyIncidents)
+      .values({ ...incident, projectId })
+      .returning();
+    return newIncident;
+  }
+
+  async updateSafetyIncident(id: string, incident: Partial<InsertSafetyIncident>): Promise<SafetyIncident> {
+    const [updatedIncident] = await db
+      .update(safetyIncidents)
+      .set({ ...incident, updatedAt: new Date() })
+      .where(eq(safetyIncidents.id, id))
+      .returning();
+    return updatedIncident;
+  }
+
+  async deleteSafetyIncident(id: string): Promise<void> {
+    await db.delete(safetyIncidents).where(eq(safetyIncidents.id, id));
   }
 
   // Team collaboration operations (simplified - just "collaborator" role)
