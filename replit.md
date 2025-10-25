@@ -47,6 +47,9 @@ PostgreSQL database with normalized schema design:
 
 - **Users**: Authentication and profile information
 - **Projects**: Core project metadata with date ranges and client information
+- **Client Personnel**: Personnel associated with each project's client organization (name, qualification, designation)
+- **Contractor Personnel**: Personnel associated with each project's contractor organization (name, qualification, designation)
+- **Contractor Equipment**: Equipment inventory for each project's contractor (equipment name, type, quantity, condition)
 - **Roads**: Individual road segments within projects with length and type classification
 - **Construction Layers**: Different construction phases with weight-based progress calculation. Available layers: Excavation & Earthwork, Bottom Sub Grade, Top Sub Grade, Bottom Sub Base, Top Sub Base, Base, and Asphalt Concrete
 - **Layer Progress**: Granular progress tracking with chainage ranges, completion dates, and quality status
@@ -142,6 +145,23 @@ This allows developers to work locally without Supabase while maintaining produc
 See `DEPLOYMENT.md` for detailed step-by-step instructions.
 
 ## Recent Changes (October 2024-2025)
+
+### Phase 2: Enhanced Project Information & Nested Tabs (Completed - October 25, 2025)
+- **Database schema expansion**: Added three new tables:
+  - `client_personnel`: Track client organization personnel with qualification and designation
+  - `contractor_personnel`: Track contractor organization personnel with qualification and designation
+  - `contractor_equipment`: Track contractor equipment inventory with type, quantity, and condition
+- **Nested tab navigation in project modal**:
+  - **Client tab** with sub-tabs:
+    - Client Details: Organization name, contact person, email, phone, address
+    - Personnel: Table view with add/delete functionality for client personnel
+  - **Contractor tab** with sub-tabs:
+    - Contractor Details: Company name, contact person, email, phone, registration number
+    - Personnel: Table view with add/delete functionality for contractor personnel  
+    - Equipment: Table view with add/delete functionality for contractor equipment
+- **Comprehensive API routes**: Full CRUD operations for client personnel, contractor personnel, and contractor equipment
+- **Conditional UI logic**: Personnel and equipment tabs are disabled during new project creation to prevent invalid API calls
+- **User experience improvements**: Clear messaging when users attempt to add personnel/equipment before saving the project
 
 ### Phase 1: Multi-Project Type Platform (Completed)
 - **Expanded project types**: Added support for Road, Building, Infrastructure, Bridge, and Other project types
