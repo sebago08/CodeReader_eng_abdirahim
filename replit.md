@@ -136,8 +136,21 @@ This allows developers to work locally without Supabase while maintaining produc
 
 See `DEPLOYMENT.md` for detailed step-by-step instructions.
 
-## Recent Changes (October 2024)
+## Recent Changes (October 2024-2025)
 
+### Phase 1: Multi-Project Type Platform (Completed)
+- **Expanded project types**: Added support for Road, Building, Infrastructure, Bridge, and Other project types
+- **Dashboard page**: Created comprehensive dashboard with 4 key metrics (Active Projects, Completed Tasks %, Budget Utilization, Safety Record)
+- **Activity tracking**: Implemented project-wide activity management with progress tracking for all project types
+- **Budget management**: Added project-level budget tracking with totalBudget and spentAmount fields
+- **Safety incidents**: Created safety incident logging system with severity levels and status tracking
+- **Tabbed interface**: Reorganized project detail page into 5 tabs (Overview, Progress, Budget, Safety, Team)
+- **Conditional features**: Road tracker now appears only for Road-type projects; all other types use standard activity tracking
+- **Sidebar navigation**: Added navigation component with Dashboard, Projects, Reports, Settings links
+- **Updated branding**: Changed from "Road Construction Tracker" to "ConstructTrack" to reflect expanded scope
+- **Default landing page**: Changed authenticated users' default page from /projects to /dashboard
+
+### Phase 0: Initial Features
 - Added Supabase SDK integration for production deployment
 - Created storage abstraction layer for file uploads
 - Added API routes for file upload/download/delete operations
