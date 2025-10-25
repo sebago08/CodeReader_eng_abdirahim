@@ -11,6 +11,8 @@ import {
   summaryAdjustments,
   documents,
   workAccomplished,
+  workPlans,
+  plannedActivities,
   type User,
   type InsertUser,
   type Project,
@@ -38,9 +40,13 @@ import {
   type InsertDocument,
   type WorkAccomplished,
   type InsertWorkAccomplished,
+  type WorkPlan,
+  type InsertWorkPlan,
+  type PlannedActivity,
+  type InsertPlannedActivity,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, or, inArray, asc } from "drizzle-orm";
+import { eq, and, desc, or, inArray, asc, isNull } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -129,6 +135,20 @@ export interface IStorage {
   updateWorkAccomplished(id: string, work: Partial<InsertWorkAccomplished>): Promise<WorkAccomplished | undefined>;
   deleteWorkAccomplished(id: string): Promise<void>;
   reorderWorkAccomplished(projectId: string, items: Array<{id: string; order: number}>): Promise<void>;
+  
+  // Work Plan operations
+  getProjectWorkPlans(projectId: string): Promise<WorkPlan[]>;
+  getWorkPlan(id: string): Promise<WorkPlan | undefined>;
+  createWorkPlan(projectId: string, workPlan: InsertWorkPlan): Promise<WorkPlan>;
+  updateWorkPlan(id: string, workPlan: Partial<InsertWorkPlan>): Promise<WorkPlan | undefined>;
+  deleteWorkPlan(id: string): Promise<void>;
+  
+  // Planned Activity operations
+  getWorkPlanActivities(workPlanId: string): Promise<PlannedActivity[]>;
+  getProjectActivities(projectId: string): Promise<PlannedActivity[]>;
+  createPlannedActivity(activity: InsertPlannedActivity): Promise<PlannedActivity>;
+  updatePlannedActivity(id: string, activity: Partial<InsertPlannedActivity>): Promise<PlannedActivity | undefined>;
+  deletePlannedActivity(id: string): Promise<void>;
 }
 
 // In-memory storage implementation
@@ -1060,6 +1080,92 @@ export class DatabaseStorage implements IStorage {
           eq(workAccomplished.projectId, projectId)
         ));
     }
+  }
+
+  // Work Plan operations
+  async getProjectWorkPlans(projectId: string): Promise<WorkPlan[]> {
+    const plans = await db
+      .select()
+      .from(workPlans)
+      .where(eq(workPlans.projectId, projectId))
+      .orderBy(desc(workPlans.createdAt));
+    return plans;
+  }
+
+  async getWorkPlan(id: string): Promise<WorkPlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(workPlans)
+      .where(eq(workPlans.id, id));
+    return plan;
+  }
+
+  async createWorkPlan(projectId: string, workPlan: InsertWorkPlan): Promise<WorkPlan> {
+    const [newPlan] = await db
+      .insert(workPlans)
+      .values({ ...workPlan, projectId })
+      .returning();
+    return newPlan;
+  }
+
+  async updateWorkPlan(id: string, workPlan: Partial<InsertWorkPlan>): Promise<WorkPlan | undefined> {
+    const [updatedPlan] = await db
+      .update(workPlans)
+      .set({ ...workPlan, updatedAt: new Date() })
+      .where(eq(workPlans.id, id))
+      .returning();
+    return updatedPlan;
+  }
+
+  async deleteWorkPlan(id: string): Promise<void> {
+    // Delete associated activities first
+    await db.delete(plannedActivities).where(eq(plannedActivities.workPlanId, id));
+    // Delete the work plan
+    await db.delete(workPlans).where(eq(workPlans.id, id));
+  }
+
+  // Planned Activity operations
+  async getWorkPlanActivities(workPlanId: string): Promise<PlannedActivity[]> {
+    const activities = await db
+      .select()
+      .from(plannedActivities)
+      .where(eq(plannedActivities.workPlanId, workPlanId))
+      .orderBy(asc(plannedActivities.order), asc(plannedActivities.startDate));
+    return activities;
+  }
+
+  async getProjectActivities(projectId: string): Promise<PlannedActivity[]> {
+    // Only return standalone activities (not attached to work plans)
+    const activities = await db
+      .select()
+      .from(plannedActivities)
+      .where(and(
+        eq(plannedActivities.projectId, projectId),
+        isNull(plannedActivities.workPlanId)
+      ))
+      .orderBy(asc(plannedActivities.startDate));
+    return activities;
+  }
+
+  async createPlannedActivity(activity: InsertPlannedActivity): Promise<PlannedActivity> {
+    const [newActivity] = await db
+      .insert(plannedActivities)
+      .values(activity)
+      .returning();
+    return newActivity;
+  }
+
+  async updatePlannedActivity(id: string, activity: Partial<InsertPlannedActivity>): Promise<PlannedActivity | undefined> {
+    const [updatedActivity] = await db
+      .update(plannedActivities)
+      .set(activity)
+      .where(eq(plannedActivities.id, id))
+      .returning();
+    return updatedActivity;
+  }
+
+  async deletePlannedActivity(id: string): Promise<void> {
+    await db.delete(plannedActivities).where(eq(plannedActivities.id, id));
   }
 }
 
