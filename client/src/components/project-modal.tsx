@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,9 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { X } from "lucide-react";
-import type { ProjectWithRoads, InsertProject } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { X, Trash2, Plus } from "lucide-react";
+import type { ProjectWithRoads, InsertProject, ClientPersonnel, ContractorPersonnel, ContractorEquipment } from "@shared/schema";
 
 interface ProjectModalProps {
   project?: ProjectWithRoads | null;
@@ -43,6 +43,35 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
     contractorEmail: "",
     contractorPhone: "",
     scopeOfWork: "",
+  });
+
+  // Sub-tab states for Client and Contractor
+  const [clientSubTab, setClientSubTab] = useState("details");
+  const [contractorSubTab, setContractorSubTab] = useState("details");
+
+  // Client personnel state
+  const [newClientPersonnel, setNewClientPersonnel] = useState({ name: "", qualification: "", designation: "" });
+  
+  // Contractor personnel state
+  const [newContractorPersonnel, setNewContractorPersonnel] = useState({ name: "", qualification: "", designation: "" });
+  
+  // Contractor equipment state
+  const [newContractorEquipment, setNewContractorEquipment] = useState({ equipmentName: "", type: "", quantity: "1", condition: "" });
+
+  // Fetch personnel and equipment if editing
+  const { data: clientPersonnel = [] } = useQuery<ClientPersonnel[]>({
+    queryKey: ['/api/projects', project?.id, 'client-personnel'],
+    enabled: !!project?.id,
+  });
+
+  const { data: contractorPersonnel = [] } = useQuery<ContractorPersonnel[]>({
+    queryKey: ['/api/projects', project?.id, 'contractor-personnel'],
+    enabled: !!project?.id,
+  });
+
+  const { data: contractorEquipment = [] } = useQuery<ContractorEquipment[]>({
+    queryKey: ['/api/projects', project?.id, 'contractor-equipment'],
+    enabled: !!project?.id,
   });
 
   useEffect(() => {
@@ -99,10 +128,75 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
     },
   });
 
+  // Client personnel mutations
+  const addClientPersonnelMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", `/api/projects/${project?.id}/client-personnel`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', project?.id, 'client-personnel'] });
+      setNewClientPersonnel({ name: "", qualification: "", designation: "" });
+      toast({ title: "Success", description: "Client personnel added successfully" });
+    },
+  });
+
+  const deleteClientPersonnelMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/client-personnel/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', project?.id, 'client-personnel'] });
+      toast({ title: "Success", description: "Client personnel deleted successfully" });
+    },
+  });
+
+  // Contractor personnel mutations
+  const addContractorPersonnelMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", `/api/projects/${project?.id}/contractor-personnel`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', project?.id, 'contractor-personnel'] });
+      setNewContractorPersonnel({ name: "", qualification: "", designation: "" });
+      toast({ title: "Success", description: "Contractor personnel added successfully" });
+    },
+  });
+
+  const deleteContractorPersonnelMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/contractor-personnel/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', project?.id, 'contractor-personnel'] });
+      toast({ title: "Success", description: "Contractor personnel deleted successfully" });
+    },
+  });
+
+  // Contractor equipment mutations
+  const addContractorEquipmentMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", `/api/projects/${project?.id}/contractor-equipment`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', project?.id, 'contractor-equipment'] });
+      setNewContractorEquipment({ equipmentName: "", type: "", quantity: "1", condition: "" });
+      toast({ title: "Success", description: "Contractor equipment added successfully" });
+    },
+  });
+
+  const deleteContractorEquipmentMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/contractor-equipment/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', project?.id, 'contractor-equipment'] });
+      toast({ title: "Success", description: "Contractor equipment deleted successfully" });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Clean up form data - convert empty strings to undefined for numeric fields
     const cleanedData = {
       ...formData,
       totalBudget: formData.totalBudget === "" ? undefined : formData.totalBudget,
@@ -124,8 +218,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h3 className="text-xl font-semibold text-gray-900">
             {project ? "Edit Project" : "Add New Project"}
@@ -325,136 +418,447 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
               </div>
             </TabsContent>
 
-            {/* Client Tab */}
-            <TabsContent value="client" className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Client Name *</Label>
-                  <Input
-                    type="text"
-                    name="client"
-                    value={formData.client}
-                    onChange={handleChange}
-                    className="w-full"
-                    placeholder="Enter client name"
-                    required
-                    data-testid="input-project-client"
-                  />
-                </div>
-                
-                <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Contact Person</Label>
-                  <Input
-                    type="text"
-                    name="clientContactPerson"
-                    value={formData.clientContactPerson}
-                    onChange={handleChange}
-                    className="w-full"
-                    placeholder="Enter contact person"
-                    data-testid="input-client-contact"
-                  />
-                </div>
+            {/* Client Tab with nested tabs */}
+            <TabsContent value="client" className="p-0">
+              <div className="flex items-center gap-1 px-6 pt-4 border-b border-gray-200 bg-gray-50">
+                <button
+                  type="button"
+                  onClick={() => setClientSubTab("details")}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    clientSubTab === "details"
+                      ? "text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                  data-testid="button-client-details-tab"
+                >
+                  Client Details
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClientSubTab("personnel")}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    clientSubTab === "personnel"
+                      ? "text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                  data-testid="button-client-personnel-tab"
+                >
+                  Personnel
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Email</Label>
-                  <Input
-                    type="email"
-                    name="clientEmail"
-                    value={formData.clientEmail}
-                    onChange={handleChange}
-                    className="w-full"
-                    placeholder="client@example.com"
-                    data-testid="input-client-email"
-                  />
-                </div>
-                
-                <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Phone</Label>
-                  <Input
-                    type="tel"
-                    name="clientPhone"
-                    value={formData.clientPhone}
-                    onChange={handleChange}
-                    className="w-full"
-                    placeholder="+1 (555) 123-4567"
-                    data-testid="input-client-phone"
-                  />
-                </div>
-              </div>
+              {clientSubTab === "details" && (
+                <div className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label className="block text-sm font-medium text-gray-700 mb-2">Client Name *</Label>
+                      <Input
+                        type="text"
+                        name="client"
+                        value={formData.client}
+                        onChange={handleChange}
+                        className="w-full"
+                        placeholder="Enter client name"
+                        required
+                        data-testid="input-project-client"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label className="block text-sm font-medium text-gray-700 mb-2">Contact Person</Label>
+                      <Input
+                        type="text"
+                        name="clientContactPerson"
+                        value={formData.clientContactPerson}
+                        onChange={handleChange}
+                        className="w-full"
+                        placeholder="Enter contact person"
+                        data-testid="input-client-contact"
+                      />
+                    </div>
+                  </div>
 
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">Address</Label>
-                <Textarea
-                  name="clientAddress"
-                  value={formData.clientAddress}
-                  onChange={handleChange}
-                  rows={3}
-                  className="w-full"
-                  placeholder="Enter client address"
-                  data-testid="textarea-client-address"
-                />
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label className="block text-sm font-medium text-gray-700 mb-2">Email</Label>
+                      <Input
+                        type="email"
+                        name="clientEmail"
+                        value={formData.clientEmail}
+                        onChange={handleChange}
+                        className="w-full"
+                        placeholder="client@example.com"
+                        data-testid="input-client-email"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label className="block text-sm font-medium text-gray-700 mb-2">Phone</Label>
+                      <Input
+                        type="tel"
+                        name="clientPhone"
+                        value={formData.clientPhone}
+                        onChange={handleChange}
+                        className="w-full"
+                        placeholder="+1 (555) 123-4567"
+                        data-testid="input-client-phone"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="block text-sm font-medium text-gray-700 mb-2">Address</Label>
+                    <Textarea
+                      name="clientAddress"
+                      value={formData.clientAddress}
+                      onChange={handleChange}
+                      rows={3}
+                      className="w-full"
+                      placeholder="Enter client address"
+                      data-testid="textarea-client-address"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {clientSubTab === "personnel" && project && (
+                <div className="p-6 space-y-6">
+                  <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+                    <table className="w-full">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Qualification</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Designation</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {clientPersonnel.map((person) => (
+                          <tr key={person.id}>
+                            <td className="px-4 py-3 text-sm text-gray-900">{person.name}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700">{person.qualification}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700">{person.designation}</td>
+                            <td className="px-4 py-3">
+                              <button
+                                type="button"
+                                onClick={() => deleteClientPersonnelMutation.mutate(person.id)}
+                                className="text-red-600 hover:text-red-800"
+                                data-testid={`button-delete-client-personnel-${person.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <Input
+                        type="text"
+                        placeholder="Full name"
+                        value={newClientPersonnel.name}
+                        onChange={(e) => setNewClientPersonnel(prev => ({ ...prev, name: e.target.value }))}
+                        data-testid="input-new-client-personnel-name"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="e.g., MBA, PMP"
+                        value={newClientPersonnel.qualification}
+                        onChange={(e) => setNewClientPersonnel(prev => ({ ...prev, qualification: e.target.value }))}
+                        data-testid="input-new-client-personnel-qualification"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="e.g., Project Director"
+                        value={newClientPersonnel.designation}
+                        onChange={(e) => setNewClientPersonnel(prev => ({ ...prev, designation: e.target.value }))}
+                        data-testid="input-new-client-personnel-designation"
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => addClientPersonnelMutation.mutate(newClientPersonnel)}
+                        disabled={!newClientPersonnel.name}
+                        className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white"
+                        data-testid="button-add-client-personnel"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Personnel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
-            {/* Contractor Tab */}
-            <TabsContent value="contractor" className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Contractor Name</Label>
-                  <Input
-                    type="text"
-                    name="contractorName"
-                    value={formData.contractorName}
-                    onChange={handleChange}
-                    className="w-full"
-                    placeholder="Enter contractor name"
-                    data-testid="input-contractor-name"
-                  />
-                </div>
-                
-                <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Contact Person</Label>
-                  <Input
-                    type="text"
-                    name="contractorContactPerson"
-                    value={formData.contractorContactPerson}
-                    onChange={handleChange}
-                    className="w-full"
-                    placeholder="Enter contact person"
-                    data-testid="input-contractor-contact"
-                  />
-                </div>
+            {/* Contractor Tab with nested tabs */}
+            <TabsContent value="contractor" className="p-0">
+              <div className="flex items-center gap-1 px-6 pt-4 border-b border-gray-200 bg-gray-50">
+                <button
+                  type="button"
+                  onClick={() => setContractorSubTab("details")}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    contractorSubTab === "details"
+                      ? "text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                  data-testid="button-contractor-details-tab"
+                >
+                  Contractor Details
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContractorSubTab("personnel")}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    contractorSubTab === "personnel"
+                      ? "text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                  data-testid="button-contractor-personnel-tab"
+                >
+                  Personnel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContractorSubTab("equipment")}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    contractorSubTab === "equipment"
+                      ? "text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                  data-testid="button-contractor-equipment-tab"
+                >
+                  Equipment
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Email</Label>
-                  <Input
-                    type="email"
-                    name="contractorEmail"
-                    value={formData.contractorEmail}
-                    onChange={handleChange}
-                    className="w-full"
-                    placeholder="contractor@example.com"
-                    data-testid="input-contractor-email"
-                  />
+              {contractorSubTab === "details" && (
+                <div className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label className="block text-sm font-medium text-gray-700 mb-2">Contractor Name</Label>
+                      <Input
+                        type="text"
+                        name="contractorName"
+                        value={formData.contractorName}
+                        onChange={handleChange}
+                        className="w-full"
+                        placeholder="Enter contractor name"
+                        data-testid="input-contractor-name"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label className="block text-sm font-medium text-gray-700 mb-2">Contact Person</Label>
+                      <Input
+                        type="text"
+                        name="contractorContactPerson"
+                        value={formData.contractorContactPerson}
+                        onChange={handleChange}
+                        className="w-full"
+                        placeholder="Enter contact person"
+                        data-testid="input-contractor-contact"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label className="block text-sm font-medium text-gray-700 mb-2">Email</Label>
+                      <Input
+                        type="email"
+                        name="contractorEmail"
+                        value={formData.contractorEmail}
+                        onChange={handleChange}
+                        className="w-full"
+                        placeholder="contractor@example.com"
+                        data-testid="input-contractor-email"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label className="block text-sm font-medium text-gray-700 mb-2">Phone</Label>
+                      <Input
+                        type="tel"
+                        name="contractorPhone"
+                        value={formData.contractorPhone}
+                        onChange={handleChange}
+                        className="w-full"
+                        placeholder="+1 (555) 123-4567"
+                        data-testid="input-contractor-phone"
+                      />
+                    </div>
+                  </div>
                 </div>
-                
-                <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Phone</Label>
-                  <Input
-                    type="tel"
-                    name="contractorPhone"
-                    value={formData.contractorPhone}
-                    onChange={handleChange}
-                    className="w-full"
-                    placeholder="+1 (555) 123-4567"
-                    data-testid="input-contractor-phone"
-                  />
+              )}
+
+              {contractorSubTab === "personnel" && project && (
+                <div className="p-6 space-y-6">
+                  <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+                    <table className="w-full">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Qualification</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Designation</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {contractorPersonnel.map((person) => (
+                          <tr key={person.id}>
+                            <td className="px-4 py-3 text-sm text-gray-900">{person.name}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700">{person.qualification}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700">{person.designation}</td>
+                            <td className="px-4 py-3">
+                              <button
+                                type="button"
+                                onClick={() => deleteContractorPersonnelMutation.mutate(person.id)}
+                                className="text-red-600 hover:text-red-800"
+                                data-testid={`button-delete-contractor-personnel-${person.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <Input
+                        type="text"
+                        placeholder="Full name"
+                        value={newContractorPersonnel.name}
+                        onChange={(e) => setNewContractorPersonnel(prev => ({ ...prev, name: e.target.value }))}
+                        data-testid="input-new-contractor-personnel-name"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="e.g., B.Eng Civil"
+                        value={newContractorPersonnel.qualification}
+                        onChange={(e) => setNewContractorPersonnel(prev => ({ ...prev, qualification: e.target.value }))}
+                        data-testid="input-new-contractor-personnel-qualification"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="e.g., Site Engineer"
+                        value={newContractorPersonnel.designation}
+                        onChange={(e) => setNewContractorPersonnel(prev => ({ ...prev, designation: e.target.value }))}
+                        data-testid="input-new-contractor-personnel-designation"
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => addContractorPersonnelMutation.mutate(newContractorPersonnel)}
+                        disabled={!newContractorPersonnel.name}
+                        className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white"
+                        data-testid="button-add-contractor-personnel"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Personnel
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {contractorSubTab === "equipment" && project && (
+                <div className="p-6 space-y-6">
+                  <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+                    <table className="w-full">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Equipment Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Quantity</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Condition</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {contractorEquipment.map((equipment) => (
+                          <tr key={equipment.id}>
+                            <td className="px-4 py-3 text-sm text-gray-900">{equipment.equipmentName}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700">{equipment.type}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700">{equipment.quantity}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700">{equipment.condition}</td>
+                            <td className="px-4 py-3">
+                              <button
+                                type="button"
+                                onClick={() => deleteContractorEquipmentMutation.mutate(equipment.id)}
+                                className="text-red-600 hover:text-red-800"
+                                data-testid={`button-delete-contractor-equipment-${equipment.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <Input
+                        type="text"
+                        placeholder="e.g., Excavator"
+                        value={newContractorEquipment.equipmentName}
+                        onChange={(e) => setNewContractorEquipment(prev => ({ ...prev, equipmentName: e.target.value }))}
+                        data-testid="input-new-contractor-equipment-name"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="e.g., Heavy machinery"
+                        value={newContractorEquipment.type}
+                        onChange={(e) => setNewContractorEquipment(prev => ({ ...prev, type: e.target.value }))}
+                        data-testid="input-new-contractor-equipment-type"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="1"
+                        value={newContractorEquipment.quantity}
+                        onChange={(e) => setNewContractorEquipment(prev => ({ ...prev, quantity: e.target.value }))}
+                        data-testid="input-new-contractor-equipment-quantity"
+                      />
+                      <Select
+                        value={newContractorEquipment.condition}
+                        onValueChange={(value) => setNewContractorEquipment(prev => ({ ...prev, condition: value }))}
+                      >
+                        <SelectTrigger data-testid="select-new-contractor-equipment-condition">
+                          <SelectValue placeholder="e.g., Good" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Excellent">Excellent</SelectItem>
+                          <SelectItem value="Good">Good</SelectItem>
+                          <SelectItem value="Fair">Fair</SelectItem>
+                          <SelectItem value="Poor">Poor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        onClick={() => addContractorEquipmentMutation.mutate({
+                          equipmentName: newContractorEquipment.equipmentName,
+                          type: newContractorEquipment.type,
+                          quantity: parseInt(newContractorEquipment.quantity),
+                          condition: newContractorEquipment.condition,
+                        })}
+                        disabled={!newContractorEquipment.equipmentName}
+                        className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white"
+                        data-testid="button-add-contractor-equipment"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Equipment
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
             {/* Project Scope Tab */}
@@ -474,7 +878,6 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
             </TabsContent>
           </Tabs>
 
-          {/* Footer */}
           <div className="flex justify-end space-x-4 px-6 py-4 border-t border-gray-200 bg-gray-50">
             <Button
               type="button"
