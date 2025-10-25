@@ -6,6 +6,9 @@ import {
   layerProgress,
   projectMembers,
   projectInvitations,
+  boqs,
+  boqItems,
+  summaryAdjustments,
   type User,
   type InsertUser,
   type Project,
@@ -23,9 +26,15 @@ import {
   type InsertProjectInvitation,
   type ProjectMemberWithUser,
   type ProjectInvitationWithDetails,
+  type BOQ,
+  type InsertBOQ,
+  type BOQItem,
+  type InsertBOQItem,
+  type SummaryAdjustment,
+  type InsertSummaryAdjustment,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, or, inArray } from "drizzle-orm";
+import { eq, and, desc, or, inArray, asc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -79,6 +88,27 @@ export interface IStorage {
   acceptInvitation(token: string, userId: string): Promise<ProjectMember>;
   declineInvitation(token: string): Promise<void>;
   deleteInvitation(invitationId: string): Promise<void>;
+  
+  // BOQ operations
+  getProjectBOQs(projectId: string): Promise<BOQ[]>;
+  getBOQ(id: string): Promise<BOQ | undefined>;
+  createBOQ(projectId: string, boq: InsertBOQ): Promise<BOQ>;
+  updateBOQ(id: string, boq: Partial<InsertBOQ>): Promise<BOQ>;
+  deleteBOQ(id: string): Promise<void>;
+  
+  // BOQ Item operations
+  getBOQItems(boqId: string): Promise<BOQItem[]>;
+  createBOQItem(boqId: string, item: InsertBOQItem): Promise<BOQItem>;
+  updateBOQItem(id: string, item: Partial<InsertBOQItem>): Promise<BOQItem>;
+  deleteBOQItem(id: string): Promise<void>;
+  bulkUpsertBOQItems(boqId: string, items: BOQItem[]): Promise<BOQItem[]>;
+  
+  // Summary Adjustment operations
+  getBOQAdjustments(boqId: string): Promise<SummaryAdjustment[]>;
+  createSummaryAdjustment(adjustment: InsertSummaryAdjustment): Promise<SummaryAdjustment>;
+  updateSummaryAdjustment(id: string, adjustment: Partial<InsertSummaryAdjustment>): Promise<SummaryAdjustment>;
+  deleteSummaryAdjustment(id: string): Promise<void>;
+  bulkUpsertAdjustments(boqId: string, adjustments: SummaryAdjustment[]): Promise<SummaryAdjustment[]>;
 }
 
 // In-memory storage implementation
@@ -396,6 +426,23 @@ export class MemStorage implements IStorage {
   async acceptInvitation(): Promise<ProjectMember> { throw new Error('Not supported in MemStorage'); }
   async declineInvitation(): Promise<void> { throw new Error('Not supported in MemStorage'); }
   async deleteInvitation(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+
+  // BOQ stubs (MemStorage doesn't support BOQ)
+  async getProjectBOQs(): Promise<BOQ[]> { return []; }
+  async getBOQ(): Promise<BOQ | undefined> { return undefined; }
+  async createBOQ(): Promise<BOQ> { throw new Error('Not supported in MemStorage'); }
+  async updateBOQ(): Promise<BOQ> { throw new Error('Not supported in MemStorage'); }
+  async deleteBOQ(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+  async getBOQItems(): Promise<BOQItem[]> { return []; }
+  async createBOQItem(): Promise<BOQItem> { throw new Error('Not supported in MemStorage'); }
+  async updateBOQItem(): Promise<BOQItem> { throw new Error('Not supported in MemStorage'); }
+  async deleteBOQItem(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+  async bulkUpsertBOQItems(): Promise<BOQItem[]> { throw new Error('Not supported in MemStorage'); }
+  async getBOQAdjustments(): Promise<SummaryAdjustment[]> { return []; }
+  async createSummaryAdjustment(): Promise<SummaryAdjustment> { throw new Error('Not supported in MemStorage'); }
+  async updateSummaryAdjustment(): Promise<SummaryAdjustment> { throw new Error('Not supported in MemStorage'); }
+  async deleteSummaryAdjustment(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+  async bulkUpsertAdjustments(): Promise<SummaryAdjustment[]> { throw new Error('Not supported in MemStorage'); }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -769,6 +816,132 @@ export class DatabaseStorage implements IStorage {
 
   async deleteInvitation(invitationId: string): Promise<void> {
     await db.delete(projectInvitations).where(eq(projectInvitations.id, invitationId));
+  }
+
+  // BOQ operations
+  async getProjectBOQs(projectId: string): Promise<BOQ[]> {
+    const boqList = await db
+      .select()
+      .from(boqs)
+      .where(eq(boqs.projectId, projectId))
+      .orderBy(desc(boqs.createdDate));
+    return boqList;
+  }
+
+  async getBOQ(id: string): Promise<BOQ | undefined> {
+    const [boq] = await db.select().from(boqs).where(eq(boqs.id, id));
+    return boq;
+  }
+
+  async createBOQ(projectId: string, boq: InsertBOQ): Promise<BOQ> {
+    const [newBOQ] = await db
+      .insert(boqs)
+      .values({ ...boq, projectId })
+      .returning();
+    return newBOQ;
+  }
+
+  async updateBOQ(id: string, boq: Partial<InsertBOQ>): Promise<BOQ> {
+    const [updatedBOQ] = await db
+      .update(boqs)
+      .set({ ...boq, lastModified: new Date() })
+      .where(eq(boqs.id, id))
+      .returning();
+    return updatedBOQ;
+  }
+
+  async deleteBOQ(id: string): Promise<void> {
+    await db.delete(boqs).where(eq(boqs.id, id));
+  }
+
+  // BOQ Item operations
+  async getBOQItems(boqId: string): Promise<BOQItem[]> {
+    const items = await db
+      .select()
+      .from(boqItems)
+      .where(eq(boqItems.boqId, boqId))
+      .orderBy(asc(boqItems.order));
+    return items;
+  }
+
+  async createBOQItem(boqId: string, item: InsertBOQItem): Promise<BOQItem> {
+    const [newItem] = await db
+      .insert(boqItems)
+      .values({ ...item, boqId })
+      .returning();
+    return newItem;
+  }
+
+  async updateBOQItem(id: string, item: Partial<InsertBOQItem>): Promise<BOQItem> {
+    const [updatedItem] = await db
+      .update(boqItems)
+      .set(item)
+      .where(eq(boqItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteBOQItem(id: string): Promise<void> {
+    await db.delete(boqItems).where(eq(boqItems.id, id));
+  }
+
+  async bulkUpsertBOQItems(boqId: string, items: BOQItem[]): Promise<BOQItem[]> {
+    // Delete existing items first
+    await db.delete(boqItems).where(eq(boqItems.boqId, boqId));
+    
+    // Insert all new items
+    if (items.length === 0) return [];
+    
+    const newItems = await db
+      .insert(boqItems)
+      .values(items.map(item => ({ ...item, boqId })))
+      .returning();
+    return newItems;
+  }
+
+  // Summary Adjustment operations
+  async getBOQAdjustments(boqId: string): Promise<SummaryAdjustment[]> {
+    const adjustments = await db
+      .select()
+      .from(summaryAdjustments)
+      .where(eq(summaryAdjustments.boqId, boqId))
+      .orderBy(asc(summaryAdjustments.order));
+    return adjustments;
+  }
+
+  async createSummaryAdjustment(adjustment: InsertSummaryAdjustment): Promise<SummaryAdjustment> {
+    const [newAdjustment] = await db
+      .insert(summaryAdjustments)
+      .values(adjustment)
+      .returning();
+    return newAdjustment;
+  }
+
+  async updateSummaryAdjustment(id: string, adjustment: Partial<InsertSummaryAdjustment>): Promise<SummaryAdjustment> {
+    const [updatedAdjustment] = await db
+      .update(summaryAdjustments)
+      .set(adjustment)
+      .where(eq(summaryAdjustments.id, id))
+      .returning();
+    return updatedAdjustment;
+  }
+
+  async deleteSummaryAdjustment(id: string): Promise<void> {
+    await db.delete(summaryAdjustments).where(eq(summaryAdjustments.id, id));
+  }
+
+  async bulkUpsertAdjustments(boqId: string, adjustments: SummaryAdjustment[]): Promise<SummaryAdjustment[]> {
+    // Delete existing adjustments first
+    await db.delete(summaryAdjustments).where(eq(summaryAdjustments.boqId, boqId));
+    
+    // Insert all new adjustments
+    if (adjustments.length === 0) return [];
+    
+    const newAdjustments = await db
+      .insert(summaryAdjustments)
+      .values(adjustments.map(adj => ({ ...adj, boqId })))
+      .returning();
+    return newAdjustments;
   }
 }
 
