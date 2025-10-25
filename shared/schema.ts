@@ -77,6 +77,9 @@ export const projects = pgTable("projects", {
   // Client logo (file path)
   clientLogo: varchar("client_logo"),
   
+  // Financial tracking
+  advancePayment: decimal("advance_payment", { precision: 15, scale: 2 }).default("0"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -175,6 +178,22 @@ export const contractorEquipment = pgTable("contractor_equipment", {
   index("contractor_equipment_project_idx").on(table.projectId),
 ]);
 
+// Payment certificates table (financial tracking)
+export const paymentCertificates = pgTable("payment_certificates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  certificateNo: varchar("certificate_no").notNull(),
+  pendingAmount: decimal("pending_amount", { precision: 15, scale: 2 }).default("0"),
+  inProcessAmount: decimal("in_process_amount", { precision: 15, scale: 2 }).default("0"),
+  amountPaid: decimal("amount_paid", { precision: 15, scale: 2 }).default("0"),
+  dateCertified: date("date_certified"),
+  paymentStatus: varchar("payment_status").notNull().default("Pending"), // "Pending", "In Process", "Paid"
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("payment_certificates_project_idx").on(table.projectId),
+]);
+
 // Project members table (for team collaboration)
 export const projectMembers = pgTable("project_members", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -221,6 +240,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   clientPersonnel: many(clientPersonnel),
   contractorPersonnel: many(contractorPersonnel),
   contractorEquipment: many(contractorEquipment),
+  paymentCertificates: many(paymentCertificates),
 }));
 
 export const roadsRelations = relations(roads, ({ one, many }) => ({
@@ -277,6 +297,13 @@ export const contractorPersonnelRelations = relations(contractorPersonnel, ({ on
 export const contractorEquipmentRelations = relations(contractorEquipment, ({ one }) => ({
   project: one(projects, {
     fields: [contractorEquipment.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const paymentCertificatesRelations = relations(paymentCertificates, ({ one }) => ({
+  project: one(projects, {
+    fields: [paymentCertificates.projectId],
     references: [projects.id],
   }),
 }));
@@ -390,6 +417,13 @@ export const insertContractorEquipmentSchema = createInsertSchema(contractorEqui
   createdAt: true,
 });
 
+export const insertPaymentCertificateSchema = createInsertSchema(paymentCertificates).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
@@ -424,6 +458,8 @@ export type ContractorPersonnel = typeof contractorPersonnel.$inferSelect;
 export type InsertContractorPersonnel = z.infer<typeof insertContractorPersonnelSchema>;
 export type ContractorEquipment = typeof contractorEquipment.$inferSelect;
 export type InsertContractorEquipment = z.infer<typeof insertContractorEquipmentSchema>;
+export type PaymentCertificate = typeof paymentCertificates.$inferSelect;
+export type InsertPaymentCertificate = z.infer<typeof insertPaymentCertificateSchema>;
 
 export type ProjectMemberWithUser = ProjectMember & {
   user: User;
