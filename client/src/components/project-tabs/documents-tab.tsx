@@ -14,7 +14,7 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
           <h2 className="text-2xl font-bold text-foreground">Documents</h2>
           <p className="text-muted-foreground text-sm mt-1">Generate and manage project documents</p>
         </div>
-        <Button data-testid="button-create-document">
+        <Button data-testid="button-create-document" disabled>
           <Plus className="w-4 h-4 mr-2" />
           Create Document
         </Button>
@@ -33,8 +33,9 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
         </CardHeader>
         <CardContent>
           <div className="text-center py-12 text-muted-foreground">
-            <p>Document generation and management will be implemented in Task 5</p>
-            <p className="text-sm mt-2">Features: Progress reports, payment certificates, work orders, project letters, and meeting minutes</p>
+            <p className="text-lg mb-2">Coming Soon</p>
+            <p className="text-sm">Document generation and management features will be available in the next release</p>
+            <p className="text-xs mt-4">Features: Progress reports, payment certificates, work orders, project letters, and meeting minutes</p>
           </div>
         </CardContent>
       </Card>
