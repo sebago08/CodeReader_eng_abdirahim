@@ -13,6 +13,11 @@ import {
   insertWorkAccomplishedSchema,
   insertWorkPlanSchema,
   insertPlannedActivitySchema,
+  insertPaymentCertificateSchema,
+  insertClientPersonnelSchema,
+  insertContractorPersonnelSchema,
+  insertContractorEquipmentSchema,
+  insertIssueSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth } from "./auth";
@@ -651,12 +656,302 @@ export function registerRoutes(app: Express): Server {
 
   app.delete('/api/activities/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const { id } = req.params;
+      const { id} = req.params;
       await storage.deletePlannedActivity(id);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting activity:", error);
       res.status(500).json({ message: "Failed to delete activity" });
+    }
+  });
+
+  // Payment Certificate routes
+  app.get('/api/projects/:projectId/payment-certificates', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const certificates = await storage.getProjectPaymentCertificates(projectId);
+      res.json(certificates);
+    } catch (error) {
+      console.error("Error fetching payment certificates:", error);
+      res.status(500).json({ message: "Failed to fetch payment certificates" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/payment-certificates', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const validatedData = insertPaymentCertificateSchema.parse(req.body);
+      const certificate = await storage.createPaymentCertificate(projectId, validatedData);
+      res.status(201).json(certificate);
+    } catch (error: any) {
+      console.error("Error creating payment certificate:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create payment certificate" });
+    }
+  });
+
+  app.patch('/api/payment-certificates/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertPaymentCertificateSchema.partial().parse(req.body);
+      const certificate = await storage.updatePaymentCertificate(id, validatedData);
+      
+      if (!certificate) {
+        return res.status(404).json({ message: "Payment certificate not found" });
+      }
+      
+      res.json(certificate);
+    } catch (error: any) {
+      console.error("Error updating payment certificate:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update payment certificate" });
+    }
+  });
+
+  app.delete('/api/payment-certificates/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePaymentCertificate(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting payment certificate:", error);
+      res.status(500).json({ message: "Failed to delete payment certificate" });
+    }
+  });
+
+  // Client Personnel routes
+  app.get('/api/projects/:projectId/client-personnel', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const personnel = await storage.getProjectClientPersonnel(projectId);
+      res.json(personnel);
+    } catch (error) {
+      console.error("Error fetching client personnel:", error);
+      res.status(500).json({ message: "Failed to fetch client personnel" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/client-personnel', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const validatedData = insertClientPersonnelSchema.parse(req.body);
+      const personnel = await storage.createClientPersonnel(projectId, validatedData);
+      res.status(201).json(personnel);
+    } catch (error: any) {
+      console.error("Error creating client personnel:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create client personnel" });
+    }
+  });
+
+  app.patch('/api/client-personnel/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertClientPersonnelSchema.partial().parse(req.body);
+      const personnel = await storage.updateClientPersonnel(id, validatedData);
+      
+      if (!personnel) {
+        return res.status(404).json({ message: "Client personnel not found" });
+      }
+      
+      res.json(personnel);
+    } catch (error: any) {
+      console.error("Error updating client personnel:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update client personnel" });
+    }
+  });
+
+  app.delete('/api/client-personnel/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteClientPersonnel(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting client personnel:", error);
+      res.status(500).json({ message: "Failed to delete client personnel" });
+    }
+  });
+
+  // Contractor Personnel routes
+  app.get('/api/projects/:projectId/contractor-personnel', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const personnel = await storage.getProjectContractorPersonnel(projectId);
+      res.json(personnel);
+    } catch (error) {
+      console.error("Error fetching contractor personnel:", error);
+      res.status(500).json({ message: "Failed to fetch contractor personnel" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/contractor-personnel', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const validatedData = insertContractorPersonnelSchema.parse(req.body);
+      const personnel = await storage.createContractorPersonnel(projectId, validatedData);
+      res.status(201).json(personnel);
+    } catch (error: any) {
+      console.error("Error creating contractor personnel:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create contractor personnel" });
+    }
+  });
+
+  app.patch('/api/contractor-personnel/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertContractorPersonnelSchema.partial().parse(req.body);
+      const personnel = await storage.updateContractorPersonnel(id, validatedData);
+      
+      if (!personnel) {
+        return res.status(404).json({ message: "Contractor personnel not found" });
+      }
+      
+      res.json(personnel);
+    } catch (error: any) {
+      console.error("Error updating contractor personnel:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update contractor personnel" });
+    }
+  });
+
+  app.delete('/api/contractor-personnel/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteContractorPersonnel(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting contractor personnel:", error);
+      res.status(500).json({ message: "Failed to delete contractor personnel" });
+    }
+  });
+
+  // Contractor Equipment routes
+  app.get('/api/projects/:projectId/contractor-equipment', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const equipment = await storage.getProjectContractorEquipment(projectId);
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error fetching contractor equipment:", error);
+      res.status(500).json({ message: "Failed to fetch contractor equipment" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/contractor-equipment', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const validatedData = insertContractorEquipmentSchema.parse(req.body);
+      const equipment = await storage.createContractorEquipment(projectId, validatedData);
+      res.status(201).json(equipment);
+    } catch (error: any) {
+      console.error("Error creating contractor equipment:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create contractor equipment" });
+    }
+  });
+
+  app.patch('/api/contractor-equipment/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertContractorEquipmentSchema.partial().parse(req.body);
+      const equipment = await storage.updateContractorEquipment(id, validatedData);
+      
+      if (!equipment) {
+        return res.status(404).json({ message: "Contractor equipment not found" });
+      }
+      
+      res.json(equipment);
+    } catch (error: any) {
+      console.error("Error updating contractor equipment:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update contractor equipment" });
+    }
+  });
+
+  app.delete('/api/contractor-equipment/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteContractorEquipment(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting contractor equipment:", error);
+      res.status(500).json({ message: "Failed to delete contractor equipment" });
+    }
+  });
+
+  // Issue routes
+  app.get('/api/projects/:projectId/issues', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const issues = await storage.getProjectIssues(projectId);
+      res.json(issues);
+    } catch (error) {
+      console.error("Error fetching issues:", error);
+      res.status(500).json({ message: "Failed to fetch issues" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/issues', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const validatedData = insertIssueSchema.parse(req.body);
+      const issue = await storage.createIssue(projectId, validatedData);
+      res.status(201).json(issue);
+    } catch (error: any) {
+      console.error("Error creating issue:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create issue" });
+    }
+  });
+
+  app.patch('/api/issues/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertIssueSchema.partial().parse(req.body);
+      const issue = await storage.updateIssue(id, validatedData);
+      
+      if (!issue) {
+        return res.status(404).json({ message: "Issue not found" });
+      }
+      
+      res.json(issue);
+    } catch (error: any) {
+      console.error("Error updating issue:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update issue" });
+    }
+  });
+
+  app.delete('/api/issues/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteIssue(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting issue:", error);
+      res.status(500).json({ message: "Failed to delete issue" });
     }
   });
 

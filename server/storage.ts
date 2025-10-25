@@ -13,6 +13,11 @@ import {
   workAccomplished,
   workPlans,
   plannedActivities,
+  paymentCertificates,
+  clientPersonnel,
+  contractorPersonnel,
+  contractorEquipment,
+  issues,
   type User,
   type InsertUser,
   type Project,
@@ -44,6 +49,16 @@ import {
   type InsertWorkPlan,
   type PlannedActivity,
   type InsertPlannedActivity,
+  type PaymentCertificate,
+  type InsertPaymentCertificate,
+  type ClientPersonnel,
+  type InsertClientPersonnel,
+  type ContractorPersonnel,
+  type InsertContractorPersonnel,
+  type ContractorEquipment,
+  type InsertContractorEquipment,
+  type Issue,
+  type InsertIssue,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, inArray, asc, isNull } from "drizzle-orm";
@@ -149,6 +164,36 @@ export interface IStorage {
   createPlannedActivity(activity: InsertPlannedActivity): Promise<PlannedActivity>;
   updatePlannedActivity(id: string, activity: Partial<InsertPlannedActivity>): Promise<PlannedActivity | undefined>;
   deletePlannedActivity(id: string): Promise<void>;
+  
+  // Payment Certificate operations
+  getProjectPaymentCertificates(projectId: string): Promise<PaymentCertificate[]>;
+  createPaymentCertificate(projectId: string, certificate: InsertPaymentCertificate): Promise<PaymentCertificate>;
+  updatePaymentCertificate(id: string, certificate: Partial<InsertPaymentCertificate>): Promise<PaymentCertificate | undefined>;
+  deletePaymentCertificate(id: string): Promise<void>;
+  
+  // Client Personnel operations
+  getProjectClientPersonnel(projectId: string): Promise<ClientPersonnel[]>;
+  createClientPersonnel(projectId: string, personnel: InsertClientPersonnel): Promise<ClientPersonnel>;
+  updateClientPersonnel(id: string, personnel: Partial<InsertClientPersonnel>): Promise<ClientPersonnel | undefined>;
+  deleteClientPersonnel(id: string): Promise<void>;
+  
+  // Contractor Personnel operations
+  getProjectContractorPersonnel(projectId: string): Promise<ContractorPersonnel[]>;
+  createContractorPersonnel(projectId: string, personnel: InsertContractorPersonnel): Promise<ContractorPersonnel>;
+  updateContractorPersonnel(id: string, personnel: Partial<InsertContractorPersonnel>): Promise<ContractorPersonnel | undefined>;
+  deleteContractorPersonnel(id: string): Promise<void>;
+  
+  // Contractor Equipment operations
+  getProjectContractorEquipment(projectId: string): Promise<ContractorEquipment[]>;
+  createContractorEquipment(projectId: string, equipment: InsertContractorEquipment): Promise<ContractorEquipment>;
+  updateContractorEquipment(id: string, equipment: Partial<InsertContractorEquipment>): Promise<ContractorEquipment | undefined>;
+  deleteContractorEquipment(id: string): Promise<void>;
+  
+  // Issue operations
+  getProjectIssues(projectId: string): Promise<Issue[]>;
+  createIssue(projectId: string, issue: InsertIssue): Promise<Issue>;
+  updateIssue(id: string, issue: Partial<InsertIssue>): Promise<Issue | undefined>;
+  deleteIssue(id: string): Promise<void>;
 }
 
 // In-memory storage implementation
@@ -1166,6 +1211,161 @@ export class DatabaseStorage implements IStorage {
 
   async deletePlannedActivity(id: string): Promise<void> {
     await db.delete(plannedActivities).where(eq(plannedActivities.id, id));
+  }
+
+  // Payment Certificate operations
+  async getProjectPaymentCertificates(projectId: string): Promise<PaymentCertificate[]> {
+    const certificates = await db
+      .select()
+      .from(paymentCertificates)
+      .where(eq(paymentCertificates.projectId, projectId))
+      .orderBy(desc(paymentCertificates.createdAt));
+    return certificates;
+  }
+
+  async createPaymentCertificate(projectId: string, certificate: InsertPaymentCertificate): Promise<PaymentCertificate> {
+    const [newCertificate] = await db
+      .insert(paymentCertificates)
+      .values({ ...certificate, projectId })
+      .returning();
+    return newCertificate;
+  }
+
+  async updatePaymentCertificate(id: string, certificate: Partial<InsertPaymentCertificate>): Promise<PaymentCertificate | undefined> {
+    const [updatedCertificate] = await db
+      .update(paymentCertificates)
+      .set(certificate)
+      .where(eq(paymentCertificates.id, id))
+      .returning();
+    return updatedCertificate;
+  }
+
+  async deletePaymentCertificate(id: string): Promise<void> {
+    await db.delete(paymentCertificates).where(eq(paymentCertificates.id, id));
+  }
+
+  // Client Personnel operations
+  async getProjectClientPersonnel(projectId: string): Promise<ClientPersonnel[]> {
+    const personnel = await db
+      .select()
+      .from(clientPersonnel)
+      .where(eq(clientPersonnel.projectId, projectId))
+      .orderBy(asc(clientPersonnel.name));
+    return personnel;
+  }
+
+  async createClientPersonnel(projectId: string, personnel: InsertClientPersonnel): Promise<ClientPersonnel> {
+    const [newPersonnel] = await db
+      .insert(clientPersonnel)
+      .values({ ...personnel, projectId })
+      .returning();
+    return newPersonnel;
+  }
+
+  async updateClientPersonnel(id: string, personnel: Partial<InsertClientPersonnel>): Promise<ClientPersonnel | undefined> {
+    const [updatedPersonnel] = await db
+      .update(clientPersonnel)
+      .set(personnel)
+      .where(eq(clientPersonnel.id, id))
+      .returning();
+    return updatedPersonnel;
+  }
+
+  async deleteClientPersonnel(id: string): Promise<void> {
+    await db.delete(clientPersonnel).where(eq(clientPersonnel.id, id));
+  }
+
+  // Contractor Personnel operations
+  async getProjectContractorPersonnel(projectId: string): Promise<ContractorPersonnel[]> {
+    const personnel = await db
+      .select()
+      .from(contractorPersonnel)
+      .where(eq(contractorPersonnel.projectId, projectId))
+      .orderBy(asc(contractorPersonnel.name));
+    return personnel;
+  }
+
+  async createContractorPersonnel(projectId: string, personnel: InsertContractorPersonnel): Promise<ContractorPersonnel> {
+    const [newPersonnel] = await db
+      .insert(contractorPersonnel)
+      .values({ ...personnel, projectId })
+      .returning();
+    return newPersonnel;
+  }
+
+  async updateContractorPersonnel(id: string, personnel: Partial<InsertContractorPersonnel>): Promise<ContractorPersonnel | undefined> {
+    const [updatedPersonnel] = await db
+      .update(contractorPersonnel)
+      .set(personnel)
+      .where(eq(contractorPersonnel.id, id))
+      .returning();
+    return updatedPersonnel;
+  }
+
+  async deleteContractorPersonnel(id: string): Promise<void> {
+    await db.delete(contractorPersonnel).where(eq(contractorPersonnel.id, id));
+  }
+
+  // Contractor Equipment operations
+  async getProjectContractorEquipment(projectId: string): Promise<ContractorEquipment[]> {
+    const equipment = await db
+      .select()
+      .from(contractorEquipment)
+      .where(eq(contractorEquipment.projectId, projectId))
+      .orderBy(asc(contractorEquipment.name));
+    return equipment;
+  }
+
+  async createContractorEquipment(projectId: string, equipment: InsertContractorEquipment): Promise<ContractorEquipment> {
+    const [newEquipment] = await db
+      .insert(contractorEquipment)
+      .values({ ...equipment, projectId })
+      .returning();
+    return newEquipment;
+  }
+
+  async updateContractorEquipment(id: string, equipment: Partial<InsertContractorEquipment>): Promise<ContractorEquipment | undefined> {
+    const [updatedEquipment] = await db
+      .update(contractorEquipment)
+      .set(equipment)
+      .where(eq(contractorEquipment.id, id))
+      .returning();
+    return updatedEquipment;
+  }
+
+  async deleteContractorEquipment(id: string): Promise<void> {
+    await db.delete(contractorEquipment).where(eq(contractorEquipment.id, id));
+  }
+
+  // Issue operations
+  async getProjectIssues(projectId: string): Promise<Issue[]> {
+    const projectIssues = await db
+      .select()
+      .from(issues)
+      .where(eq(issues.projectId, projectId))
+      .orderBy(desc(issues.createdAt));
+    return projectIssues;
+  }
+
+  async createIssue(projectId: string, issue: InsertIssue): Promise<Issue> {
+    const [newIssue] = await db
+      .insert(issues)
+      .values({ ...issue, projectId })
+      .returning();
+    return newIssue;
+  }
+
+  async updateIssue(id: string, issue: Partial<InsertIssue>): Promise<Issue | undefined> {
+    const [updatedIssue] = await db
+      .update(issues)
+      .set(issue)
+      .where(eq(issues.id, id))
+      .returning();
+    return updatedIssue;
+  }
+
+  async deleteIssue(id: string): Promise<void> {
+    await db.delete(issues).where(eq(issues.id, id));
   }
 }
 
