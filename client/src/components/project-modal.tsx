@@ -265,7 +265,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
             </TabsList>
 
             {/* Basic Information Tab */}
-            <TabsContent value="basic" className="p-6 space-y-6">
+            <TabsContent value="basic" className="p-6 space-y-6 min-h-[500px]">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label className="block text-sm font-medium text-gray-700 mb-2">Project Name *</Label>
@@ -434,7 +434,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
             </TabsContent>
 
             {/* Client Tab with nested tabs */}
-            <TabsContent value="client" className="p-0">
+            <TabsContent value="client" className="p-0 min-h-[500px]">
               <div className="flex items-center gap-1 px-6 pt-4 border-b border-gray-200 bg-gray-50">
                 <button
                   type="button"
@@ -619,7 +619,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
             </TabsContent>
 
             {/* Contractor Tab with nested tabs */}
-            <TabsContent value="contractor" className="p-0">
+            <TabsContent value="contractor" className="p-0 min-h-[500px]">
               <div className="flex items-center gap-1 px-6 pt-4 border-b border-gray-200 bg-gray-50">
                 <button
                   type="button"
@@ -904,7 +904,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
             </TabsContent>
 
             {/* Project Scope Tab */}
-            <TabsContent value="scope" className="p-6 space-y-6">
+            <TabsContent value="scope" className="p-6 space-y-6 min-h-[500px]">
               <div>
                 <Label className="block text-sm font-medium text-gray-700 mb-2">Scope of Work</Label>
                 <Textarea
