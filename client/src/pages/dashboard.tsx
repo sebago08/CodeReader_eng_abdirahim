@@ -1,247 +1,219 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
+import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import ProjectCard from "@/components/project-card";
-import ProjectModal from "@/components/project-modal";
-import RoadModal from "@/components/road-modal";
-import ProgressModal from "@/components/progress-modal";
-import { apiRequest } from "@/lib/queryClient";
-import type { ProjectWithRoads, Project } from "@shared/schema";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FolderKanban, CheckCircle, DollarSign, Shield, Eye, Edit } from "lucide-react";
+import type { ProjectWithRoads } from "@shared/schema";
 
 export default function Dashboard() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [editingProject, setEditingProject] = useState<ProjectWithRoads | null>(null);
-  const [editingRoad, setEditingRoad] = useState<any>(null);
-  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
-
-  const { data: projects, isLoading } = useQuery<ProjectWithRoads[]>({
+  const { data: projects = [], isLoading } = useQuery<ProjectWithRoads[]>({
     queryKey: ["/api/projects"],
   });
 
-  const deleteProjectMutation = useMutation({
-    mutationFn: async (projectId: string) => {
-      await apiRequest("DELETE", `/api/projects/${projectId}`);
+  // Calculate stats
+  const activeProjects = projects.filter(p => p.status === "active").length;
+  const completedTasks = 84; // Mock for now
+  const totalBudget = projects.reduce((sum, p) => sum + parseFloat(p.contractAmount || "0"), 0);
+  const budgetUsed = totalBudget * 0.76; // Mock 76% utilization
+  const budgetPercentage = totalBudget > 0 ? Math.round((budgetUsed / totalBudget) * 100) : 0;
+  const safetyIncidents = 0;
+
+  const statCards = [
+    {
+      title: "Active Projects",
+      value: activeProjects,
+      subtitle: `+2 from last month`,
+      icon: FolderKanban,
+      iconBg: "bg-primary/10",
+      iconColor: "text-primary",
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      toast({
-        title: "Success",
-        description: "Project deleted successfully",
-      });
+    {
+      title: "Completed Tasks",
+      value: `${completedTasks}%`,
+      subtitle: "Task completion rate",
+      icon: CheckCircle,
+      iconBg: "bg-success/10",
+      iconColor: "text-success",
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to delete project",
-        variant: "destructive",
-      });
+    {
+      title: "Budget Utilization",
+      value: `${budgetPercentage}%`,
+      subtitle: `$${(budgetUsed / 1000000).toFixed(1)}M of $${(totalBudget / 1000000).toFixed(1)}M`,
+      icon: DollarSign,
+      iconBg: "bg-secondary/10",
+      iconColor: "text-secondary",
     },
-  });
-
-  const duplicateProjectMutation = useMutation({
-    mutationFn: async (projectId: string) => {
-      await apiRequest("POST", `/api/projects/${projectId}/duplicate`);
+    {
+      title: "Safety Record",
+      value: safetyIncidents,
+      subtitle: "Zero incidents this month",
+      icon: Shield,
+      iconBg: "bg-accent/10",
+      iconColor: "text-accent",
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      toast({
-        title: "Success",
-        description: "Project duplicated successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to duplicate project",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleAddProject = () => {
-    setEditingProject(null);
-    setActiveModal("project");
-  };
-
-  const handleEditProject = (project: ProjectWithRoads) => {
-    setEditingProject(project);
-    setActiveModal("project");
-  };
-
-  const handleDeleteProject = (projectId: string) => {
-    if (window.confirm("Are you sure you want to delete this project?")) {
-      deleteProjectMutation.mutate(projectId);
-    }
-  };
-
-  const handleDuplicateProject = (projectId: string) => {
-    duplicateProjectMutation.mutate(projectId);
-  };
-
-  const handleAddRoad = (project: ProjectWithRoads) => {
-    setEditingProject(project);
-    setEditingRoad(null);
-    setActiveModal("road");
-  };
-
-  const handleEditRoad = (project: ProjectWithRoads, road: any) => {
-    setEditingProject(project);
-    setEditingRoad(road);
-    setActiveModal("road");
-  };
-
-  const handleAddProgress = (project: ProjectWithRoads, road: any, layerId: string) => {
-    setEditingProject(project);
-    setEditingRoad(road);
-    setSelectedLayerId(layerId);
-    setActiveModal("progress");
-  };
-
-  const handleResetProgress = async (layerId: string) => {
-    if (!confirm("Are you sure you want to reset all progress for this layer? This action cannot be undone.")) {
-      return;
-    }
-    
-    try {
-      await apiRequest("DELETE", `/api/layers/${layerId}/progress/reset`);
-      toast({
-        title: "Success",
-        description: "Layer progress has been reset successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reset layer progress",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const closeModal = () => {
-    setActiveModal(null);
-    setEditingProject(null);
-    setEditingRoad(null);
-    setSelectedLayerId(null);
-  };
+  ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-black text-primary-foreground shadow-lg">
-        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i className="fas fa-hard-hat text-lg"></i>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Road Construction Tracker</h1>
-                <p className="text-primary-foreground/80 text-sm">Professional Construction Management</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
-        {/* Dashboard Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">Project Dashboard</h2>
-            <p className="text-muted-foreground">Manage your construction projects and track progress</p>
-          </div>
-          <Button
-            onClick={handleAddProject}
-            className="mt-4 md:mt-0 bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-medium hover:bg-secondary/90 transition-colors shadow-lg"
-            data-testid="button-add-project"
-          >
-            <i className="fas fa-plus mr-2"></i>
-            New Project
-          </Button>
+    <AppLayout breadcrumb={<h1 className="text-xl font-semibold">Project Dashboard</h1>}>
+      <div className="p-8 space-y-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {statCards.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={stat.title} data-testid={`card-stat-${stat.title.toLowerCase().replace(/\s+/g, '-')}`}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {stat.title}
+                  </CardTitle>
+                  <div className={`w-10 h-10 rounded-lg ${stat.iconBg} flex items-center justify-center`}>
+                    <Icon className={`w-5 h-5 ${stat.iconColor}`} />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold" data-testid={`text-stat-${stat.title.toLowerCase().replace(/\s+/g, '-')}`}>
+                    {stat.value}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {stat.subtitle}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
-        {/* Projects Grid */}
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="text-muted-foreground">Loading projects...</div>
-          </div>
-        ) : projects && projects.length > 0 ? (
-          <div className="w-full lg:w-3/4 mx-auto space-y-6" data-testid="projects-grid">
-            {projects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onEdit={() => handleEditProject(project)}
-                onDelete={() => handleDeleteProject(project.id)}
-                onDuplicate={() => handleDuplicateProject(project.id)}
-                onAddRoad={() => handleAddRoad(project)}
-                onEditRoad={(road) => handleEditRoad(project, road)}
-                onAddProgress={(road, layerId) => handleAddProgress(project, road, layerId)}
-                onResetProgress={handleResetProgress}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <div className="bg-card rounded-xl p-8 max-w-md mx-auto">
-              <i className="fas fa-road text-4xl text-muted-foreground mb-4"></i>
-              <h3 className="text-xl font-semibold text-card-foreground mb-2">No Projects Yet</h3>
-              <p className="text-muted-foreground mb-6">Get started by creating your first construction project.</p>
-              <Button
-                onClick={handleAddProject}
-                className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                data-testid="button-add-first-project"
-              >
-                <i className="fas fa-plus mr-2"></i>
-                Create First Project
-              </Button>
+        {/* Recent Projects */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Recent Projects</CardTitle>
+              <CardDescription>Active construction projects</CardDescription>
             </div>
-          </div>
-        )}
-      </main>
+            <Button asChild data-testid="button-new-project">
+              <Link href="/projects">
+                New Project
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading projects...</div>
+            ) : projects.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No projects yet. Create your first project to get started.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b text-left text-sm text-muted-foreground">
+                      <th className="pb-3 font-medium">Project Name</th>
+                      <th className="pb-3 font-medium">Project ID</th>
+                      <th className="pb-3 font-medium">Client</th>
+                      <th className="pb-3 font-medium">Start Date</th>
+                      <th className="pb-3 font-medium">Status</th>
+                      <th className="pb-3 font-medium">Progress</th>
+                      <th className="pb-3 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {projects.slice(0, 10).map((project) => {
+                      // Calculate overall progress
+                      const totalProgress = project.roads?.reduce((sum, road) => {
+                        const roadProgress = road.layers?.reduce((layerSum, layer) => {
+                          const completedLength = layer.progress?.reduce((pSum, p) => 
+                            pSum + (parseFloat(p.endChainage) - parseFloat(p.startChainage)), 0) || 0;
+                          const roadLength = parseFloat(road.length as string);
+                          const layerPercentage = roadLength > 0 ? (completedLength / roadLength) * 100 : 0;
+                          const layerWeight = layer.weight || 0;
+                          return layerSum + (layerPercentage * (layerWeight / 100));
+                        }, 0) || 0;
+                        return sum + roadProgress;
+                      }, 0) || 0;
+                      const overallProgress = project.roads && project.roads.length > 0
+                        ? Math.round(totalProgress / project.roads.length)
+                        : 0;
 
-      {/* Modals */}
-      {activeModal === "project" && (
-        <ProjectModal
-          project={editingProject}
-          onClose={closeModal}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-            closeModal();
-          }}
-        />
-      )}
-
-      {activeModal === "road" && editingProject && (
-        <RoadModal
-          project={editingProject}
-          road={editingRoad}
-          onClose={closeModal}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-            closeModal();
-          }}
-        />
-      )}
-
-      {activeModal === "progress" && editingProject && editingRoad && selectedLayerId && (
-        <ProgressModal
-          project={editingProject}
-          road={editingRoad}
-          layerId={selectedLayerId}
-          onClose={closeModal}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-            closeModal();
-          }}
-        />
-      )}
-    </div>
+                      return (
+                        <tr 
+                          key={project.id} 
+                          className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+                          data-testid={`row-project-${project.id}`}
+                        >
+                          <td className="py-4">
+                            <div className="font-medium text-foreground">{project.name}</div>
+                          </td>
+                          <td className="py-4 text-sm text-muted-foreground">
+                            {project.projectNumber || "—"}
+                          </td>
+                          <td className="py-4 text-sm text-muted-foreground">
+                            {project.client || "—"}
+                          </td>
+                          <td className="py-4 text-sm text-muted-foreground">
+                            {project.startDate ? new Date(project.startDate).toLocaleDateString() : "—"}
+                          </td>
+                          <td className="py-4">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              project.status === 'active' 
+                                ? 'bg-success/10 text-success' 
+                                : project.status === 'completed'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {project.status ? project.status.charAt(0).toUpperCase() + project.status.slice(1) : 'Active'}
+                            </span>
+                          </td>
+                          <td className="py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-[100px]">
+                                <div 
+                                  className="h-full bg-primary transition-all duration-300"
+                                  style={{ width: `${overallProgress}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-medium text-muted-foreground min-w-[40px]">
+                                {overallProgress}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                asChild
+                                data-testid={`button-view-${project.id}`}
+                                title="View project"
+                              >
+                                <Link href={`/projects/${project.id}`}>
+                                  <Eye className="w-4 h-4" />
+                                </Link>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                asChild
+                                data-testid={`button-edit-${project.id}`}
+                                title="Edit project"
+                              >
+                                <Link href={`/projects/${project.id}`}>
+                                  <Edit className="w-4 h-4" />
+                                </Link>
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </AppLayout>
   );
 }
