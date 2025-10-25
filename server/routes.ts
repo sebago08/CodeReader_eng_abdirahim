@@ -690,6 +690,45 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Update certificate status (moves amount to correct column)
+  app.patch('/api/payment-certificates/:id/status', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      // Get current certificate to calculate the total amount
+      const certificate = await storage.getPaymentCertificateById(id);
+      if (!certificate) {
+        return res.status(404).json({ message: "Certificate not found" });
+      }
+      
+      // Calculate total amount (sum of all three columns)
+      const totalAmount = (
+        parseFloat(certificate.pendingAmount || "0") +
+        parseFloat(certificate.inProcessAmount || "0") +
+        parseFloat(certificate.amountPaid || "0")
+      ).toString();
+      
+      // Map amount to correct column based on new status
+      const pendingAmount = status === "Submitted" ? totalAmount : "0";
+      const inProcessAmount = status === "In Process" ? totalAmount : "0";
+      const amountPaid = status === "Paid" ? totalAmount : "0";
+      
+      // Update the certificate with new status and amounts
+      const updatedCertificate = await storage.updatePaymentCertificate(id, {
+        paymentStatus: status,
+        pendingAmount,
+        inProcessAmount,
+        amountPaid,
+      });
+      
+      res.json(updatedCertificate);
+    } catch (error) {
+      console.error("Error updating payment certificate status:", error);
+      res.status(500).json({ message: "Failed to update payment certificate status" });
+    }
+  });
+
   // Update advance payment
   app.patch('/api/projects/:projectId/advance-payment', isAuthenticated, async (req, res) => {
     try {

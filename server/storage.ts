@@ -130,6 +130,7 @@ export interface IStorage {
   
   // Payment certificate operations
   getPaymentCertificates(projectId: string): Promise<PaymentCertificate[]>;
+  getPaymentCertificateById(id: string): Promise<PaymentCertificate | undefined>;
   createPaymentCertificate(projectId: string, certificate: InsertPaymentCertificate): Promise<PaymentCertificate>;
   updatePaymentCertificate(id: string, certificate: Partial<InsertPaymentCertificate>): Promise<PaymentCertificate>;
   deletePaymentCertificate(id: string): Promise<void>;
@@ -1052,6 +1053,14 @@ export class DatabaseStorage implements IStorage {
       .from(paymentCertificates)
       .where(eq(paymentCertificates.projectId, projectId))
       .orderBy(desc(paymentCertificates.createdAt));
+  }
+
+  async getPaymentCertificateById(id: string): Promise<PaymentCertificate | undefined> {
+    const [result] = await db.select()
+      .from(paymentCertificates)
+      .where(eq(paymentCertificates.id, id))
+      .limit(1);
+    return result;
   }
 
   async createPaymentCertificate(projectId: string, certificate: InsertPaymentCertificate): Promise<PaymentCertificate> {
