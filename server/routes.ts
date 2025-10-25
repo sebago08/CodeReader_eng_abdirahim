@@ -1,7 +1,15 @@
 import type { Express, RequestHandler } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProjectSchema, insertRoadSchema, insertLayerSchema, insertLayerProgressSchema } from "@shared/schema";
+import { 
+  insertProjectSchema, 
+  insertRoadSchema, 
+  insertLayerSchema, 
+  insertLayerProgressSchema,
+  insertBOQSchema,
+  insertBOQItemSchema,
+  insertSummaryAdjustmentSchema,
+} from "@shared/schema";
 import { setupAuth } from "./auth";
 import multer from "multer";
 import { getStorageService, getMockStorage } from "./storage-service";
@@ -227,6 +235,120 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error resetting layer progress:", error);
       res.status(500).json({ message: "Failed to reset layer progress" });
+    }
+  });
+
+  // BOQ routes
+  app.get('/api/projects/:projectId/boqs', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const boqs = await storage.getProjectBOQs(projectId);
+      res.json(boqs);
+    } catch (error) {
+      console.error("Error fetching BOQs:", error);
+      res.status(500).json({ message: "Failed to fetch BOQs" });
+    }
+  });
+
+  app.get('/api/boqs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const boq = await storage.getBOQ(id);
+      
+      if (!boq) {
+        return res.status(404).json({ message: "BOQ not found" });
+      }
+      
+      // Fetch items and adjustments
+      const items = await storage.getBOQItems(id);
+      const adjustments = await storage.getBOQAdjustments(id);
+      
+      res.json({ ...boq, items, adjustments });
+    } catch (error) {
+      console.error("Error fetching BOQ:", error);
+      res.status(500).json({ message: "Failed to fetch BOQ" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/boqs', isAuthenticated, async (req: any, res) => {
+    try {
+      const { projectId } = req.params;
+      const validatedData = insertBOQSchema.parse(req.body);
+      const boq = await storage.createBOQ(projectId, validatedData);
+      res.status(201).json(boq);
+    } catch (error) {
+      console.error("Error creating BOQ:", error);
+      res.status(500).json({ message: "Failed to create BOQ" });
+    }
+  });
+
+  app.patch('/api/boqs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { items, adjustments, ...boqData } = req.body;
+      
+      // Check if BOQ exists
+      const existingBoq = await storage.getBOQ(id);
+      if (!existingBoq) {
+        return res.status(404).json({ message: "BOQ not found" });
+      }
+      
+      // Update BOQ metadata
+      if (Object.keys(boqData).length > 0) {
+        const validatedData = insertBOQSchema.partial().parse(boqData);
+        await storage.updateBOQ(id, validatedData);
+      }
+      
+      // Validate and bulk update items if provided
+      if (items && Array.isArray(items)) {
+        // Validate each item
+        const validatedItems = items.map(item => {
+          // For existing items, use partial validation; for new items, validate all required fields
+          const schema = item.id ? insertBOQItemSchema.partial() : insertBOQItemSchema;
+          return schema.parse(item);
+        });
+        await storage.bulkUpsertBOQItems(id, validatedItems as any);
+      }
+      
+      // Validate and bulk update adjustments if provided
+      if (adjustments && Array.isArray(adjustments)) {
+        // Validate each adjustment
+        const validatedAdjustments = adjustments.map(adjustment => {
+          // For existing adjustments, use partial validation; for new adjustments, validate all required fields
+          const schema = adjustment.id ? insertSummaryAdjustmentSchema.partial() : insertSummaryAdjustmentSchema;
+          return schema.parse(adjustment);
+        });
+        await storage.bulkUpsertAdjustments(id, validatedAdjustments as any);
+      }
+      
+      // Fetch updated BOQ with items and adjustments
+      const updatedBoq = await storage.getBOQ(id);
+      if (!updatedBoq) {
+        return res.status(404).json({ message: "BOQ not found after update" });
+      }
+      
+      const updatedItems = await storage.getBOQItems(id);
+      const updatedAdjustments = await storage.getBOQAdjustments(id);
+      
+      res.json({ ...updatedBoq, items: updatedItems, adjustments: updatedAdjustments });
+    } catch (error: any) {
+      console.error("Error updating BOQ:", error);
+      // Return 400 for validation errors, 500 for other errors
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid data format", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update BOQ" });
+    }
+  });
+
+  app.delete('/api/boqs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteBOQ(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting BOQ:", error);
+      res.status(500).json({ message: "Failed to delete BOQ" });
     }
   });
 
