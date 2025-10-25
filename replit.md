@@ -50,6 +50,7 @@ PostgreSQL database with normalized schema design:
 - **Client Personnel**: Personnel associated with each project's client organization (name, qualification, designation)
 - **Contractor Personnel**: Personnel associated with each project's contractor organization (name, qualification, designation)
 - **Contractor Equipment**: Equipment inventory for each project's contractor (equipment name, type, quantity, condition)
+- **Payment Certificates**: Payment certificate tracking with certificate number, amounts (pending, in-process, paid), date certified, and payment status
 - **Roads**: Individual road segments within projects with length and type classification
 - **Construction Layers**: Different construction phases with weight-based progress calculation. Available layers: Excavation & Earthwork, Bottom Sub Grade, Top Sub Grade, Bottom Sub Base, Top Sub Base, Base, and Asphalt Concrete
 - **Layer Progress**: Granular progress tracking with chainage ranges, completion dates, and quality status
@@ -145,6 +146,20 @@ This allows developers to work locally without Supabase while maintaining produc
 See `DEPLOYMENT.md` for detailed step-by-step instructions.
 
 ## Recent Changes (October 2024-2025)
+
+### Phase 3: Financial Tracking with Payment Certificates (Completed - October 25, 2025)
+- **Database schema expansion**: Added payment certificates tracking:
+  - `payment_certificates` table: Certificate number, pending/in-process/paid amounts (decimal 15,2), date certified, payment status
+  - `projects.advancePayment` field: Track advance payment amounts per project
+- **Financial Progress tab**: New sub-tab in Progress section with elegant UI featuring:
+  - Payment Certificates summary: 4-metric dashboard showing Contract Amount, Total Certified, Amount Left, and Financial Progress with real-time calculations
+  - Advance Payment input: Auto-save on blur for seamless data entry
+  - Add Certificate form: 5-field inline form (Certificate No, Amount, Date Certified, Payment Status, Add button)
+  - Certificates table: Comprehensive view with columns for pending/in-process/paid amounts, color-coded status badges (green=Paid, yellow=In Process, gray=Pending), and delete functionality
+  - Real-time totals row: Automatically calculates and displays sum totals for all amount columns
+- **API endpoints**: Full CRUD operations for payment certificates (GET, POST, DELETE) plus PATCH endpoint for advance payment updates
+- **Financial calculations**: Automatic computation of Total Certified (sum of all paid amounts), Amount Left (contract - certified), and Financial Progress percentage
+- **Type safety**: Proper TypeScript types and null handling for all financial data with decimal precision
 
 ### Phase 2: Enhanced Project Information & Nested Tabs (Completed - October 25, 2025)
 - **Database schema expansion**: Added three new tables:
