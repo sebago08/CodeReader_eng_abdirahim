@@ -45,6 +45,7 @@ export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
   name: varchar("name").notNull(),
+  projectNumber: varchar("project_number"),
   projectType: varchar("project_type").notNull().default("Road"), // "Road", "Building", "Infrastructure", etc.
   client: varchar("client").notNull(),
   location: varchar("location").notNull(),
@@ -52,8 +53,27 @@ export const projects = pgTable("projects", {
   status: varchar("status").notNull().default("Active"), // "Active", "Completed", "On Hold"
   totalBudget: decimal("total_budget", { precision: 15, scale: 2 }),
   spentAmount: decimal("spent_amount", { precision: 15, scale: 2 }).default("0"),
+  contractAmount: decimal("contract_amount", { precision: 15, scale: 2 }),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
+  duration: integer("duration"), // Duration in months
+  defectsLiabilityPeriod: integer("defects_liability_period"), // In months
+  
+  // Client details
+  clientContactPerson: varchar("client_contact_person"),
+  clientEmail: varchar("client_email"),
+  clientPhone: varchar("client_phone"),
+  clientAddress: text("client_address"),
+  
+  // Contractor details
+  contractorName: varchar("contractor_name"),
+  contractorContactPerson: varchar("contractor_contact_person"),
+  contractorEmail: varchar("contractor_email"),
+  contractorPhone: varchar("contractor_phone"),
+  
+  // Project scope
+  scopeOfWork: text("scope_of_work"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
