@@ -7,8 +7,10 @@ import {
   insertLayerSchema, 
   insertLayerProgressSchema,
   insertActivitySchema,
-  insertSafetyIncidentSchema 
+  insertSafetyIncidentSchema,
+  insertWorkPlanActivitySchema
 } from "@shared/schema";
+import { ZodError, z } from "zod";
 import { setupAuth } from "./auth";
 import multer from "multer";
 import { getStorageService, getMockStorage } from "./storage-service";
@@ -740,6 +742,120 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error updating advance payment:", error);
       res.status(500).json({ message: "Failed to update advance payment" });
+    }
+  });
+
+  // Work Plan Activity Routes
+  app.get('/api/projects/:projectId/work-plan-activities', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const activities = await storage.getWorkPlanActivities(projectId);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching work plan activities:", error);
+      res.status(500).json({ message: "Failed to fetch work plan activities" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/work-plan-activities', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      // Validate request body
+      const validated = insertWorkPlanActivitySchema.parse(req.body);
+      
+      // Recalculate end date server-side (duration - 1 days from start)
+      const startDate = new Date(validated.startDate);
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + (validated.duration - 1));
+      
+      const activityData = {
+        ...validated,
+        endDate: endDate.toISOString().split('T')[0],
+      };
+      
+      const activity = await storage.createWorkPlanActivity(projectId, activityData);
+      res.status(201).json(activity);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error creating work plan activity:", error);
+      res.status(500).json({ message: "Failed to create work plan activity" });
+    }
+  });
+
+  app.delete('/api/work-plan-activities/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      // Get the activity to find its project
+      const activity = await storage.getWorkPlanActivityById(id);
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      
+      // Verify user has access to the activity's project
+      const project = await storage.getProject(activity.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      await storage.deleteWorkPlanActivity(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting work plan activity:", error);
+      res.status(500).json({ message: "Failed to delete work plan activity" });
+    }
+  });
+
+  app.patch('/api/work-plan-activities/:id/milestone', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      // Validate request body
+      const milestoneSchema = z.object({
+        isMilestone: z.boolean(),
+      });
+      const { isMilestone } = milestoneSchema.parse(req.body);
+      
+      // Get the activity to find its project
+      const activity = await storage.getWorkPlanActivityById(id);
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      
+      // Verify user has access to the activity's project
+      const project = await storage.getProject(activity.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const updatedActivity = await storage.toggleWorkPlanMilestone(id, isMilestone);
+      res.json(updatedActivity);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error toggling milestone:", error);
+      res.status(500).json({ message: "Failed to toggle milestone" });
     }
   });
 
