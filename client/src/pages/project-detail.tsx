@@ -15,8 +15,9 @@ import BudgetTab from "@/components/project-tabs/budget-tab";
 import SafetyTab from "@/components/project-tabs/safety-tab";
 import TeamTab from "@/components/project-tabs/team-tab";
 import WorkPlanTab from "@/components/project-tabs/work-plan-tab";
+import { DocumentsTab } from "@/components/project-tabs/documents-tab";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { ProjectWithRoads } from "@shared/schema";
+import type { ProjectWithRoads, ProjectDocument } from "@shared/schema";
 
 export default function ProjectDetail() {
   const { toast } = useToast();
@@ -201,6 +202,9 @@ export default function ProjectDetail() {
               <TabsTrigger value="team" data-testid="tab-team">
                 Team
               </TabsTrigger>
+              <TabsTrigger value="documents" data-testid="tab-documents">
+                Documents
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" data-testid="tab-content-overview">
@@ -236,6 +240,18 @@ export default function ProjectDetail() {
                   isOwner={isOwner || false}
                 />
               )}
+            </TabsContent>
+
+            <TabsContent value="documents" data-testid="tab-content-documents">
+              <DocumentsTab 
+                project={project} 
+                onViewDocument={(doc) => {
+                  toast({
+                    title: "Document Viewer",
+                    description: "Document viewing feature coming soon!",
+                  });
+                }}
+              />
             </TabsContent>
           </Tabs>
         </main>
