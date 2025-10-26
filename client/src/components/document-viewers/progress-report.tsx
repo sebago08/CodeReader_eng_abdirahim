@@ -251,10 +251,21 @@ export function ProgressReport({
   };
 
   const handleSaveClick = () => {
-    // Use existing document name when editing, or generate a new one when creating
-    const defaultName = document?.documentName || `Monthly Progress Report - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-    setDocumentName(defaultName);
-    setShowSaveDialog(true);
+    // If editing an existing document, save immediately without showing the dialog
+    if (document && document.documentName) {
+      const images = {
+        coverImage: coverImage || undefined,
+        topLogo: topLogo || undefined,
+        leftLogo: leftLogo || undefined,
+        rightLogo: rightLogo || undefined,
+      };
+      onSave?.(document.documentName, images);
+    } else {
+      // For new documents, show the dialog to enter a name
+      const defaultName = `Monthly Progress Report - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+      setDocumentName(defaultName);
+      setShowSaveDialog(true);
+    }
   };
 
   const handleConfirmSave = () => {
