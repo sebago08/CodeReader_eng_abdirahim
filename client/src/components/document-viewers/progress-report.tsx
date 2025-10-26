@@ -197,9 +197,51 @@ export function ProgressReport({
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header Actions - Hidden in print */}
-      <div className="print:hidden sticky top-0 z-10 bg-background border-b">
+    <>
+      {/* Print Styles */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 2cm 2.5cm;
+          }
+          
+          body {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+          }
+          
+          .print\\:hidden {
+            display: none !important;
+          }
+          
+          .print-content {
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          
+          /* Prevent page breaks inside tables and cards */
+          table, .card {
+            page-break-inside: avoid;
+          }
+          
+          /* Ensure proper page breaks */
+          .page-break-after {
+            page-break-after: always;
+          }
+          
+          /* Remove shadows and borders for print */
+          .card {
+            box-shadow: none;
+            border: 1px solid #e5e7eb;
+          }
+        }
+      `}</style>
+      
+      <div className="min-h-screen bg-background">
+        {/* Header Actions - Hidden in print */}
+        <div className="print:hidden sticky top-0 z-10 bg-background border-b">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -282,7 +324,7 @@ export function ProgressReport({
       </div>
 
       {/* Report Content */}
-      <div className="max-w-5xl mx-auto px-6 py-8 print:p-8" data-testid="report-content">
+      <div className="max-w-5xl mx-auto px-6 py-8 print-content" data-testid="report-content">
         {/* Cover Page */}
         <div className="mb-12 print:page-break-after-always">
           <div className="text-center space-y-6">
@@ -708,5 +750,6 @@ export function ProgressReport({
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }
