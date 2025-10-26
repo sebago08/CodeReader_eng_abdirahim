@@ -9,10 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Project, DocumentType, ProjectDocument } from "@shared/schema";
+import { ProgressReport } from "@/components/document-viewers/progress-report";
 
 interface DocumentsTabProps {
   project: Project;
-  onViewDocument: (document: ProjectDocument) => void;
 }
 
 const DOCUMENT_TEMPLATES = [
@@ -48,13 +48,46 @@ const DOCUMENT_TEMPLATES = [
   },
 ];
 
-export function DocumentsTab({ project, onViewDocument }: DocumentsTabProps) {
+export function DocumentsTab({ project }: DocumentsTabProps) {
   const { toast } = useToast();
+  const [viewingDocument, setViewingDocument] = useState<ProjectDocument | null>(null);
   
   // Fetch documents for this project
   const { data: documents = [], isLoading } = useQuery<ProjectDocument[]>({
     queryKey: ['/api/projects', project.id, 'documents'],
   });
+
+  // If viewing a document, render the appropriate viewer
+  if (viewingDocument) {
+    if (viewingDocument.documentType === 'progress-report') {
+      return (
+        <ProgressReport 
+          document={viewingDocument}
+          onBack={() => setViewingDocument(null)}
+        />
+      );
+    }
+    
+    // For other document types, show placeholder for now
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          onClick={() => setViewingDocument(null)}
+          data-testid="button-back-to-documents"
+        >
+          ← Back to Documents
+        </Button>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground">
+              Viewer for {viewingDocument.documentType} coming soon!
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Create document mutation
   const createDocumentMutation = useMutation({
@@ -81,7 +114,7 @@ export function DocumentsTab({ project, onViewDocument }: DocumentsTabProps) {
         title: "Document created",
         description: "Your document has been created successfully.",
       });
-      onViewDocument(newDocument);
+      setViewingDocument(newDocument);
     },
     onError: () => {
       toast({
@@ -273,7 +306,7 @@ export function DocumentsTab({ project, onViewDocument }: DocumentsTabProps) {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => onViewDocument(doc)}
+                                onClick={() => setViewingDocument(doc)}
                                 className="text-[#1a5276] border-[#1a5276] hover:bg-[#1a5276] hover:text-white"
                                 data-testid={`button-view-document-${doc.id}`}
                               >

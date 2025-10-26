@@ -1,0 +1,307 @@
+ConstructPro
+Monthly Progress Report
+Unsaved
+Save Document
+Print PDF
+Export PDF
+Back to Project
+Dashboard
+Projects
+Cover Page Image
+Upload a single image to display on the cover page (e.g., project site photo)
+Reports
+Settings
+Click to upload cover image
+PNG, JPG, JPEG up to 10MB
+Urban Development Corp
+Riverfront Commercial Complex
+Riverfront Commercial Complex
+Contractor: BuildRight Construction
+Contract: RFC-2023-001
+MONTHLY PROGRESS REPORT OCTOBER 2025
+TABLE OF CONTENTS
+1.
+INTRODUCTION
+1.1
+Project Summary
+1.2
+Location and Extents of Works
+2.
+PROJECT INFORMATION
+2.1
+Project Summary
+3.
+SCOPE OF WORK
+4.
+PROGRESS
+4.1
+Overall Progress
+4.2
+Work Progress
+4.3
+Financial Progress
+5.
+WORK PLAN
+6.
+PROGRESS PHOTOS
+7.
+CLIENT PERSONNEL
+8.
+CONTRACTOR PERSONNEL
+9.
+CONTRACTOR'S EQUIPMENT
+10.
+ISSUES AND CONCERNS
+1. INTRODUCTION
+1.1 Project Summary
+No executive summary has been provided for this project. You can add one in the project form under "Report Content" tab.
+1.2 Location and Extents of Works
+No location and extents information has been provided for this project. You can add it in the project form under "Report Content" tab.
+2. PROJECT INFORMATION
+2.1 Project Summary - RFC-2023-001
+Table 1: Project Summary
+Item
+Details
+1.
+Contractor
+BuildRight Construction
+2.
+Contract Sum (USD)
+$5,000,000
+3.
+Source of funds
+Urban Development Corp
+4.
+Date of Letter of Acceptance
+-
+5.
+Date of Contract Signature
+-
+6.
+Start Date
+March 15, 2023
+7.
+Commencement date
+March 15, 2023
+8.
+Original Contract period
+8 Months
+9.
+Revised Contract period
+-
+10.
+Site possession date
+-
+11.
+Date of Completion
+November 15, 2023
+12.
+Period Elapsed
+32 Months
+13.
+Percentage of Time Elapsed
+100%
+14.
+Percentage of Actual Work Progress for the month
+-
+15.
+Percentage of Planned Work Progress of the month
+-
+16.
+Physical progress to date
+42%
+17.
+Defects Liability Period
+12 months
+18.
+Claims
+-
+19.
+Interest on Delayed Payments
+-
+20.
+Liquidated Damages
+-
+21.
+Total Amount certified to date (IPC01)
+-
+22.
+Advance Payment
+$0.00
+23.
+Percentage of amount certified to date (including Advance Payment and Retention Amount)
+-
+24.
+Amount paid to date
+$0.00
+3. SCOPE OF WORK
+Construction of a 10-story commercial complex with retail space on ground floor and office spaces on upper floors. Includes underground parking for 200 vehicles.
+4. PROGRESS
+4.1 Overall Progress
+Completion Status
+42%
+Days Elapsed
+Budget Used
+390% - 956 / 245 days
+42%
+4.2 Work Progress
+Activity Name
+Progress
+Foundation and excavation
+100%
+Structural framework floors 1-5
+100%
+Structural framework floors 6-10
+65%
+MEP installations
+15%
+Interior finishing
+0%
+4.3 Financial Progress
+Contract Amount
+Total Certified
+Balance
+Financial Progress
+0%
+$5,000,000.00
+$0.00
+$5,000,000.00
+No payment certificates recorded for this project.
+5. WORK PLAN
+Activity Name
+Start Date
+Duration
+End Date
+Foundation and excavation
+March 15, 2023
+30 days
+April 14, 2023
+Structural framework floors 1-5
+April 15, 2023
+60 days
+June 14, 2023
+Structural framework floors 6-10
+June 15, 2023
+60 days
+August 14, 2023
+MEP installations
+August 15, 2023
+45 days
+September 29, 2023
+Interior finishing
+September 30, 2023
+40 days
+November 9, 2023
+6. PROGRESS PHOTOS
+Upload Photos
+No progress photos uploaded yet
+Upload Your First Photo
+7. CLIENT PERSONNEL
+Table 2: Client Personnel
+#
+Name
+Qualification
+Designation
+1.
+Sarah Johnson
+MBA, PMP
+Project Director
+2.
+Robert Martinez
+B.Sc Engineering Management
+Project Supervisor
+3.
+Jennifer Lee
+B.Eng Civil Engineering
+Technical Inspector
+4.
+William Thompson
+MSc Project Management
+Quality Assurance Manager
+5.
+Amanda Chen
+B.Sc Quantity Surveying
+Cost Controller
+8. CONTRACTOR PERSONNEL
+Table 3: Contractor Personnel
+#
+Name
+Qualification
+Designation
+1.
+Michael Chen
+B.Eng Civil Engineering
+Project Manager
+2.
+Sarah Williams
+MSc Construction Management
+Site Engineer
+3.
+David Brown
+B.Sc Quantity Surveying
+Quantity Surveyor
+4.
+Thomas Anderson
+B.Eng Mechanical Engineering
+MEP Coordinator
+5.
+Patricia Garcia
+Diploma Construction Technology
+Safety Officer
+9. CONTRACTOR'S EQUIPMENT
+Table 4: Contractor's Equipment
+#
+Equipment Name
+Type
+Quantity
+Condition
+1.
+Tower Crane
+Heavy Machinery
+2
+Excellent
+2.
+Concrete Mixer
+Construction Equipment
+3
+Good
+3.
+Excavator CAT 320
+Heavy Machinery
+1
+Good
+4.
+Bulldozer D6T
+Heavy Machinery
+1
+Excellent
+5.
+Dump Trucks
+Transportation
+5
+Good
+6.
+Concrete Pump
+Construction Equipment
+2
+Excellent
+7.
+Welding Machines
+Tools & Equipment
+8
+Good
+10. ISSUES AND CONCERNS
+Minor delay in delivery of custom window frames (2 days)
+✓ Resolved on 2025-10-08 - Marked resolved.
+Weather conditions favorable – no significant delays
+✓ Resolved on 2025-10-05 - Cleared after last week; schedule normalized.
+Prepared by:
+Reviewed by:
+John Smith
+Sarah Johnson
+Project Manager
+Urban Development Corp
+October 26, 2025
+_________________
+This report is confidential and intended solely for the use of Urban Development Corp
+ConstructPro Project Management System - October 26, 2025
