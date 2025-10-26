@@ -650,19 +650,28 @@ export function ProgressReport({
                   </tr>
                 </thead>
                 <tbody>
-                  {paymentCertificates.map((cert: any, index: number) => (
-                    <tr key={cert.id} className="border-b">
-                      <td className="py-2 px-4">{index + 1}.</td>
-                      <td className="py-2 px-4">{cert.certificateNo}</td>
-                      <td className="py-2 px-4">{formatDate(cert.dateCertified)}</td>
-                      <td className="py-2 px-4">{formatCurrency(cert.amountPaid)}</td>
-                      <td className="py-2 px-4">
-                        <Badge variant={cert.paymentStatus === 'Paid' ? 'default' : cert.paymentStatus === 'In Process' ? 'secondary' : 'outline'}>
-                          {cert.paymentStatus}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
+                  {[...paymentCertificates]
+                    .sort((a: any, b: any) => {
+                      // Sort advance payment first
+                      const isAAdvance = a.certificateNo.toLowerCase().includes('advance');
+                      const isBAdvance = b.certificateNo.toLowerCase().includes('advance');
+                      if (isAAdvance && !isBAdvance) return -1;
+                      if (!isAAdvance && isBAdvance) return 1;
+                      return 0;
+                    })
+                    .map((cert: any, index: number) => (
+                      <tr key={cert.id} className="border-b">
+                        <td className="py-2 px-4">{index + 1}.</td>
+                        <td className="py-2 px-4">{cert.certificateNo}</td>
+                        <td className="py-2 px-4">{formatDate(cert.dateCertified)}</td>
+                        <td className="py-2 px-4">{formatCurrency(cert.amountPaid)}</td>
+                        <td className="py-2 px-4">
+                          <Badge variant={cert.paymentStatus === 'Paid' ? 'default' : cert.paymentStatus === 'In Process' ? 'secondary' : 'outline'}>
+                            {cert.paymentStatus}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
