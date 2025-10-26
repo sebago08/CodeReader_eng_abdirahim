@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Download, Save, X, Upload } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -38,6 +38,19 @@ export function ProgressReport({
   const [topLogo, setTopLogo] = useState<string>('');
   const [leftLogo, setLeftLogo] = useState<string>('');
   const [rightLogo, setRightLogo] = useState<string>('');
+  
+  // Load images from document when editing
+  useEffect(() => {
+    if (document && isPreview) {
+      const loadedImages = document.customContent as any;
+      if (loadedImages) {
+        if (loadedImages.coverImage) setCoverImage(loadedImages.coverImage);
+        if (loadedImages.topLogo) setTopLogo(loadedImages.topLogo);
+        if (loadedImages.leftLogo) setLeftLogo(loadedImages.leftLogo);
+        if (loadedImages.rightLogo) setRightLogo(loadedImages.rightLogo);
+      }
+    }
+  }, [document, isPreview]);
   
   // Use either the document's snapshot or the direct project prop
   const project = (document?.projectSnapshot || projectProp) as unknown as ProjectWithRoads;
@@ -238,7 +251,8 @@ export function ProgressReport({
   };
 
   const handleSaveClick = () => {
-    const defaultName = `Monthly Progress Report - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    // Use existing document name when editing, or generate a new one when creating
+    const defaultName = document?.documentName || `Monthly Progress Report - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     setDocumentName(defaultName);
     setShowSaveDialog(true);
   };

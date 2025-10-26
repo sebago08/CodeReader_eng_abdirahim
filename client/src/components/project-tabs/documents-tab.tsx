@@ -73,7 +73,7 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
         documentName,
         projectSnapshot,
         customContent: images || {}, // Store images in customContent
-      }) as ProjectDocument;
+      }) as unknown as ProjectDocument;
     },
     onSuccess: (newDocument: ProjectDocument) => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects', project.id, 'documents'] });
@@ -99,7 +99,7 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
       return await apiRequest("PATCH", `/api/documents/${documentId}`, {
         documentName,
         customContent: images || {},
-      }) as ProjectDocument;
+      }) as unknown as ProjectDocument;
     },
     onSuccess: (updatedDocument: ProjectDocument) => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects', project.id, 'documents'] });
