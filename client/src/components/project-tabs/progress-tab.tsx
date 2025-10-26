@@ -598,7 +598,7 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                     <TableHeader>
                       <TableRow>
                         <TableHead>Certificate No.</TableHead>
-                        <TableHead>Pending Amount (USD)</TableHead>
+                        <TableHead>Submitted Amount (USD)</TableHead>
                         <TableHead>In Process Amount (USD)</TableHead>
                         <TableHead>Amount Paid (USD)</TableHead>
                         <TableHead>Payment Status</TableHead>
