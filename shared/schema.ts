@@ -239,6 +239,21 @@ export const projectInvitations = pgTable("project_invitations", {
   index("invitations_token_idx").on(table.token),
 ]);
 
+// Project documents table (for generated documents like progress reports, certificates, etc.)
+export const projectDocuments = pgTable("project_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  userId: varchar("user_id").notNull(), // User who created the document
+  documentType: varchar("document_type").notNull(), // "progress-report", "taking-over-certificate", etc.
+  documentName: varchar("document_name").notNull(),
+  projectSnapshot: jsonb("project_snapshot").notNull(), // Frozen project data at time of creation
+  customContent: jsonb("custom_content"), // Editable fields (meeting notes, instruction content, etc.)
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("project_documents_project_idx").on(table.projectId),
+  index("project_documents_type_idx").on(table.documentType),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
@@ -356,6 +371,17 @@ export const projectInvitationsRelations = relations(projectInvitations, ({ one 
   }),
 }));
 
+export const projectDocumentsRelations = relations(projectDocuments, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectDocuments.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [projectDocuments.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
@@ -455,6 +481,13 @@ export const insertWorkPlanActivitySchema = createInsertSchema(workPlanActivitie
   duration: z.coerce.number().int().min(1, "Duration must be at least 1 day"),
 });
 
+export const insertProjectDocumentSchema = createInsertSchema(projectDocuments).omit({
+  id: true,
+  projectId: true,
+  userId: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
@@ -502,3 +535,14 @@ export type ProjectInvitationWithDetails = ProjectInvitation & {
   invitedByUser: User;
   project: Project;
 };
+
+export type ProjectDocument = typeof projectDocuments.$inferSelect;
+export type InsertProjectDocument = z.infer<typeof insertProjectDocumentSchema>;
+
+// Document type enum
+export type DocumentType = 
+  | "progress-report" 
+  | "taking-over-certificate" 
+  | "commencement-order" 
+  | "instruction-letter" 
+  | "meeting-minutes";
