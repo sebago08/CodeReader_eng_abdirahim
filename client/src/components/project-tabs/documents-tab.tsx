@@ -57,39 +57,7 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
     queryKey: ['/api/projects', project.id, 'documents'],
   });
 
-  // If viewing a document, render the appropriate viewer
-  if (viewingDocument) {
-    if (viewingDocument.documentType === 'progress-report') {
-      return (
-        <ProgressReport 
-          document={viewingDocument}
-          onBack={() => setViewingDocument(null)}
-        />
-      );
-    }
-    
-    // For other document types, show placeholder for now
-    return (
-      <div className="space-y-4">
-        <Button
-          variant="ghost"
-          onClick={() => setViewingDocument(null)}
-          data-testid="button-back-to-documents"
-        >
-          ← Back to Documents
-        </Button>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
-              Viewer for {viewingDocument.documentType} coming soon!
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Create document mutation
+  // Create document mutation - MUST BE BEFORE CONDITIONAL RETURNS
   const createDocumentMutation = useMutation({
     mutationFn: async (documentType: DocumentType) => {
       // Create a snapshot of the current project data
@@ -180,6 +148,38 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
   };
 
   const totalDocuments = documents.length;
+
+  // Conditional rendering for viewing a document
+  if (viewingDocument) {
+    if (viewingDocument.documentType === 'progress-report') {
+      return (
+        <ProgressReport 
+          document={viewingDocument}
+          onBack={() => setViewingDocument(null)}
+        />
+      );
+    }
+    
+    // For other document types, show placeholder for now
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          onClick={() => setViewingDocument(null)}
+          data-testid="button-back-to-documents"
+        >
+          ← Back to Documents
+        </Button>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground">
+              Viewer for {viewingDocument.documentType} coming soon!
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
