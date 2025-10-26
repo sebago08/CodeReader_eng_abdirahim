@@ -84,3 +84,60 @@
     @apply flex justify-center items-center h-screen text-muted-foreground;
   }
 }
+
+/* Print Styles */
+@media print {
+  @page {
+    size: A4;
+    margin: 2cm 2.5cm;
+  }
+
+  /* Hide everything except the print content */
+  body * {
+    visibility: hidden;
+  }
+
+  .print-content,
+  .print-content * {
+    visibility: visible;
+  }
+
+  .print-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  /* Hide non-printable elements */
+  button,
+  .no-print,
+  [data-testid="button-print"],
+  [data-testid="button-export-pdf"],
+  [data-testid="button-save"],
+  [data-testid="button-cancel-preview"] {
+    display: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  .print\:page-break-after-always {
+    page-break-after: always;
+  }
+
+  /* Preserve colors for print */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Override background colors for cards */
+  .bg-card,
+  .bg-background {
+    background-color: white !important;
+  }
+
+  /* Ensure text is black for better readability */
+  .text-muted-foreground {
+    color: #666 !important;
+  }
+}
