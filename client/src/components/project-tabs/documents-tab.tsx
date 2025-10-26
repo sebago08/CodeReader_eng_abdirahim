@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { FileText, Plus, FileCheck, FileSignature, Mail, Eye, Users, Trash2, ChevronDown } from "lucide-react";
+import { FileText, Plus, FileCheck, FileSignature, Mail, Eye, Users, Trash2, ChevronDown, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -52,6 +52,7 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
   const { toast } = useToast();
   const [viewingDocument, setViewingDocument] = useState<ProjectDocument | null>(null);
   const [previewDocument, setPreviewDocument] = useState<{ documentType: DocumentType; projectSnapshot: any } | null>(null);
+  const [editingDocument, setEditingDocument] = useState<ProjectDocument | null>(null);
   
   // Fetch documents for this project
   const { data: documents = [], isLoading } = useQuery<ProjectDocument[]>({
@@ -92,6 +93,32 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
     },
   });
 
+  // Update document mutation
+  const updateDocumentMutation = useMutation<ProjectDocument, Error, { documentId: string; documentName: string; images?: any }>({
+    mutationFn: async ({ documentId, documentName, images }) => {
+      return await apiRequest("PATCH", `/api/documents/${documentId}`, {
+        documentName,
+        customContent: images || {},
+      }) as ProjectDocument;
+    },
+    onSuccess: (updatedDocument: ProjectDocument) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', project.id, 'documents'] });
+      toast({
+        title: "Document updated",
+        description: "Your document has been updated successfully.",
+      });
+      setEditingDocument(null);
+      setViewingDocument(updatedDocument);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update document. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Delete document mutation
   const deleteDocumentMutation = useMutation({
     mutationFn: async (documentId: string) => {
@@ -122,16 +149,30 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
   };
 
   const handleSaveDocument = (documentName: string, images?: any) => {
-    if (!previewDocument) return;
-    createDocumentMutation.mutate({
-      documentType: previewDocument.documentType,
-      documentName,
-      images,
-    });
+    if (editingDocument) {
+      // Update existing document
+      updateDocumentMutation.mutate({
+        documentId: editingDocument.id,
+        documentName,
+        images,
+      });
+    } else if (previewDocument) {
+      // Create new document
+      createDocumentMutation.mutate({
+        documentType: previewDocument.documentType,
+        documentName,
+        images,
+      });
+    }
+  };
+
+  const handleEditDocument = (doc: ProjectDocument) => {
+    setEditingDocument(doc);
   };
 
   const handleCancelPreview = () => {
     setPreviewDocument(null);
+    setEditingDocument(null);
   };
 
   const handleDeleteDocument = (documentId: string) => {
@@ -164,6 +205,42 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
   };
 
   const totalDocuments = documents.length;
+
+  // Conditional rendering for editing mode
+  if (editingDocument) {
+    if (editingDocument.documentType === 'progress-report') {
+      return (
+        <ProgressReport 
+          document={editingDocument}
+          project={editingDocument.projectSnapshot as any}
+          isPreview={true}
+          isSaving={updateDocumentMutation.isPending}
+          onSave={handleSaveDocument}
+          onCancel={handleCancelPreview}
+        />
+      );
+    }
+    
+    // For other document types, show placeholder for now
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          onClick={handleCancelPreview}
+          data-testid="button-cancel-edit"
+        >
+          ← Back to Documents
+        </Button>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground">
+              Editing for {editingDocument.documentType} coming soon!
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Conditional rendering for preview mode
   if (previewDocument) {
@@ -363,6 +440,16 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
                               >
                                 <Eye className="w-4 h-4 mr-2" />
                                 View
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditDocument(doc)}
+                                className="text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white"
+                                data-testid={`button-edit-document-${doc.id}`}
+                              >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
                               </Button>
                               <Button
                                 size="sm"

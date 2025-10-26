@@ -928,6 +928,35 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch('/api/documents/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      const { documentName, customContent } = req.body;
+      
+      const document = await storage.getDocument(id);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Verify user has access to the document's project
+      const project = await storage.getProject(document.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const updatedDocument = await storage.updateDocument(id, {
+        documentName,
+        customContent,
+      });
+      
+      res.json(updatedDocument);
+    } catch (error) {
+      console.error("Error updating document:", error);
+      res.status(500).json({ message: "Failed to update document" });
+    }
+  });
+
   app.delete('/api/documents/:id', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
