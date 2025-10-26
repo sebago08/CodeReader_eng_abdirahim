@@ -152,6 +152,7 @@ export interface IStorage {
   getProjectDocuments(projectId: string): Promise<ProjectDocument[]>;
   getDocument(id: string): Promise<ProjectDocument | undefined>;
   createDocument(projectId: string, userId: string, document: InsertProjectDocument): Promise<ProjectDocument>;
+  updateDocument(id: string, updates: Partial<Pick<InsertProjectDocument, 'documentName' | 'customContent'>>): Promise<ProjectDocument>;
   deleteDocument(id: string): Promise<void>;
 }
 
@@ -553,6 +554,7 @@ export class MemStorage implements IStorage {
   async getProjectDocuments(): Promise<ProjectDocument[]> { return []; }
   async getDocument(): Promise<ProjectDocument | undefined> { return undefined; }
   async createDocument(): Promise<ProjectDocument> { throw new Error('Not supported in MemStorage'); }
+  async updateDocument(): Promise<ProjectDocument> { throw new Error('Not supported in MemStorage'); }
   async deleteDocument(): Promise<void> { throw new Error('Not supported in MemStorage'); }
 }
 
@@ -1161,6 +1163,14 @@ export class DatabaseStorage implements IStorage {
   async createDocument(projectId: string, userId: string, document: InsertProjectDocument): Promise<ProjectDocument> {
     const [result] = await db.insert(projectDocuments)
       .values({ ...document, projectId, userId })
+      .returning();
+    return result;
+  }
+  
+  async updateDocument(id: string, updates: Partial<Pick<InsertProjectDocument, 'documentName' | 'customContent'>>): Promise<ProjectDocument> {
+    const [result] = await db.update(projectDocuments)
+      .set(updates)
+      .where(eq(projectDocuments.id, id))
       .returning();
     return result;
   }
