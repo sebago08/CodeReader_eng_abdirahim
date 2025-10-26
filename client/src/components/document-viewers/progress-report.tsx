@@ -408,10 +408,10 @@ export function ProgressReport({
       )}
 
       {/* Report Content */}
-      <div className="max-w-5xl mx-auto px-6 py-8 print-content" data-testid="report-content">
+      <div className="max-w-5xl mx-auto print-content" data-testid="report-content">
         
-        {/* Cover Page */}
-        <div className="page-break-after print:page-break-after-always mb-12">
+        {/* Cover Page - Reduced margins for prominence */}
+        <div className="page-break-after print:page-break-after-always mb-12 px-4 py-8">
           <div className="text-center space-y-8">
             {/* Top Logo */}
             {displayTopLogo && (
@@ -452,7 +452,7 @@ export function ProgressReport({
 
             {/* Cover Photo */}
             {displayCoverImage && (
-              <div className="my-8">
+              <div className="my-4">
                 <img src={displayCoverImage} alt="Project Site" className="w-full h-64 object-cover rounded shadow-lg" />
               </div>
             )}
@@ -476,6 +476,8 @@ export function ProgressReport({
           </div>
         </div>
 
+        {/* Content Pages - Normal padding */}
+        <div className="px-6">
         {/* Table of Contents - Separate Page */}
         <div className="page-break-after print:page-break-after-always mb-12">
           <h2 className="text-xl font-bold mb-6" data-testid="heading-toc">TABLE OF CONTENTS</h2>
@@ -809,6 +811,7 @@ export function ProgressReport({
           <p className="text-xs text-center text-gray-600 mt-2">
             ConstructTrack Project Management System - {currentDate}
           </p>
+        </div>
         </div>
       </div>
 
