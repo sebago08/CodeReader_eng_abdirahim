@@ -255,6 +255,33 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
     updateAdvancePaymentMutation.mutate(advancePayment);
   };
 
+  const handleAddAdvancePaymentCertificate = () => {
+    const advanceAmount = parseFloat(advancePayment);
+    if (!advanceAmount || advanceAmount <= 0) {
+      toast({ title: "Error", description: "Please enter a valid advance payment amount", variant: "destructive" });
+      return;
+    }
+
+    // Check if advance payment certificate already exists
+    const existingAdvanceCert = paymentCertificates.find(cert => 
+      cert.certificateNo.toLowerCase().includes("advance") || cert.certificateNo === "ADV"
+    );
+
+    if (existingAdvanceCert) {
+      toast({ title: "Info", description: "Advance payment certificate already exists", variant: "default" });
+      return;
+    }
+
+    createCertificateMutation.mutate({
+      certificateNo: "Advance Payment",
+      pendingAmount: "0",
+      inProcessAmount: "0",
+      amountPaid: advanceAmount.toString(),
+      dateCertified: new Date().toISOString().split('T')[0],
+      paymentStatus: "Paid",
+    });
+  };
+
   const totalPending = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.pendingAmount || "0"), 0);
   const totalInProcess = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.inProcessAmount || "0"), 0);
   const totalPaid = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.amountPaid || "0"), 0);
@@ -462,16 +489,27 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Input
-                  type="number"
-                  value={advancePayment}
-                  onChange={(e) => setAdvancePayment(e.target.value)}
-                  onBlur={handleAdvancePaymentBlur}
-                  placeholder="Enter advance payment amount"
-                  className="max-w-md"
-                  data-testid="input-advance-payment"
-                />
-                <p className="text-sm text-gray-500">Enter the advance payment amount received for this project</p>
+                <div className="flex gap-2 max-w-2xl">
+                  <Input
+                    type="number"
+                    value={advancePayment}
+                    onChange={(e) => setAdvancePayment(e.target.value)}
+                    onBlur={handleAdvancePaymentBlur}
+                    placeholder="Enter advance payment amount"
+                    className="flex-1"
+                    data-testid="input-advance-payment"
+                  />
+                  <Button
+                    onClick={handleAddAdvancePaymentCertificate}
+                    disabled={createCertificateMutation.isPending || !advancePayment || parseFloat(advancePayment) <= 0}
+                    className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white whitespace-nowrap"
+                    data-testid="button-add-advance-certificate"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add as Certificate
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-500">Enter the advance payment amount and click "Add as Certificate" to include it in the IPC table</p>
               </div>
             </CardContent>
           </Card>
@@ -568,7 +606,16 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paymentCertificates.map((certificate) => (
+                      {[...paymentCertificates]
+                        .sort((a, b) => {
+                          // Sort advance payment first
+                          const isAAdvance = a.certificateNo.toLowerCase().includes('advance');
+                          const isBAdvance = b.certificateNo.toLowerCase().includes('advance');
+                          if (isAAdvance && !isBAdvance) return -1;
+                          if (!isAAdvance && isBAdvance) return 1;
+                          return 0;
+                        })
+                        .map((certificate) => (
                         <TableRow key={certificate.id}>
                           <TableCell className="font-medium">{certificate.certificateNo}</TableCell>
                           <TableCell>
