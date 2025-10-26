@@ -175,13 +175,6 @@ export function ProgressReport({
     window.print();
   };
 
-  const handleExportPDF = () => {
-    toast({
-      title: "PDF Export",
-      description: "PDF export functionality will be available in the next update.",
-    });
-  };
-
   const handleSaveClick = () => {
     // Set default name based on current date
     const defaultName = `Monthly Progress Report - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
@@ -299,22 +292,13 @@ export function ProgressReport({
               ) : (
                 <>
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrint}
-                    data-testid="button-print"
-                  >
-                    <Printer className="h-4 w-4 mr-2" />
-                    Print
-                  </Button>
-                  <Button
                     variant="default"
                     size="sm"
-                    onClick={handleExportPDF}
-                    data-testid="button-export-pdf"
+                    onClick={handlePrint}
+                    data-testid="button-print-pdf"
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Export PDF
+                    Download PDF
                   </Button>
                 </>
               )}
