@@ -672,6 +672,11 @@ export function ProgressReport({
                         </td>
                       </tr>
                     ))}
+                  <tr className="bg-gray-100 font-semibold border-t-2 border-gray-300">
+                    <td className="py-2 px-4" colSpan={3}>Total</td>
+                    <td className="py-2 px-4">{formatCurrency(totalCertified.toString())}</td>
+                    <td className="py-2 px-4"></td>
+                  </tr>
                 </tbody>
               </table>
             </div>
