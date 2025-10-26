@@ -616,7 +616,7 @@ export function ProgressReport({
 
           {/* 4.3 Financial Progress */}
           <h3 className="text-lg font-semibold mb-4">4.3 Financial Progress</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div>
               <p className="text-sm font-medium mb-1">Contract Amount</p>
               <p className="text-lg font-semibold">{formatCurrency(project.contractAmount)}</p>
@@ -634,7 +634,39 @@ export function ProgressReport({
               <p className="text-lg font-semibold">{financialProgress}%</p>
             </div>
           </div>
-          {paymentCertificates.length === 0 && (
+
+          {/* Payment Certificates Table */}
+          {paymentCertificates.length > 0 ? (
+            <div className="overflow-x-auto">
+              <h4 className="text-base font-semibold mb-3">Interim Payment Certificates (IPCs)</h4>
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="border-b-2 border-gray-300">
+                    <th className="text-left py-2 px-4 font-semibold">#</th>
+                    <th className="text-left py-2 px-4 font-semibold">Certificate No.</th>
+                    <th className="text-left py-2 px-4 font-semibold">Date Certified</th>
+                    <th className="text-left py-2 px-4 font-semibold">Amount Paid</th>
+                    <th className="text-left py-2 px-4 font-semibold">Payment Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paymentCertificates.map((cert: any, index: number) => (
+                    <tr key={cert.id} className="border-b">
+                      <td className="py-2 px-4">{index + 1}.</td>
+                      <td className="py-2 px-4">{cert.certificateNo}</td>
+                      <td className="py-2 px-4">{formatDate(cert.dateCertified)}</td>
+                      <td className="py-2 px-4">{formatCurrency(cert.amountPaid)}</td>
+                      <td className="py-2 px-4">
+                        <Badge variant={cert.paymentStatus === 'Paid' ? 'default' : cert.paymentStatus === 'In Process' ? 'secondary' : 'outline'}>
+                          {cert.paymentStatus}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
             <p className="text-gray-600 text-sm">No payment certificates recorded for this project.</p>
           )}
         </div>
