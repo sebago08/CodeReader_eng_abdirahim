@@ -8,7 +8,8 @@ import {
   insertLayerProgressSchema,
   insertActivitySchema,
   insertSafetyIncidentSchema,
-  insertWorkPlanActivitySchema
+  insertWorkPlanActivitySchema,
+  insertProjectDocumentSchema
 } from "@shared/schema";
 import { ZodError, z } from "zod";
 import { setupAuth } from "./auth";
@@ -856,6 +857,98 @@ export function registerRoutes(app: Express): Server {
       }
       console.error("Error toggling milestone:", error);
       res.status(500).json({ message: "Failed to toggle milestone" });
+    }
+  });
+
+  // Project Document Routes
+  app.get('/api/projects/:projectId/documents', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const documents = await storage.getProjectDocuments(projectId);
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching project documents:", error);
+      res.status(500).json({ message: "Failed to fetch project documents" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/documents', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      // Validate request body
+      const validated = insertProjectDocumentSchema.parse(req.body);
+      
+      const document = await storage.createDocument(projectId, userId, validated);
+      res.status(201).json(document);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error creating document:", error);
+      res.status(500).json({ message: "Failed to create document" });
+    }
+  });
+
+  app.get('/api/documents/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      const document = await storage.getDocument(id);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Verify user has access to the document's project
+      const project = await storage.getProject(document.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      res.json(document);
+    } catch (error) {
+      console.error("Error fetching document:", error);
+      res.status(500).json({ message: "Failed to fetch document" });
+    }
+  });
+
+  app.delete('/api/documents/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      const document = await storage.getDocument(id);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+      
+      // Verify user has access to the document's project
+      const project = await storage.getProject(document.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      await storage.deleteDocument(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ message: "Failed to delete document" });
     }
   });
 
