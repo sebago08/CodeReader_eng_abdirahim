@@ -1,21 +1,42 @@
-import { ArrowLeft, Printer, Download } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Printer, Download, Save, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { ProjectDocument, ProjectWithRoads } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 interface ProgressReportProps {
-  document: ProjectDocument;
-  onBack: () => void;
+  document?: ProjectDocument;
+  project?: ProjectWithRoads;
+  isPreview?: boolean;
+  isSaving?: boolean;
+  onSave?: (documentName: string) => void;
+  onCancel?: () => void;
+  onBack?: () => void;
 }
 
-export function ProgressReport({ document, onBack }: ProgressReportProps) {
+export function ProgressReport({ 
+  document, 
+  project: projectProp,
+  isPreview = false,
+  isSaving = false,
+  onSave,
+  onCancel,
+  onBack 
+}: ProgressReportProps) {
   const { toast } = useToast();
-  const project = document.projectSnapshot as unknown as ProjectWithRoads;
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [documentName, setDocumentName] = useState('');
+  
+  // Use either the document's snapshot or the direct project prop
+  const project = (document?.projectSnapshot || projectProp) as unknown as ProjectWithRoads;
   
   const currentDate = new Date().toLocaleDateString('en-US', { 
     year: 'numeric', 
@@ -147,6 +168,20 @@ export function ProgressReport({ document, onBack }: ProgressReportProps) {
     });
   };
 
+  const handleSaveClick = () => {
+    // Set default name based on current date
+    const defaultName = `Monthly Progress Report - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    setDocumentName(defaultName);
+    setShowSaveDialog(true);
+  };
+
+  const handleConfirmSave = () => {
+    if (documentName.trim() && onSave) {
+      onSave(documentName.trim());
+      setShowSaveDialog(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header Actions - Hidden in print */}
@@ -157,38 +192,76 @@ export function ProgressReport({ document, onBack }: ProgressReportProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onBack}
-                data-testid="button-back"
+                onClick={isPreview ? onCancel : onBack}
+                data-testid={isPreview ? "button-cancel" : "button-back"}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Documents
+                {isPreview ? 'Cancel' : 'Back to Documents'}
               </Button>
-              <div>
-                <h1 className="text-lg font-semibold" data-testid="text-document-name">{document.documentName}</h1>
-                <p className="text-sm text-muted-foreground">
-                  Created {formatDate(document.createdAt)}
-                </p>
-              </div>
+              {!isPreview && document && (
+                <div>
+                  <h1 className="text-lg font-semibold" data-testid="text-document-name">{document.documentName}</h1>
+                  <p className="text-sm text-muted-foreground">
+                    Created {formatDate(document.createdAt)}
+                  </p>
+                </div>
+              )}
+              {isPreview && (
+                <div>
+                  <h1 className="text-lg font-semibold" data-testid="text-preview-title">Preview: Monthly Progress Report</h1>
+                  <p className="text-sm text-muted-foreground">
+                    Review and save this document
+                  </p>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrint}
-                data-testid="button-print"
-              >
-                <Printer className="h-4 w-4 mr-2" />
-                Print
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleExportPDF}
-                data-testid="button-export-pdf"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export PDF
-              </Button>
+              {isPreview ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onCancel}
+                    disabled={isSaving}
+                    data-testid="button-cancel-preview"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleSaveClick}
+                    disabled={isSaving}
+                    data-testid="button-save-document"
+                    className="bg-[#1a5276] hover:bg-[#14455f]"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {isSaving ? 'Saving...' : 'Save Document'}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrint}
+                    data-testid="button-print"
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleExportPDF}
+                    data-testid="button-export-pdf"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export PDF
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -573,6 +646,53 @@ export function ProgressReport({ document, onBack }: ProgressReportProps) {
           </p>
         </div>
       </div>
+
+      {/* Save Dialog */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent data-testid="dialog-save-document">
+          <DialogHeader>
+            <DialogTitle>Save Document</DialogTitle>
+            <DialogDescription>
+              Enter a name for this document. You can edit it later if needed.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="document-name">Document Name</Label>
+              <Input
+                id="document-name"
+                value={documentName}
+                onChange={(e) => setDocumentName(e.target.value)}
+                placeholder="Monthly Progress Report - Oct 26, 2025"
+                data-testid="input-document-name"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && documentName.trim()) {
+                    handleConfirmSave();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowSaveDialog(false)}
+              disabled={isSaving}
+              data-testid="button-cancel-save"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmSave}
+              disabled={!documentName.trim() || isSaving}
+              data-testid="button-confirm-save"
+              className="bg-[#1a5276] hover:bg-[#14455f]"
+            >
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

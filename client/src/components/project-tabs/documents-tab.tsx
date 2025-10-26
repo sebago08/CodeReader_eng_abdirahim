@@ -51,6 +51,7 @@ const DOCUMENT_TEMPLATES = [
 export function DocumentsTab({ project }: DocumentsTabProps) {
   const { toast } = useToast();
   const [viewingDocument, setViewingDocument] = useState<ProjectDocument | null>(null);
+  const [previewDocument, setPreviewDocument] = useState<{ documentType: DocumentType; projectSnapshot: any } | null>(null);
   
   // Fetch documents for this project
   const { data: documents = [], isLoading } = useQuery<ProjectDocument[]>({
@@ -58,36 +59,34 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
   });
 
   // Create document mutation - MUST BE BEFORE CONDITIONAL RETURNS
-  const createDocumentMutation = useMutation({
-    mutationFn: async (documentType: DocumentType) => {
+  const createDocumentMutation = useMutation<ProjectDocument, Error, { documentType: DocumentType; documentName: string }>({
+    mutationFn: async ({ documentType, documentName }: { documentType: DocumentType; documentName: string }) => {
       // Create a snapshot of the current project data
       const projectSnapshot = {
         ...project,
         // Add any additional computed fields if needed
       };
       
-      const template = DOCUMENT_TEMPLATES.find(t => t.type === documentType);
-      const documentName = `${template?.name} - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-      
       return await apiRequest("POST", `/api/projects/${project.id}/documents`, {
         documentType,
         documentName,
         projectSnapshot,
         customContent: {}, // Empty custom content initially
-      });
+      }) as Promise<ProjectDocument>;
     },
     onSuccess: (newDocument: ProjectDocument) => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects', project.id, 'documents'] });
       toast({
-        title: "Document created",
-        description: "Your document has been created successfully.",
+        title: "Document saved",
+        description: "Your document has been saved successfully.",
       });
+      setPreviewDocument(null);
       setViewingDocument(newDocument);
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to create document. Please try again.",
+        description: "Failed to save document. Please try again.",
         variant: "destructive",
       });
     },
@@ -115,7 +114,23 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
   });
 
   const handleCreateDocument = (documentType: DocumentType) => {
-    createDocumentMutation.mutate(documentType);
+    // Create a preview instead of saving immediately
+    const projectSnapshot = {
+      ...project,
+    };
+    setPreviewDocument({ documentType, projectSnapshot });
+  };
+
+  const handleSaveDocument = (documentName: string) => {
+    if (!previewDocument) return;
+    createDocumentMutation.mutate({
+      documentType: previewDocument.documentType,
+      documentName,
+    });
+  };
+
+  const handleCancelPreview = () => {
+    setPreviewDocument(null);
   };
 
   const handleDeleteDocument = (documentId: string) => {
@@ -149,7 +164,42 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
 
   const totalDocuments = documents.length;
 
-  // Conditional rendering for viewing a document
+  // Conditional rendering for preview mode
+  if (previewDocument) {
+    if (previewDocument.documentType === 'progress-report') {
+      return (
+        <ProgressReport 
+          project={previewDocument.projectSnapshot}
+          isPreview={true}
+          isSaving={createDocumentMutation.isPending}
+          onSave={handleSaveDocument}
+          onCancel={handleCancelPreview}
+        />
+      );
+    }
+    
+    // For other document types, show placeholder for now
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          onClick={handleCancelPreview}
+          data-testid="button-cancel-preview"
+        >
+          ← Back to Documents
+        </Button>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground">
+              Preview for {previewDocument.documentType} coming soon!
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Conditional rendering for viewing a saved document
   if (viewingDocument) {
     if (viewingDocument.documentType === 'progress-report') {
       return (
