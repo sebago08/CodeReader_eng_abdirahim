@@ -120,8 +120,10 @@
   }
 
   /* Ensure proper page breaks */
-  .print\:page-break-after-always {
+  .print\:page-break-after-always,
+  .page-break-after {
     page-break-after: always;
+    break-after: always;
   }
 
   /* Preserve colors for print */
