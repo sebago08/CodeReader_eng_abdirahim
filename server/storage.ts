@@ -13,6 +13,7 @@ import {
   contractorEquipment,
   paymentCertificates,
   workPlanActivities,
+  projectDocuments,
   type User,
   type InsertUser,
   type Project,
@@ -44,6 +45,8 @@ import {
   type InsertPaymentCertificate,
   type WorkPlanActivity,
   type InsertWorkPlanActivity,
+  type ProjectDocument,
+  type InsertProjectDocument,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, inArray } from "drizzle-orm";
@@ -144,6 +147,12 @@ export interface IStorage {
   createWorkPlanActivity(projectId: string, activity: InsertWorkPlanActivity): Promise<WorkPlanActivity>;
   deleteWorkPlanActivity(id: string): Promise<void>;
   toggleWorkPlanMilestone(id: string, isMilestone: boolean): Promise<WorkPlanActivity>;
+  
+  // Project document operations
+  getProjectDocuments(projectId: string): Promise<ProjectDocument[]>;
+  getDocument(id: string): Promise<ProjectDocument | undefined>;
+  createDocument(projectId: string, userId: string, document: InsertProjectDocument): Promise<ProjectDocument>;
+  deleteDocument(id: string): Promise<void>;
 }
 
 // In-memory storage implementation
@@ -539,6 +548,12 @@ export class MemStorage implements IStorage {
   async acceptInvitation(): Promise<ProjectMember> { throw new Error('Not supported in MemStorage'); }
   async declineInvitation(): Promise<void> { throw new Error('Not supported in MemStorage'); }
   async deleteInvitation(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+  
+  // Document operations stubs (MemStorage doesn't support documents)
+  async getProjectDocuments(): Promise<ProjectDocument[]> { return []; }
+  async getDocument(): Promise<ProjectDocument | undefined> { return undefined; }
+  async createDocument(): Promise<ProjectDocument> { throw new Error('Not supported in MemStorage'); }
+  async deleteDocument(): Promise<void> { throw new Error('Not supported in MemStorage'); }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1125,6 +1140,33 @@ export class DatabaseStorage implements IStorage {
       .where(eq(workPlanActivities.id, id))
       .returning();
     return result;
+  }
+  
+  // Project document operations
+  async getProjectDocuments(projectId: string): Promise<ProjectDocument[]> {
+    return await db.select()
+      .from(projectDocuments)
+      .where(eq(projectDocuments.projectId, projectId))
+      .orderBy(desc(projectDocuments.createdAt));
+  }
+  
+  async getDocument(id: string): Promise<ProjectDocument | undefined> {
+    const [result] = await db.select()
+      .from(projectDocuments)
+      .where(eq(projectDocuments.id, id))
+      .limit(1);
+    return result;
+  }
+  
+  async createDocument(projectId: string, userId: string, document: InsertProjectDocument): Promise<ProjectDocument> {
+    const [result] = await db.insert(projectDocuments)
+      .values({ ...document, projectId, userId })
+      .returning();
+    return result;
+  }
+  
+  async deleteDocument(id: string): Promise<void> {
+    await db.delete(projectDocuments).where(eq(projectDocuments.id, id));
   }
 }
 
