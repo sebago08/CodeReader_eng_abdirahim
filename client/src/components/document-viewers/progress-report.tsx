@@ -124,7 +124,9 @@ export function ProgressReport({ document, onBack }: ProgressReportProps) {
 
   const daysElapsed = calculateElapsedTime();
   const totalProjectDays = totalDays();
-  const timeElapsedPercentage = Math.round((daysElapsed / totalProjectDays) * 100);
+  const timeElapsedPercentage = totalProjectDays > 0 
+    ? Math.min(100, Math.round((daysElapsed / totalProjectDays) * 100))
+    : 0;
 
   // Financial calculations
   const contractAmount = parseFloat(project.contractAmount || '0');
