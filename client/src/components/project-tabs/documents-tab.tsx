@@ -72,7 +72,7 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
         documentName,
         projectSnapshot,
         customContent: {}, // Empty custom content initially
-      }) as Promise<ProjectDocument>;
+      }) as ProjectDocument;
     },
     onSuccess: (newDocument: ProjectDocument) => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects', project.id, 'documents'] });
