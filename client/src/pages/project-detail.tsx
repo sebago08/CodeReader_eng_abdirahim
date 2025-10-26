@@ -243,15 +243,7 @@ export default function ProjectDetail() {
             </TabsContent>
 
             <TabsContent value="documents" data-testid="tab-content-documents">
-              <DocumentsTab 
-                project={project} 
-                onViewDocument={(doc) => {
-                  toast({
-                    title: "Document Viewer",
-                    description: "Document viewing feature coming soon!",
-                  });
-                }}
-              />
+              <DocumentsTab project={project} />
             </TabsContent>
           </Tabs>
         </main>
