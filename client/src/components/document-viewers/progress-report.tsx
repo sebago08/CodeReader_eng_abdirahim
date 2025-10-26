@@ -181,7 +181,7 @@ export function ProgressReport({
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          const canvas = document.createElement('canvas');
+          const canvas = globalThis.document.createElement('canvas');
           let width = img.width;
           let height = img.height;
 
