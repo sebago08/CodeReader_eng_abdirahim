@@ -59,8 +59,8 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
   });
 
   // Create document mutation - MUST BE BEFORE CONDITIONAL RETURNS
-  const createDocumentMutation = useMutation<ProjectDocument, Error, { documentType: DocumentType; documentName: string }>({
-    mutationFn: async ({ documentType, documentName }: { documentType: DocumentType; documentName: string }) => {
+  const createDocumentMutation = useMutation<ProjectDocument, Error, { documentType: DocumentType; documentName: string; images?: any }>({
+    mutationFn: async ({ documentType, documentName, images }: { documentType: DocumentType; documentName: string; images?: any }) => {
       // Create a snapshot of the current project data
       const projectSnapshot = {
         ...project,
@@ -71,7 +71,7 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
         documentType,
         documentName,
         projectSnapshot,
-        customContent: {}, // Empty custom content initially
+        customContent: images || {}, // Store images in customContent
       }) as ProjectDocument;
     },
     onSuccess: (newDocument: ProjectDocument) => {
@@ -121,11 +121,12 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
     setPreviewDocument({ documentType, projectSnapshot });
   };
 
-  const handleSaveDocument = (documentName: string) => {
+  const handleSaveDocument = (documentName: string, images?: any) => {
     if (!previewDocument) return;
     createDocumentMutation.mutate({
       documentType: previewDocument.documentType,
       documentName,
+      images,
     });
   };
 

@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { ArrowLeft, Printer, Download, Save, X } from 'lucide-react';
+import { ArrowLeft, Download, Save, X, Upload } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +16,7 @@ interface ProgressReportProps {
   project?: ProjectWithRoads;
   isPreview?: boolean;
   isSaving?: boolean;
-  onSave?: (documentName: string) => void;
+  onSave?: (documentName: string, images?: { coverImage?: string; topLogo?: string; leftLogo?: string; rightLogo?: string }) => void;
   onCancel?: () => void;
   onBack?: () => void;
 }
@@ -34,6 +33,11 @@ export function ProgressReport({
   const { toast } = useToast();
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [documentName, setDocumentName] = useState('');
+  const [showImageUpload, setShowImageUpload] = useState(isPreview);
+  const [coverImage, setCoverImage] = useState<string>('');
+  const [topLogo, setTopLogo] = useState<string>('');
+  const [leftLogo, setLeftLogo] = useState<string>('');
+  const [rightLogo, setRightLogo] = useState<string>('');
   
   // Use either the document's snapshot or the direct project prop
   const project = (document?.projectSnapshot || projectProp) as unknown as ProjectWithRoads;
@@ -171,12 +175,32 @@ export function ProgressReport({
   }, 0) + advancePayment;
   const financialProgress = contractAmount > 0 ? Math.round((totalCertified / contractAmount) * 100) : 0;
 
+  const handleImageUpload = (type: 'cover' | 'topLogo' | 'leftLogo' | 'rightLogo') => {
+    const input = window.document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const result = event.target?.result as string;
+          if (type === 'cover') setCoverImage(result);
+          else if (type === 'topLogo') setTopLogo(result);
+          else if (type === 'leftLogo') setLeftLogo(result);
+          else if (type === 'rightLogo') setRightLogo(result);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
+
   const handlePrint = () => {
     window.print();
   };
 
   const handleSaveClick = () => {
-    // Set default name based on current date
     const defaultName = `Monthly Progress Report - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     setDocumentName(defaultName);
     setShowSaveDialog(true);
@@ -184,80 +208,52 @@ export function ProgressReport({
 
   const handleConfirmSave = () => {
     if (documentName.trim() && onSave) {
-      onSave(documentName.trim());
+      // Pass images along with document name
+      const images = {
+        coverImage: coverImage || undefined,
+        topLogo: topLogo || undefined,
+        leftLogo: leftLogo || undefined,
+        rightLogo: rightLogo || undefined,
+      };
+      onSave(documentName.trim(), images);
       setShowSaveDialog(false);
     }
   };
+  
+  // Load images from document if viewing a saved document
+  const loadedImages = document?.customContent as any;
+  const displayCoverImage = coverImage || loadedImages?.coverImage || '';
+  const displayTopLogo = topLogo || loadedImages?.topLogo || '';
+  const displayLeftLogo = leftLogo || loadedImages?.leftLogo || '';
+  const displayRightLogo = rightLogo || loadedImages?.rightLogo || '';
 
   return (
     <>
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 2cm 2.5cm;
-          }
-          
-          body {
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
-          }
-          
-          .print\\:hidden {
-            display: none !important;
-          }
-          
-          .print-content {
-            max-width: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          
-          /* Prevent page breaks inside tables and cards */
-          table, .card {
-            page-break-inside: avoid;
-          }
-          
-          /* Ensure proper page breaks */
-          .page-break-after {
-            page-break-after: always;
-          }
-          
-          /* Remove shadows and borders for print */
-          .card {
-            box-shadow: none;
-            border: 1px solid #e5e7eb;
-          }
-        }
-      `}</style>
-      
-      <div className="min-h-screen bg-background">
-        {/* Header Actions - Hidden in print */}
-        <div className="print:hidden sticky top-0 z-10 bg-background border-b">
-        <div className="max-w-5xl mx-auto px-6 py-4">
+      {/* Header Section - Hidden on Print */}
+      <div className="print:hidden bg-white border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={isPreview ? onCancel : onBack}
-                data-testid={isPreview ? "button-cancel" : "button-back"}
+                data-testid="button-back"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {isPreview ? 'Cancel' : 'Back to Documents'}
+                Back to Documents
               </Button>
-              {!isPreview && document && (
+              {!isPreview && (
                 <div>
-                  <h1 className="text-lg font-semibold" data-testid="text-document-name">{document.documentName}</h1>
+                  <h2 className="text-lg font-semibold">{document?.documentName}</h2>
                   <p className="text-sm text-muted-foreground">
-                    Created {formatDate(document.createdAt)}
+                    Created {document?.createdAt ? formatDate(document.createdAt) : ''}
                   </p>
                 </div>
               )}
               {isPreview && (
                 <div>
-                  <h1 className="text-lg font-semibold" data-testid="text-preview-title">Preview: Monthly Progress Report</h1>
+                  <h2 className="text-lg font-semibold">Document Preview</h2>
                   <p className="text-sm text-muted-foreground">
                     Review and save this document
                   </p>
@@ -307,381 +303,448 @@ export function ProgressReport({
         </div>
       </div>
 
-      {/* Report Content */}
-      <div className="max-w-5xl mx-auto px-6 py-8 print-content" data-testid="report-content">
-        {/* Cover Page */}
-        <div className="mb-12 print:page-break-after-always">
-          <div className="text-center space-y-6">
-            <div>
-              <p className="text-sm text-muted-foreground mb-2" data-testid="text-client">{project.client}</p>
-              <h1 className="text-4xl font-bold mb-4" data-testid="text-project-name">{project.name}</h1>
-            </div>
-            
-            <div className="space-y-2">
-              <p className="text-muted-foreground">Contractor: {project.contractorName || 'Not specified'}</p>
-              <p className="text-muted-foreground">Contract: {project.projectNumber || 'N/A'}</p>
-            </div>
-
-            <div className="mt-8">
-              <h2 className="text-2xl font-semibold">
-                MONTHLY PROGRESS REPORT<br />
-                {reportPeriod}
-              </h2>
+      {/* Image Upload Section - Only in Preview Mode */}
+      {isPreview && showImageUpload && (
+        <div className="print:hidden bg-muted border-b">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex items-start gap-6">
+              <div className="flex-1">
+                <Label className="text-sm font-medium mb-2 block">Top Logo (Organization/Municipality)</Label>
+                <Button variant="outline" size="sm" onClick={() => handleImageUpload('topLogo')} className="w-full">
+                  <Upload className="h-4 w-4 mr-2" />
+                  {displayTopLogo ? 'Change Logo' : 'Upload Logo'}
+                </Button>
+                {displayTopLogo && <img src={displayTopLogo} alt="Top Logo" className="mt-2 h-16 object-contain mx-auto" />}
+              </div>
+              <div className="flex-1">
+                <Label className="text-sm font-medium mb-2 block">Cover Photo (Project Site)</Label>
+                <Button variant="outline" size="sm" onClick={() => handleImageUpload('cover')} className="w-full">
+                  <Upload className="h-4 w-4 mr-2" />
+                  {displayCoverImage ? 'Change Photo' : 'Upload Photo'}
+                </Button>
+                {displayCoverImage && <img src={displayCoverImage} alt="Cover" className="mt-2 h-16 object-cover w-full rounded" />}
+              </div>
+              <div className="flex-1">
+                <Label className="text-sm font-medium mb-2 block">Left Logo (Funding Organization)</Label>
+                <Button variant="outline" size="sm" onClick={() => handleImageUpload('leftLogo')} className="w-full">
+                  <Upload className="h-4 w-4 mr-2" />
+                  {displayLeftLogo ? 'Change Logo' : 'Upload Logo'}
+                </Button>
+                {displayLeftLogo && <img src={displayLeftLogo} alt="Left Logo" className="mt-2 h-16 object-contain mx-auto" />}
+              </div>
+              <div className="flex-1">
+                <Label className="text-sm font-medium mb-2 block">Right Logo (Partner Organization)</Label>
+                <Button variant="outline" size="sm" onClick={() => handleImageUpload('rightLogo')} className="w-full">
+                  <Upload className="h-4 w-4 mr-2" />
+                  {displayRightLogo ? 'Change Logo' : 'Upload Logo'}
+                </Button>
+                {displayRightLogo && <img src={displayRightLogo} alt="Right Logo" className="mt-2 h-16 object-contain mx-auto" />}
+              </div>
             </div>
           </div>
         </div>
+      )}
 
-        {/* Table of Contents */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-bold mb-4" data-testid="heading-toc">TABLE OF CONTENTS</h2>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span>1. INTRODUCTION</span></div>
-              <div className="flex justify-between ml-4"><span>1.1 Project Summary</span></div>
-              <div className="flex justify-between ml-4"><span>1.2 Location and Extents of Works</span></div>
-              <div className="flex justify-between"><span>2. PROJECT INFORMATION</span></div>
-              <div className="flex justify-between"><span>3. SCOPE OF WORK</span></div>
-              <div className="flex justify-between"><span>4. PROGRESS</span></div>
-              <div className="flex justify-between ml-4"><span>4.1 Overall Progress</span></div>
-              <div className="flex justify-between ml-4"><span>4.2 Work Progress</span></div>
-              <div className="flex justify-between ml-4"><span>4.3 Financial Progress</span></div>
-              <div className="flex justify-between"><span>5. WORK PLAN</span></div>
-              <div className="flex justify-between"><span>6. CLIENT PERSONNEL</span></div>
-              <div className="flex justify-between"><span>7. CONTRACTOR PERSONNEL</span></div>
-              <div className="flex justify-between"><span>8. CONTRACTOR'S EQUIPMENT</span></div>
-              <div className="flex justify-between"><span>9. ISSUES AND CONCERNS</span></div>
+      {/* Report Content */}
+      <div className="max-w-5xl mx-auto px-6 py-8 print-content" data-testid="report-content">
+        
+        {/* Cover Page */}
+        <div className="page-break-after print:page-break-after-always mb-12">
+          <div className="text-center space-y-8">
+            {/* Top Logo */}
+            {displayTopLogo && (
+              <div className="flex justify-center mb-6">
+                <img src={displayTopLogo} alt="Organization Logo" className="h-32 object-contain" />
+              </div>
+            )}
+            
+            {/* Client & Project Info */}
+            <div className="space-y-2">
+              <h2 className="text-lg font-bold">{project.client}</h2>
+              <h3 className="text-base font-semibold">{project.description || project.name}</h3>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Project Title with Highlights */}
+            <div className="space-y-2 my-6">
+              <div className="bg-yellow-200 px-4 py-2 inline-block">
+                <p className="text-sm font-semibold">{project.name}</p>
+              </div>
+              {project.projectNumber && (
+                <div className="bg-yellow-200 px-4 py-2 inline-block block mt-2">
+                  <p className="text-sm">Contract: {project.projectNumber}</p>
+                </div>
+              )}
+              {project.contractorName && (
+                <div className="bg-yellow-200 px-4 py-2 inline-block block mt-2">
+                  <p className="text-sm">Contractor: {project.contractorName}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Report Title */}
+            <div className="my-8">
+              <h1 className="text-2xl font-bold text-blue-600">
+                MONTHLY PROGRESS REPORT {reportPeriod}
+              </h1>
+            </div>
+
+            {/* Cover Photo */}
+            {displayCoverImage && (
+              <div className="my-8">
+                <img src={displayCoverImage} alt="Project Site" className="w-full h-64 object-cover rounded shadow-lg" />
+              </div>
+            )}
+
+            {/* Date */}
+            <div className="mt-8">
+              <h3 className="text-xl font-bold">{currentDate.toUpperCase()}</h3>
+            </div>
+
+            {/* Bottom Logos */}
+            {(displayLeftLogo || displayRightLogo) && (
+              <div className="flex justify-center items-center gap-12 mt-12">
+                {displayLeftLogo && (
+                  <img src={displayLeftLogo} alt="Funding Organization" className="h-16 object-contain" />
+                )}
+                {displayRightLogo && (
+                  <img src={displayRightLogo} alt="Partner Organization" className="h-16 object-contain" />
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Table of Contents - Separate Page */}
+        <div className="page-break-after print:page-break-after-always mb-12">
+          <h2 className="text-xl font-bold mb-6" data-testid="heading-toc">TABLE OF CONTENTS</h2>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span>1. INTRODUCTION</span></div>
+            <div className="flex justify-between ml-4"><span>1.1 Project Summary</span></div>
+            <div className="flex justify-between ml-4"><span>1.2 Location and Extents of Works</span></div>
+            <div className="flex justify-between"><span>2. PROJECT INFORMATION</span></div>
+            <div className="flex justify-between"><span>3. SCOPE OF WORK</span></div>
+            <div className="flex justify-between"><span>4. PROGRESS</span></div>
+            <div className="flex justify-between ml-4"><span>4.1 Overall Progress</span></div>
+            <div className="flex justify-between ml-4"><span>4.2 Work Progress</span></div>
+            <div className="flex justify-between ml-4"><span>4.3 Financial Progress</span></div>
+            <div className="flex justify-between"><span>5. WORK PLAN</span></div>
+            <div className="flex justify-between"><span>6. CLIENT PERSONNEL</span></div>
+            <div className="flex justify-between"><span>7. CONTRACTOR PERSONNEL</span></div>
+            <div className="flex justify-between"><span>8. CONTRACTOR'S EQUIPMENT</span></div>
+            <div className="flex justify-between"><span>9. ISSUES AND CONCERNS</span></div>
+          </div>
+        </div>
 
         {/* 1. Introduction */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-bold mb-4" data-testid="heading-introduction">1. INTRODUCTION</h2>
-            
-            <h3 className="text-lg font-semibold mb-2">1.1 Project Summary</h3>
-            <p className="text-muted-foreground mb-4">{project.description || 'No description provided for this project.'}</p>
-            
-            <h3 className="text-lg font-semibold mb-2">1.2 Location and Extents of Works</h3>
-            <p className="text-muted-foreground mb-4">
-              <strong>Location:</strong> {project.location}<br />
-              {project.scopeOfWork && (
-                <><strong>Scope:</strong> {project.scopeOfWork}</>
-              )}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-introduction">1. INTRODUCTION</h2>
+          
+          <h3 className="text-lg font-semibold mb-2">1.1 Project Summary</h3>
+          <p className="mb-4">{project.description || 'No description provided for this project.'}</p>
+          
+          <h3 className="text-lg font-semibold mb-2">1.2 Location and Extents of Works</h3>
+          <p className="mb-4">
+            <strong>Location:</strong> {project.location}<br />
+            {project.scopeOfWork && (
+              <><strong>Scope:</strong> {project.scopeOfWork}</>
+            )}
+          </p>
+        </div>
 
         {/* 2. Project Information */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-bold mb-4" data-testid="heading-project-info">2. PROJECT INFORMATION</h2>
-            <h3 className="text-lg font-semibold mb-4">2.1 Project Summary - {project.projectNumber || 'N/A'}</h3>
-            
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-project-info">2. PROJECT INFORMATION</h2>
+          <h3 className="text-lg font-semibold mb-4">2.1 Project Summary - {project.projectNumber || 'N/A'}</h3>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b-2 border-gray-300">
+                  <th className="text-left py-2 px-4 font-semibold">Item</th>
+                  <th className="text-left py-2 px-4 font-semibold">Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b"><td className="py-2 px-4">1. Contractor</td><td className="py-2 px-4">{project.contractorName || '-'}</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">2. Contract Sum (USD)</td><td className="py-2 px-4">{formatCurrency(project.contractAmount)}</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">3. Source of funds</td><td className="py-2 px-4">{project.client}</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">4. Start Date</td><td className="py-2 px-4">{formatDate(project.startDate)}</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">5. Commencement date</td><td className="py-2 px-4">{formatDate(project.startDate)}</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">6. Original Contract period</td><td className="py-2 px-4">{project.duration ? `${project.duration} Months` : '-'}</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">7. Date of Completion</td><td className="py-2 px-4">{formatDate(project.endDate)}</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">8. Period Elapsed</td><td className="py-2 px-4">{Math.round(daysElapsed / 30)} Months</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">9. Percentage of Time Elapsed</td><td className="py-2 px-4">{timeElapsedPercentage}%</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">10. Physical progress to date</td><td className="py-2 px-4">{overallProgress}%</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">11. Defects Liability Period</td><td className="py-2 px-4">{project.defectsLiabilityPeriod ? `${project.defectsLiabilityPeriod} months` : '-'}</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">12. Total Amount certified to date</td><td className="py-2 px-4">{formatCurrency(totalCertified.toString())}</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">13. Advance Payment</td><td className="py-2 px-4">{formatCurrency(project.advancePayment)}</td></tr>
+                <tr className="border-b"><td className="py-2 px-4">14. Percentage of amount certified to date</td><td className="py-2 px-4">{financialProgress}%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* 3. Scope of Work */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-scope">3. SCOPE OF WORK</h2>
+          <p>{project.scopeOfWork || 'No scope of work details provided.'}</p>
+        </div>
+
+        {/* 4. Progress */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-6 border-b-2 border-gray-300 pb-2" data-testid="heading-progress">4. PROGRESS</h2>
+          
+          {/* 4.1 Overall Progress */}
+          <h3 className="text-lg font-semibold mb-4">4.1 Overall Progress</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Completion Status</p>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold">{overallProgress}%</span>
+                </div>
+                <Progress value={overallProgress} className="h-2" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Days Elapsed</p>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold">{timeElapsedPercentage}%</span>
+                  <span className="text-sm">{daysElapsed} / {totalProjectDays} days</span>
+                </div>
+                <Progress value={timeElapsedPercentage} className="h-2" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Budget Used</p>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold">{financialProgress}%</span>
+                </div>
+                <Progress value={financialProgress} className="h-2" />
+              </div>
+            </div>
+          </div>
+
+          <div className="my-6 border-t border-gray-200"></div>
+
+          {/* 4.2 Work Progress */}
+          <h3 className="text-lg font-semibold mb-4">4.2 Work Progress</h3>
+          {workPlanActivities.length > 0 ? (
+            <div className="space-y-3">
+              {workPlanActivities.map((activity: any) => (
+                <div key={activity.id} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{activity.activityName}</span>
+                    <Badge variant={activity.isMilestone ? "default" : "outline"}>
+                      {activity.isMilestone ? "Milestone" : "Activity"}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600">No work plan activities recorded.</p>
+          )}
+
+          <div className="my-6 border-t border-gray-200"></div>
+
+          {/* 4.3 Financial Progress */}
+          <h3 className="text-lg font-semibold mb-4">4.3 Financial Progress</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <p className="text-sm font-medium mb-1">Contract Amount</p>
+              <p className="text-lg font-semibold">{formatCurrency(project.contractAmount)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-1">Total Certified</p>
+              <p className="text-lg font-semibold">{formatCurrency(totalCertified.toString())}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-1">Balance</p>
+              <p className="text-lg font-semibold">{formatCurrency((contractAmount - totalCertified).toString())}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-1">Financial Progress</p>
+              <p className="text-lg font-semibold">{financialProgress}%</p>
+            </div>
+          </div>
+          {paymentCertificates.length === 0 && (
+            <p className="text-gray-600 text-sm">No payment certificates recorded for this project.</p>
+          )}
+        </div>
+
+        {/* 5. Work Plan */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-workplan">5. WORK PLAN</h2>
+          {workPlanActivities.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 px-4 font-semibold">Item</th>
-                    <th className="text-left py-2 px-4 font-semibold">Details</th>
+                  <tr className="border-b-2 border-gray-300">
+                    <th className="text-left py-2 px-4 font-semibold">Activity Name</th>
+                    <th className="text-left py-2 px-4 font-semibold">Start Date</th>
+                    <th className="text-left py-2 px-4 font-semibold">Duration</th>
+                    <th className="text-left py-2 px-4 font-semibold">End Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b"><td className="py-2 px-4">1. Contractor</td><td className="py-2 px-4">{project.contractorName || '-'}</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">2. Contract Sum (USD)</td><td className="py-2 px-4">{formatCurrency(project.contractAmount)}</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">3. Source of funds</td><td className="py-2 px-4">{project.client}</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">4. Start Date</td><td className="py-2 px-4">{formatDate(project.startDate)}</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">5. Commencement date</td><td className="py-2 px-4">{formatDate(project.startDate)}</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">6. Original Contract period</td><td className="py-2 px-4">{project.duration ? `${project.duration} Months` : '-'}</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">7. Date of Completion</td><td className="py-2 px-4">{formatDate(project.endDate)}</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">8. Period Elapsed</td><td className="py-2 px-4">{Math.round(daysElapsed / 30)} Months</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">9. Percentage of Time Elapsed</td><td className="py-2 px-4">{timeElapsedPercentage}%</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">10. Physical progress to date</td><td className="py-2 px-4">{overallProgress}%</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">11. Defects Liability Period</td><td className="py-2 px-4">{project.defectsLiabilityPeriod ? `${project.defectsLiabilityPeriod} months` : '-'}</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">12. Total Amount certified to date</td><td className="py-2 px-4">{formatCurrency(totalCertified.toString())}</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">13. Advance Payment</td><td className="py-2 px-4">{formatCurrency(project.advancePayment)}</td></tr>
-                  <tr className="border-b"><td className="py-2 px-4">14. Percentage of amount certified to date</td><td className="py-2 px-4">{financialProgress}%</td></tr>
+                  {workPlanActivities.map((activity: any) => (
+                    <tr key={activity.id} className="border-b">
+                      <td className="py-2 px-4">{activity.activityName}</td>
+                      <td className="py-2 px-4">{formatDate(activity.startDate)}</td>
+                      <td className="py-2 px-4">{activity.duration} days</td>
+                      <td className="py-2 px-4">{formatDate(activity.endDate)}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* 3. Scope of Work */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-bold mb-4" data-testid="heading-scope">3. SCOPE OF WORK</h2>
-            <p>{project.scopeOfWork || 'No scope of work details provided.'}</p>
-          </CardContent>
-        </Card>
-
-        {/* 4. Progress */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-bold mb-6" data-testid="heading-progress">4. PROGRESS</h2>
-            
-            {/* 4.1 Overall Progress */}
-            <h3 className="text-lg font-semibold mb-4">4.1 Overall Progress</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Completion Status</p>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">{overallProgress}%</span>
-                  </div>
-                  <Progress value={overallProgress} className="h-2" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Days Elapsed</p>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">{timeElapsedPercentage}%</span>
-                    <span className="text-sm text-muted-foreground">{daysElapsed} / {totalProjectDays} days</span>
-                  </div>
-                  <Progress value={timeElapsedPercentage} className="h-2" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Budget Used</p>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">{financialProgress}%</span>
-                  </div>
-                  <Progress value={financialProgress} className="h-2" />
-                </div>
-              </div>
-            </div>
-
-            <Separator className="my-6" />
-
-            {/* 4.2 Work Progress */}
-            <h3 className="text-lg font-semibold mb-4">4.2 Work Progress</h3>
-            {workPlanActivities.length > 0 ? (
-              <div className="space-y-3">
-                {workPlanActivities.map((activity: any, index: number) => (
-                  <div key={activity.id} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{activity.activityName}</span>
-                      <Badge variant={activity.isMilestone ? "default" : "outline"}>
-                        {activity.isMilestone ? "Milestone" : "Activity"}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No work plan activities recorded.</p>
-            )}
-
-            <Separator className="my-6" />
-
-            {/* 4.3 Financial Progress */}
-            <h3 className="text-lg font-semibold mb-4">4.3 Financial Progress</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Contract Amount</p>
-                <p className="text-lg font-semibold">{formatCurrency(project.contractAmount)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Total Certified</p>
-                <p className="text-lg font-semibold">{formatCurrency(totalCertified.toString())}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Balance</p>
-                <p className="text-lg font-semibold">{formatCurrency((contractAmount - totalCertified).toString())}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Financial Progress</p>
-                <p className="text-lg font-semibold">{financialProgress}%</p>
-              </div>
-            </div>
-            {paymentCertificates.length === 0 && (
-              <p className="text-muted-foreground text-sm">No payment certificates recorded for this project.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* 5. Work Plan */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-bold mb-4" data-testid="heading-workplan">5. WORK PLAN</h2>
-            {workPlanActivities.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-4 font-semibold">Activity Name</th>
-                      <th className="text-left py-2 px-4 font-semibold">Start Date</th>
-                      <th className="text-left py-2 px-4 font-semibold">Duration</th>
-                      <th className="text-left py-2 px-4 font-semibold">End Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {workPlanActivities.map((activity: any) => (
-                      <tr key={activity.id} className="border-b">
-                        <td className="py-2 px-4">{activity.activityName}</td>
-                        <td className="py-2 px-4">{formatDate(activity.startDate)}</td>
-                        <td className="py-2 px-4">{activity.duration} days</td>
-                        <td className="py-2 px-4">{formatDate(activity.endDate)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No work plan activities have been added to this project.</p>
-            )}
-          </CardContent>
-        </Card>
+          ) : (
+            <p className="text-gray-600">No work plan activities have been added to this project.</p>
+          )}
+        </div>
 
         {/* 6. Client Personnel */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-bold mb-4" data-testid="heading-client-personnel">6. CLIENT PERSONNEL</h2>
-            {clientPersonnel.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-4 font-semibold">#</th>
-                      <th className="text-left py-2 px-4 font-semibold">Name</th>
-                      <th className="text-left py-2 px-4 font-semibold">Qualification</th>
-                      <th className="text-left py-2 px-4 font-semibold">Designation</th>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-client-personnel">6. CLIENT PERSONNEL</h2>
+          {clientPersonnel.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="border-b-2 border-gray-300">
+                    <th className="text-left py-2 px-4 font-semibold">#</th>
+                    <th className="text-left py-2 px-4 font-semibold">Name</th>
+                    <th className="text-left py-2 px-4 font-semibold">Qualification</th>
+                    <th className="text-left py-2 px-4 font-semibold">Designation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {clientPersonnel.map((person: any, index: number) => (
+                    <tr key={person.id} className="border-b">
+                      <td className="py-2 px-4">{index + 1}.</td>
+                      <td className="py-2 px-4">{person.name}</td>
+                      <td className="py-2 px-4">{person.qualification || '-'}</td>
+                      <td className="py-2 px-4">{person.designation || '-'}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {clientPersonnel.map((person: any, index: number) => (
-                      <tr key={person.id} className="border-b">
-                        <td className="py-2 px-4">{index + 1}.</td>
-                        <td className="py-2 px-4">{person.name}</td>
-                        <td className="py-2 px-4">{person.qualification || '-'}</td>
-                        <td className="py-2 px-4">{person.designation || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No client personnel recorded for this project.</p>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-gray-600">No client personnel recorded for this project.</p>
+          )}
+        </div>
 
         {/* 7. Contractor Personnel */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-bold mb-4" data-testid="heading-contractor-personnel">7. CONTRACTOR PERSONNEL</h2>
-            {contractorPersonnel.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-4 font-semibold">#</th>
-                      <th className="text-left py-2 px-4 font-semibold">Name</th>
-                      <th className="text-left py-2 px-4 font-semibold">Qualification</th>
-                      <th className="text-left py-2 px-4 font-semibold">Designation</th>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-contractor-personnel">7. CONTRACTOR PERSONNEL</h2>
+          {contractorPersonnel.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="border-b-2 border-gray-300">
+                    <th className="text-left py-2 px-4 font-semibold">#</th>
+                    <th className="text-left py-2 px-4 font-semibold">Name</th>
+                    <th className="text-left py-2 px-4 font-semibold">Qualification</th>
+                    <th className="text-left py-2 px-4 font-semibold">Designation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {contractorPersonnel.map((person: any, index: number) => (
+                    <tr key={person.id} className="border-b">
+                      <td className="py-2 px-4">{index + 1}.</td>
+                      <td className="py-2 px-4">{person.name}</td>
+                      <td className="py-2 px-4">{person.qualification || '-'}</td>
+                      <td className="py-2 px-4">{person.designation || '-'}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {contractorPersonnel.map((person: any, index: number) => (
-                      <tr key={person.id} className="border-b">
-                        <td className="py-2 px-4">{index + 1}.</td>
-                        <td className="py-2 px-4">{person.name}</td>
-                        <td className="py-2 px-4">{person.qualification || '-'}</td>
-                        <td className="py-2 px-4">{person.designation || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No contractor personnel recorded for this project.</p>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-gray-600">No contractor personnel recorded for this project.</p>
+          )}
+        </div>
 
         {/* 8. Contractor's Equipment */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-bold mb-4" data-testid="heading-equipment">8. CONTRACTOR'S EQUIPMENT</h2>
-            {contractorEquipment.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-4 font-semibold">#</th>
-                      <th className="text-left py-2 px-4 font-semibold">Equipment Name</th>
-                      <th className="text-left py-2 px-4 font-semibold">Type</th>
-                      <th className="text-left py-2 px-4 font-semibold">Quantity</th>
-                      <th className="text-left py-2 px-4 font-semibold">Condition</th>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-equipment">8. CONTRACTOR'S EQUIPMENT</h2>
+          {contractorEquipment.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="border-b-2 border-gray-300">
+                    <th className="text-left py-2 px-4 font-semibold">#</th>
+                    <th className="text-left py-2 px-4 font-semibold">Equipment Name</th>
+                    <th className="text-left py-2 px-4 font-semibold">Type</th>
+                    <th className="text-left py-2 px-4 font-semibold">Quantity</th>
+                    <th className="text-left py-2 px-4 font-semibold">Condition</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {contractorEquipment.map((equip: any, index: number) => (
+                    <tr key={equip.id} className="border-b">
+                      <td className="py-2 px-4">{index + 1}.</td>
+                      <td className="py-2 px-4">{equip.equipmentName}</td>
+                      <td className="py-2 px-4">{equip.type || '-'}</td>
+                      <td className="py-2 px-4">{equip.quantity}</td>
+                      <td className="py-2 px-4">{equip.condition || '-'}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {contractorEquipment.map((equip: any, index: number) => (
-                      <tr key={equip.id} className="border-b">
-                        <td className="py-2 px-4">{index + 1}.</td>
-                        <td className="py-2 px-4">{equip.equipmentName}</td>
-                        <td className="py-2 px-4">{equip.type || '-'}</td>
-                        <td className="py-2 px-4">{equip.quantity}</td>
-                        <td className="py-2 px-4">{equip.condition || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No contractor equipment recorded for this project.</p>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-gray-600">No contractor equipment recorded for this project.</p>
+          )}
+        </div>
 
         {/* 9. Issues and Concerns */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-bold mb-4" data-testid="heading-issues">9. ISSUES AND CONCERNS</h2>
-            {safetyIncidents.length > 0 ? (
-              <div className="space-y-3">
-                {safetyIncidents.map((incident: any) => (
-                  <div key={incident.id} className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-medium">{incident.description}</p>
-                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                        <Badge variant={incident.status === 'Resolved' ? 'default' : 'secondary'}>
-                          {incident.status}
-                        </Badge>
-                        <span>{formatDate(incident.incidentDate)}</span>
-                      </div>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-issues">9. ISSUES AND CONCERNS</h2>
+          {safetyIncidents.length > 0 ? (
+            <div className="space-y-3">
+              {safetyIncidents.map((incident: any) => (
+                <div key={incident.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <p className="font-medium">{incident.description}</p>
+                    <div className="flex items-center gap-2 mt-2 text-sm">
+                      <Badge variant={incident.status === 'Resolved' ? 'default' : 'secondary'}>
+                        {incident.status}
+                      </Badge>
+                      <span>{formatDate(incident.incidentDate)}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No issues or concerns recorded for this project.</p>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600">No issues or concerns recorded for this project.</p>
+          )}
+        </div>
 
         {/* Footer */}
-        <div className="mt-12 pt-6 border-t">
+        <div className="mt-12 pt-6 border-t-2 border-gray-300">
           <div className="grid grid-cols-2 gap-8 mb-6">
             <div>
               <p className="text-sm font-semibold mb-2">Prepared by:</p>
               <p className="text-sm">{project.contractorContactPerson || 'Project Manager'}</p>
-              <p className="text-sm text-muted-foreground">{project.contractorName}</p>
+              <p className="text-sm text-gray-600">{project.contractorName}</p>
             </div>
             <div>
               <p className="text-sm font-semibold mb-2">Reviewed by:</p>
               <p className="text-sm">{project.clientContactPerson || 'Client Representative'}</p>
-              <p className="text-sm text-muted-foreground">{project.client}</p>
+              <p className="text-sm text-gray-600">{project.client}</p>
             </div>
           </div>
-          <p className="text-sm text-center text-muted-foreground mt-6">{currentDate}</p>
-          <Separator className="my-4" />
-          <p className="text-xs text-center text-muted-foreground">
+          <p className="text-sm text-center text-gray-600 mt-6">{currentDate}</p>
+          <div className="my-4 border-t border-gray-200"></div>
+          <p className="text-xs text-center text-gray-600">
             This report is confidential and intended solely for the use of {project.client}
           </p>
-          <p className="text-xs text-center text-muted-foreground mt-2">
+          <p className="text-xs text-center text-gray-600 mt-2">
             ConstructTrack Project Management System - {currentDate}
           </p>
         </div>
@@ -733,7 +796,6 @@ export function ProgressReport({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
     </>
   );
 }
