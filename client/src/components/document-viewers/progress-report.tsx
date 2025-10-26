@@ -38,6 +38,20 @@ export function ProgressReport({
   // Use either the document's snapshot or the direct project prop
   const project = (document?.projectSnapshot || projectProp) as unknown as ProjectWithRoads;
   
+  // Safety check - if no project data, show error
+  if (!project || !project.id) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-muted-foreground">Unable to load project data</p>
+          <Button onClick={isPreview ? onCancel : onBack} className="mt-4">
+            Go Back
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
   const currentDate = new Date().toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'long', 

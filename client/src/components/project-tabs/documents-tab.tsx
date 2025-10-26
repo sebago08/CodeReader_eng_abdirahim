@@ -8,11 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Project, DocumentType, ProjectDocument } from "@shared/schema";
+import type { ProjectWithRoads, DocumentType, ProjectDocument } from "@shared/schema";
 import { ProgressReport } from "@/components/document-viewers/progress-report";
 
 interface DocumentsTabProps {
-  project: Project;
+  project: ProjectWithRoads;
 }
 
 const DOCUMENT_TEMPLATES = [
