@@ -186,6 +186,12 @@ export function ProgressReport({
   const totalCertified = paymentCertificates.reduce((sum: number, cert: any) => {
     return sum + parseFloat(cert.amountPaid || '0');
   }, 0) + advancePayment;
+  const totalSubmitted = paymentCertificates.reduce((sum: number, cert: any) => {
+    return sum + parseFloat(cert.pendingAmount || '0');
+  }, 0);
+  const totalInProcess = paymentCertificates.reduce((sum: number, cert: any) => {
+    return sum + parseFloat(cert.inProcessAmount || '0');
+  }, 0);
   const financialProgress = contractAmount > 0 ? Math.round((totalCertified / contractAmount) * 100) : 0;
 
   const compressImage = (file: File, maxWidth: number, maxHeight: number): Promise<string> => {
@@ -645,6 +651,8 @@ export function ProgressReport({
                     <th className="text-left py-2 px-4 font-semibold">#</th>
                     <th className="text-left py-2 px-4 font-semibold">Certificate No.</th>
                     <th className="text-left py-2 px-4 font-semibold">Date Certified</th>
+                    <th className="text-left py-2 px-4 font-semibold">Submitted Amount</th>
+                    <th className="text-left py-2 px-4 font-semibold">In Process Amount</th>
                     <th className="text-left py-2 px-4 font-semibold">Amount Paid</th>
                     <th className="text-left py-2 px-4 font-semibold">Payment Status</th>
                   </tr>
@@ -664,6 +672,12 @@ export function ProgressReport({
                         <td className="py-2 px-4">{index + 1}.</td>
                         <td className="py-2 px-4">{cert.certificateNo}</td>
                         <td className="py-2 px-4">{formatDate(cert.dateCertified)}</td>
+                        <td className="py-2 px-4">
+                          {parseFloat(cert.pendingAmount || '0') > 0 ? formatCurrency(cert.pendingAmount) : '-'}
+                        </td>
+                        <td className="py-2 px-4">
+                          {parseFloat(cert.inProcessAmount || '0') > 0 ? formatCurrency(cert.inProcessAmount) : '-'}
+                        </td>
                         <td className="py-2 px-4">{formatCurrency(cert.amountPaid)}</td>
                         <td className="py-2 px-4">
                           <Badge variant={cert.paymentStatus === 'Paid' ? 'default' : cert.paymentStatus === 'In Process' ? 'secondary' : 'outline'}>
@@ -674,6 +688,8 @@ export function ProgressReport({
                     ))}
                   <tr className="bg-gray-100 font-semibold border-t-2 border-gray-300">
                     <td className="py-2 px-4" colSpan={3}>Total</td>
+                    <td className="py-2 px-4">{formatCurrency(totalSubmitted.toString())}</td>
+                    <td className="py-2 px-4">{formatCurrency(totalInProcess.toString())}</td>
                     <td className="py-2 px-4">{formatCurrency(totalCertified.toString())}</td>
                     <td className="py-2 px-4"></td>
                   </tr>
