@@ -101,14 +101,14 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
         customContent: images || {},
       }) as unknown as ProjectDocument;
     },
-    onSuccess: (updatedDocument: ProjectDocument) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects', project.id, 'documents'] });
       toast({
         title: "Document updated",
         description: "Your document has been updated successfully.",
       });
       setEditingDocument(null);
-      setViewingDocument(updatedDocument);
+      setViewingDocument(null);
     },
     onError: () => {
       toast({
