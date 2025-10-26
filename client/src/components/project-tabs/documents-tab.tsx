@@ -149,9 +149,7 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
   };
 
   const handleSaveDocument = (documentName: string, images?: any) => {
-    console.log('handleSaveDocument called', { editingDocument, previewDocument, documentName });
     if (editingDocument) {
-      console.log('Updating document:', editingDocument.id);
       // Update existing document
       updateDocumentMutation.mutate({
         documentId: editingDocument.id,
@@ -159,20 +157,16 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
         images,
       });
     } else if (previewDocument) {
-      console.log('Creating new document');
       // Create new document
       createDocumentMutation.mutate({
         documentType: previewDocument.documentType,
         documentName,
         images,
       });
-    } else {
-      console.error('Neither editingDocument nor previewDocument is set!');
     }
   };
 
   const handleEditDocument = (doc: ProjectDocument) => {
-    console.log('handleEditDocument called with:', doc);
     setEditingDocument(doc);
     setPreviewDocument(null); // Clear preview document when editing
   };
