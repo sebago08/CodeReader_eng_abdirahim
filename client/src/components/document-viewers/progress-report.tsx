@@ -175,22 +175,59 @@ export function ProgressReport({
   }, 0) + advancePayment;
   const financialProgress = contractAmount > 0 ? Math.round((totalCertified / contractAmount) * 100) : 0;
 
+  const compressImage = (file: File, maxWidth: number, maxHeight: number): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions while maintaining aspect ratio
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG with 0.8 quality
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          resolve(compressedDataUrl);
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleImageUpload = (type: 'cover' | 'topLogo' | 'leftLogo' | 'rightLogo') => {
-    const input = window.document.createElement('input');
+    const input = globalThis.document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = (e: Event) => {
+    input.onchange = async (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const result = event.target?.result as string;
-          if (type === 'cover') setCoverImage(result);
-          else if (type === 'topLogo') setTopLogo(result);
-          else if (type === 'leftLogo') setLeftLogo(result);
-          else if (type === 'rightLogo') setRightLogo(result);
-        };
-        reader.readAsDataURL(file);
+        // Compress image before storing
+        const maxDimension = type === 'cover' ? 1200 : 800;
+        const compressed = await compressImage(file, maxDimension, maxDimension);
+        
+        if (type === 'cover') setCoverImage(compressed);
+        else if (type === 'topLogo') setTopLogo(compressed);
+        else if (type === 'leftLogo') setLeftLogo(compressed);
+        else if (type === 'rightLogo') setRightLogo(compressed);
       }
     };
     input.click();
