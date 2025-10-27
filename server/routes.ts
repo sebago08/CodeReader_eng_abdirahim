@@ -1019,6 +1019,7 @@ export function registerRoutes(app: Express): Server {
       }
       
       // Insert activity and reorder atomically
+      // Preserve the parent section ID if the target is an activity
       const newActivity = await storage.insertActivityAtPosition(
         targetActivity.projectId,
         targetActivity.orderIndex,
@@ -1028,6 +1029,7 @@ export function registerRoutes(app: Express): Server {
           itemType: "activity",
           isMilestone: false,
           orderIndex: 0, // Will be overridden by insertActivityAtPosition
+          parentSectionId: targetActivity.itemType === "activity" ? targetActivity.parentSectionId : null,
         }
       );
       
