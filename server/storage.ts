@@ -80,6 +80,7 @@ export interface IStorage {
   deleteRoad(id: string): Promise<void>;
   
   // Layer operations
+  getLayersByRoadId(roadId: string): Promise<ConstructionLayer[]>;
   createLayers(roadId: string, layers: InsertLayer[]): Promise<ConstructionLayer[]>;
   updateLayer(id: string, layer: Partial<InsertLayer>): Promise<ConstructionLayer>;
   deleteLayer(id: string): Promise<void>;
@@ -373,6 +374,10 @@ export class MemStorage implements IStorage {
   }
 
   // Layer operations
+  async getLayersByRoadId(roadId: string): Promise<ConstructionLayer[]> {
+    return Array.from(this.layers.values()).filter(l => l.roadId === roadId);
+  }
+
   async createLayers(roadId: string, layers: InsertLayer[]): Promise<ConstructionLayer[]> {
     if (layers.length === 0) return [];
     
@@ -721,6 +726,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Layer operations
+  async getLayersByRoadId(roadId: string): Promise<ConstructionLayer[]> {
+    return await db.select().from(constructionLayers).where(eq(constructionLayers.roadId, roadId));
+  }
+
   async createLayers(roadId: string, layers: InsertLayer[]): Promise<ConstructionLayer[]> {
     if (layers.length === 0) return [];
     
