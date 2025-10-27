@@ -949,6 +949,48 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post('/api/work-plan-activities/:targetId/insert-section', isAuthenticated, async (req, res) => {
+    try {
+      const { targetId } = req.params;
+      const userId = req.user!.id;
+      
+      // Validate request body
+      const insertSchema = z.object({
+        position: z.enum(['above', 'below']),
+        sectionName: z.string().min(1),
+      });
+      const { position, sectionName } = insertSchema.parse(req.body);
+      
+      // Get the target activity to find its project and orderIndex
+      const targetActivity = await storage.getWorkPlanActivityById(targetId);
+      if (!targetActivity) {
+        return res.status(404).json({ message: "Target activity not found" });
+      }
+      
+      // Verify user has access to the activity's project
+      const project = await storage.getProject(targetActivity.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      // Insert section and reorder atomically
+      const newSection = await storage.insertSectionAtPosition(
+        targetActivity.projectId,
+        targetActivity.orderIndex,
+        position,
+        sectionName
+      );
+      
+      res.json(newSection);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error inserting section:", error);
+      res.status(500).json({ message: "Failed to insert section" });
+    }
+  });
+
   // Project Document Routes
   app.get('/api/projects/:projectId/documents', isAuthenticated, async (req, res) => {
     try {

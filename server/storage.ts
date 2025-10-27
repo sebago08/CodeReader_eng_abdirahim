@@ -49,7 +49,7 @@ import {
   type InsertProjectDocument,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, or, inArray } from "drizzle-orm";
+import { eq, and, desc, or, inArray, sql, gte } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -148,6 +148,7 @@ export interface IStorage {
   createWorkPlanActivity(projectId: string, activity: InsertWorkPlanActivity): Promise<WorkPlanActivity>;
   deleteWorkPlanActivity(id: string): Promise<void>;
   toggleWorkPlanMilestone(id: string, isMilestone: boolean): Promise<WorkPlanActivity>;
+  insertSectionAtPosition(projectId: string, targetOrderIndex: number, position: "above" | "below", sectionName: string): Promise<WorkPlanActivity>;
   
   // Project document operations
   getProjectDocuments(projectId: string): Promise<ProjectDocument[]>;
@@ -1151,6 +1152,45 @@ export class DatabaseStorage implements IStorage {
       .where(eq(workPlanActivities.id, id))
       .returning();
     return result;
+  }
+
+  async insertSectionAtPosition(
+    projectId: string,
+    targetOrderIndex: number,
+    position: "above" | "below",
+    sectionName: string
+  ): Promise<WorkPlanActivity> {
+    // Calculate the insert position
+    const insertIndex = position === "above" ? targetOrderIndex : targetOrderIndex + 1;
+    
+    // Execute in a transaction to ensure atomicity
+    return await db.transaction(async (tx) => {
+      // First, shift all items at or after the insert position by 1
+      await tx.update(workPlanActivities)
+        .set({ 
+          orderIndex: sql`${workPlanActivities.orderIndex} + 1`,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(workPlanActivities.projectId, projectId),
+            gte(workPlanActivities.orderIndex, insertIndex)
+          )
+        );
+      
+      // Then insert the new section at the calculated position
+      const [newSection] = await tx.insert(workPlanActivities)
+        .values({
+          projectId,
+          activityName: sectionName,
+          itemType: "section",
+          orderIndex: insertIndex,
+          isMilestone: false,
+        })
+        .returning();
+      
+      return newSection;
+    });
   }
   
   // Project document operations

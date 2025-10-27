@@ -7,9 +7,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { WorkPlanActivity } from "@shared/schema";
-import { Trash2, Flag, ListCheck, Heading2 } from "lucide-react";
+import { Trash2, Flag, ListCheck, Heading2, MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface WorkPlanTabProps {
   projectId: string;
@@ -84,6 +90,30 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
     },
   });
 
+  // Insert section header at specific position (atomic server-side operation)
+  const insertSectionMutation = useMutation({
+    mutationFn: async ({ position, targetActivity, sectionName }: { position: "above" | "below"; targetActivity: WorkPlanActivity; sectionName: string }) => {
+      return await apiRequest("POST", `/api/work-plan-activities/${targetActivity.id}/insert-section`, {
+        position,
+        sectionName,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
+      toast({
+        title: "Section inserted",
+        description: "Section header has been inserted successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to insert section. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Calculate end date based on start date and duration
   // A 1-day task starts and ends on the same day, so we add (duration - 1) days
   const calculateEndDate = (start: string, days: number): string => {
@@ -153,6 +183,34 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
       month: "numeric",
       day: "numeric",
     });
+  };
+
+  const handleInsertSection = (position: "above" | "below", targetActivity: WorkPlanActivity) => {
+    const sectionName = window.prompt(`Enter section name to insert ${position}:`);
+    if (!sectionName || !sectionName.trim()) {
+      return;
+    }
+    
+    insertSectionMutation.mutate({
+      position,
+      targetActivity,
+      sectionName: sectionName.trim(),
+    });
+  };
+
+  // Helper to check if an activity is indented (belongs to a section)
+  // An activity is indented if there's a section header before it and no other section after that
+  const isIndented = (index: number): boolean => {
+    if (index === 0) return false;
+    
+    // Look backwards to find if we're under a section
+    for (let i = index - 1; i >= 0; i--) {
+      if (activities[i].itemType === "section") {
+        return true; // Found a section header before this activity
+      }
+    }
+    
+    return false; // No section header found before this activity
   };
 
   return (
@@ -281,7 +339,7 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {activities.map((activity) => (
+                  {activities.map((activity, index) => (
                     activity.itemType === "section" ? (
                       <TableRow 
                         key={activity.id} 
@@ -295,21 +353,50 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteActivityMutation.mutate(activity.id)}
-                            disabled={deleteActivityMutation.isPending}
-                            data-testid={`button-delete-${activity.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  data-testid={`button-kebab-${activity.id}`}
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  onClick={() => handleInsertSection("above", activity)}
+                                  data-testid={`menu-insert-above-${activity.id}`}
+                                >
+                                  Insert Section Above
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleInsertSection("below", activity)}
+                                  data-testid={`menu-insert-below-${activity.id}`}
+                                >
+                                  Insert Section Below
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteActivityMutation.mutate(activity.id)}
+                              disabled={deleteActivityMutation.isPending}
+                              data-testid={`button-delete-${activity.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
                       <TableRow key={activity.id} data-testid={`row-activity-${activity.id}`}>
                         <TableCell className="font-medium" data-testid={`text-activity-name-${activity.id}`}>
-                          {activity.activityName}
+                          <div className={isIndented(index) ? "pl-8" : ""}>
+                            {activity.activityName}
+                          </div>
                         </TableCell>
                         <TableCell data-testid={`text-start-date-${activity.id}`}>
                           {activity.startDate ? formatDate(activity.startDate) : '-'}
@@ -340,15 +427,42 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                           </Button>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteActivityMutation.mutate(activity.id)}
-                            disabled={deleteActivityMutation.isPending}
-                            data-testid={`button-delete-${activity.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  data-testid={`button-kebab-${activity.id}`}
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  onClick={() => handleInsertSection("above", activity)}
+                                  data-testid={`menu-insert-above-${activity.id}`}
+                                >
+                                  Insert Section Above
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleInsertSection("below", activity)}
+                                  data-testid={`menu-insert-below-${activity.id}`}
+                                >
+                                  Insert Section Below
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteActivityMutation.mutate(activity.id)}
+                              disabled={deleteActivityMutation.isPending}
+                              data-testid={`button-delete-${activity.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
