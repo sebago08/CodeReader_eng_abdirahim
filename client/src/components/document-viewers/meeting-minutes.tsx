@@ -32,7 +32,6 @@ interface MeetingMinutesProps {
 export function MeetingMinutes({ project, documentId, savedData, onBack, onSave }: MeetingMinutesProps) {
   const displayProject = savedData?.projectSnapshot || project;
   const isSaved = !!savedData;
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [meetingDate, setMeetingDate] = useState(new Date().toISOString().split('T')[0]);
   const [meetingTime, setMeetingTime] = useState('10:00');
   const [venue, setVenue] = useState('');
@@ -165,19 +164,24 @@ export function MeetingMinutes({ project, documentId, savedData, onBack, onSave 
     }
   };
 
-  const handleSave = (documentName: string) => {
-    const customContent = {
-      meetingDate,
-      meetingTime,
-      venue,
-      attendees,
-      agenda,
-      discussions,
-      actionItems,
-      nextMeeting
-    };
-    onSave(documentId, documentName, customContent);
-    setShowSaveDialog(false);
+  const handleSaveDocument = () => {
+    const documentName = window.prompt(
+      'Enter document name:',
+      `Meeting Minutes - ${new Date(meetingDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+    );
+    if (documentName && documentName.trim()) {
+      const customContent = {
+        meetingDate,
+        meetingTime,
+        venue,
+        attendees,
+        agenda,
+        discussions,
+        actionItems,
+        nextMeeting
+      };
+      onSave(documentId, documentName.trim(), customContent);
+    }
   };
 
   return (
@@ -205,9 +209,10 @@ export function MeetingMinutes({ project, documentId, savedData, onBack, onSave 
                 </Badge>
               )}
               <Button 
-                onClick={() => setShowSaveDialog(true)} 
+                onClick={handleSaveDocument} 
                 variant="outline"
                 disabled={isExporting}
+                data-testid="button-save-document"
               >
                 <Save className="w-4 h-4 mr-2" />
                 Save Document
@@ -399,12 +404,6 @@ export function MeetingMinutes({ project, documentId, savedData, onBack, onSave 
         </div>
       </div>
 
-      <SaveDocumentDialog
-        open={showSaveDialog}
-        onOpenChange={setShowSaveDialog}
-        onSave={handleSave}
-        defaultName={`Meeting Minutes - ${new Date(meetingDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
-      />
     </div>
   );
 }
