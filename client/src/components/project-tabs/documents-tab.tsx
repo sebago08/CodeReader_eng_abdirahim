@@ -105,14 +105,19 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
         customContent: images || {},
       }) as unknown as ProjectDocument;
     },
-    onSuccess: () => {
+    onSuccess: (updatedDocument) => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects', project.id, 'documents'] });
       toast({
         title: "Document updated",
         description: "Your document has been updated successfully.",
       });
       setEditingDocument(null);
-      setViewingDocument(null);
+      // Update viewing document with the latest data if we're in viewing mode
+      if (viewingDocument) {
+        setViewingDocument(updatedDocument);
+      } else {
+        setViewingDocument(null);
+      }
     },
     onError: () => {
       toast({
@@ -358,6 +363,15 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
   if (viewingDocument) {
     const project = viewingDocument.projectSnapshot as any;
     
+    // Handler to update document when saving in view mode
+    const handleViewingSave = (docId: string, docName: string, customContent?: any) => {
+      updateDocumentMutation.mutate({
+        documentId: viewingDocument.id,
+        documentName: docName,
+        images: customContent,
+      });
+    };
+    
     switch (viewingDocument.documentType) {
       case 'progress-report':
         return (
@@ -373,7 +387,7 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
             documentId={viewingDocument.id}
             savedData={viewingDocument as any}
             onBack={() => setViewingDocument(null)}
-            onSave={(docId, docName, customContent) => {}}
+            onSave={handleViewingSave}
           />
         );
       case 'instruction-letter':
@@ -383,7 +397,7 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
             documentId={viewingDocument.id}
             savedData={viewingDocument as any}
             onBack={() => setViewingDocument(null)}
-            onSave={(docId, docName, customContent) => {}}
+            onSave={handleViewingSave}
           />
         );
       case 'taking-over-certificate':
@@ -393,7 +407,7 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
             documentId={viewingDocument.id}
             savedData={viewingDocument as any}
             onBack={() => setViewingDocument(null)}
-            onSave={(docId, docName, customContent) => {}}
+            onSave={handleViewingSave}
           />
         );
       case 'meeting-minutes':
@@ -403,7 +417,7 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
             documentId={viewingDocument.id}
             savedData={viewingDocument as any}
             onBack={() => setViewingDocument(null)}
-            onSave={(docId, docName, customContent) => {}}
+            onSave={handleViewingSave}
           />
         );
       default:
