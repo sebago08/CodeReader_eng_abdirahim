@@ -10,6 +10,10 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ProjectWithRoads, DocumentType, ProjectDocument } from "@shared/schema";
 import { ProgressReport } from "@/components/document-viewers/progress-report";
+import { CommencementOrder } from "@/components/document-viewers/commencement-order";
+import { InstructionLetter } from "@/components/document-viewers/instruction-letter";
+import { TakingOverCertificate } from "@/components/document-viewers/taking-over-certificate";
+import { MeetingMinutes } from "@/components/document-viewers/meeting-minutes";
 
 interface DocumentsTabProps {
   project: ProjectWithRoads;
@@ -209,105 +213,215 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
 
   // Conditional rendering for editing mode
   if (editingDocument) {
-    if (editingDocument.documentType === 'progress-report') {
-      return (
-        <ProgressReport 
-          document={editingDocument}
-          project={editingDocument.projectSnapshot as any}
-          isPreview={true}
-          isSaving={updateDocumentMutation.isPending}
-          onSave={handleSaveDocument}
-          onCancel={handleCancelPreview}
-        />
-      );
-    }
+    const project = editingDocument.projectSnapshot as any;
     
-    // For other document types, show placeholder for now
-    return (
-      <div className="space-y-4">
-        <Button
-          variant="ghost"
-          onClick={handleCancelPreview}
-          data-testid="button-cancel-edit"
-        >
-          ← Back to Documents
-        </Button>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
-              Editing for {editingDocument.documentType} coming soon!
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    switch (editingDocument.documentType) {
+      case 'progress-report':
+        return (
+          <ProgressReport 
+            document={editingDocument}
+            project={project}
+            isPreview={true}
+            isSaving={updateDocumentMutation.isPending}
+            onSave={handleSaveDocument}
+            onCancel={handleCancelPreview}
+          />
+        );
+      case 'commencement-order':
+        return (
+          <CommencementOrder 
+            project={project}
+            documentId={editingDocument.id}
+            savedData={editingDocument as any}
+            onBack={handleCancelPreview}
+            onSave={(docId, docName, customContent) => handleSaveDocument(docName, customContent)}
+          />
+        );
+      case 'instruction-letter':
+        return (
+          <InstructionLetter 
+            project={project}
+            documentId={editingDocument.id}
+            savedData={editingDocument as any}
+            onBack={handleCancelPreview}
+            onSave={(docId, docName, customContent) => handleSaveDocument(docName, customContent)}
+          />
+        );
+      case 'taking-over-certificate':
+        return (
+          <TakingOverCertificate 
+            project={project}
+            documentId={editingDocument.id}
+            savedData={editingDocument as any}
+            onBack={handleCancelPreview}
+            onSave={(docId, docName, customContent) => handleSaveDocument(docName, customContent)}
+          />
+        );
+      case 'meeting-minutes':
+        return (
+          <MeetingMinutes 
+            project={project}
+            documentId={editingDocument.id}
+            savedData={editingDocument as any}
+            onBack={handleCancelPreview}
+            onSave={(docId, docName, customContent) => handleSaveDocument(docName, customContent)}
+          />
+        );
+      default:
+        return (
+          <div className="space-y-4">
+            <Button variant="ghost" onClick={handleCancelPreview} data-testid="button-cancel-edit">
+              ← Back to Documents
+            </Button>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-center text-muted-foreground">
+                  Editing for {editingDocument.documentType} coming soon!
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+    }
   }
 
   // Conditional rendering for preview mode
   if (previewDocument) {
-    if (previewDocument.documentType === 'progress-report') {
-      return (
-        <ProgressReport 
-          project={previewDocument.projectSnapshot}
-          isPreview={true}
-          isSaving={createDocumentMutation.isPending}
-          onSave={handleSaveDocument}
-          onCancel={handleCancelPreview}
-        />
-      );
-    }
+    const project = previewDocument.projectSnapshot;
     
-    // For other document types, show placeholder for now
-    return (
-      <div className="space-y-4">
-        <Button
-          variant="ghost"
-          onClick={handleCancelPreview}
-          data-testid="button-cancel-preview"
-        >
-          ← Back to Documents
-        </Button>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
-              Preview for {previewDocument.documentType} coming soon!
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    switch (previewDocument.documentType) {
+      case 'progress-report':
+        return (
+          <ProgressReport 
+            project={project}
+            isPreview={true}
+            isSaving={createDocumentMutation.isPending}
+            onSave={handleSaveDocument}
+            onCancel={handleCancelPreview}
+          />
+        );
+      case 'commencement-order':
+        return (
+          <CommencementOrder 
+            project={project}
+            documentId="new"
+            onBack={handleCancelPreview}
+            onSave={(docId, docName, customContent) => handleSaveDocument(docName, customContent)}
+          />
+        );
+      case 'instruction-letter':
+        return (
+          <InstructionLetter 
+            project={project}
+            documentId="new"
+            onBack={handleCancelPreview}
+            onSave={(docId, docName, customContent) => handleSaveDocument(docName, customContent)}
+          />
+        );
+      case 'taking-over-certificate':
+        return (
+          <TakingOverCertificate 
+            project={project}
+            documentId="new"
+            onBack={handleCancelPreview}
+            onSave={(docId, docName, customContent) => handleSaveDocument(docName, customContent)}
+          />
+        );
+      case 'meeting-minutes':
+        return (
+          <MeetingMinutes 
+            project={project}
+            documentId="new"
+            onBack={handleCancelPreview}
+            onSave={(docId, docName, customContent) => handleSaveDocument(docName, customContent)}
+          />
+        );
+      default:
+        return (
+          <div className="space-y-4">
+            <Button variant="ghost" onClick={handleCancelPreview} data-testid="button-cancel-preview">
+              ← Back to Documents
+            </Button>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-center text-muted-foreground">
+                  Preview for {previewDocument.documentType} coming soon!
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+    }
   }
 
   // Conditional rendering for viewing a saved document
   if (viewingDocument) {
-    if (viewingDocument.documentType === 'progress-report') {
-      return (
-        <ProgressReport 
-          document={viewingDocument}
-          onBack={() => setViewingDocument(null)}
-        />
-      );
-    }
+    const project = viewingDocument.projectSnapshot as any;
     
-    // For other document types, show placeholder for now
-    return (
-      <div className="space-y-4">
-        <Button
-          variant="ghost"
-          onClick={() => setViewingDocument(null)}
-          data-testid="button-back-to-documents"
-        >
-          ← Back to Documents
-        </Button>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
-              Viewer for {viewingDocument.documentType} coming soon!
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    switch (viewingDocument.documentType) {
+      case 'progress-report':
+        return (
+          <ProgressReport 
+            document={viewingDocument}
+            onBack={() => setViewingDocument(null)}
+          />
+        );
+      case 'commencement-order':
+        return (
+          <CommencementOrder 
+            project={project}
+            documentId={viewingDocument.id}
+            savedData={viewingDocument as any}
+            onBack={() => setViewingDocument(null)}
+            onSave={(docId, docName, customContent) => {}}
+          />
+        );
+      case 'instruction-letter':
+        return (
+          <InstructionLetter 
+            project={project}
+            documentId={viewingDocument.id}
+            savedData={viewingDocument as any}
+            onBack={() => setViewingDocument(null)}
+            onSave={(docId, docName, customContent) => {}}
+          />
+        );
+      case 'taking-over-certificate':
+        return (
+          <TakingOverCertificate 
+            project={project}
+            documentId={viewingDocument.id}
+            savedData={viewingDocument as any}
+            onBack={() => setViewingDocument(null)}
+            onSave={(docId, docName, customContent) => {}}
+          />
+        );
+      case 'meeting-minutes':
+        return (
+          <MeetingMinutes 
+            project={project}
+            documentId={viewingDocument.id}
+            savedData={viewingDocument as any}
+            onBack={() => setViewingDocument(null)}
+            onSave={(docId, docName, customContent) => {}}
+          />
+        );
+      default:
+        return (
+          <div className="space-y-4">
+            <Button variant="ghost" onClick={() => setViewingDocument(null)} data-testid="button-back-to-documents">
+              ← Back to Documents
+            </Button>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-center text-muted-foreground">
+                  Viewer for {viewingDocument.documentType} coming soon!
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+    }
   }
 
   if (isLoading) {
