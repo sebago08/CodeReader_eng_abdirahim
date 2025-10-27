@@ -190,7 +190,7 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
           {isSaved ? (
             <Badge className="bg-[#27ae60] text-white hover:bg-[#27ae60]">
               <CheckCircle2 className="w-3 h-3 mr-1" />
-              Saved {new Date(savedData.savedAt).toLocaleDateString()}
+              Saved {savedData?.savedAt ? new Date(savedData.savedAt).toLocaleDateString() : ''}
             </Badge>
           ) : (
             <Badge variant="outline" className="text-[#f39c12] border-[#f39c12]">
