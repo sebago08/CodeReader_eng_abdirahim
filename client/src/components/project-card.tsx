@@ -1,4 +1,10 @@
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import SegmentedProgress from "@/components/segmented-progress";
 import type { ProjectWithRoads } from "@shared/schema";
 
@@ -225,32 +231,42 @@ export default function ProjectCard({
                         ({roadProgress}%)
                       </span>
                     </div>
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={() => onEditRoad(road)}
-                        className="text-xs text-muted-foreground hover:text-secondary"
-                        title="Edit Road"
-                        data-testid="button-edit-road"
-                      >
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <button
-                        onClick={() => onDuplicateRoad(road)}
-                        className="text-xs text-muted-foreground hover:text-blue-600"
-                        title="Duplicate Road"
-                        data-testid="button-duplicate-road"
-                      >
-                        <i className="fas fa-copy"></i>
-                      </button>
-                      <button
-                        onClick={() => onDeleteRoad(road)}
-                        className="text-xs text-muted-foreground hover:text-destructive"
-                        title="Delete Road"
-                        data-testid="button-delete-road"
-                      >
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className="text-xs text-muted-foreground hover:text-secondary p-1"
+                          title="Road Actions"
+                          aria-label="Road actions menu"
+                          data-testid="button-road-menu"
+                        >
+                          <i className="fas fa-ellipsis-v"></i>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => onEditRoad(road)}
+                          data-testid="menu-item-edit-road"
+                        >
+                          <i className="fas fa-edit mr-2"></i>
+                          Edit Road
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => onDuplicateRoad(road)}
+                          data-testid="menu-item-duplicate-road"
+                        >
+                          <i className="fas fa-copy mr-2"></i>
+                          Duplicate Road
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => onDeleteRoad(road)}
+                          className="text-destructive focus:text-destructive"
+                          data-testid="menu-item-delete-road"
+                        >
+                          <i className="fas fa-trash mr-2"></i>
+                          Delete Road
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                   <div className="flex flex-col gap-2 text-xs">
                     {road.layers && road.layers.length > 0 ? (
