@@ -75,12 +75,12 @@ localPort = 42947
 externalPort = 3000
 
 [[ports]]
-localPort = 44437
-externalPort = 8008
+localPort = 43265
+externalPort = 8080
 
 [[ports]]
-localPort = 46541
-externalPort = 6800
+localPort = 44437
+externalPort = 8008
 
 [agent]
 integrations = ["javascript_log_in_with_replit==1.0.0", "javascript_database==1.0.0"]
