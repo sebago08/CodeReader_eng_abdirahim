@@ -32,7 +32,7 @@ PostgreSQL database with a normalized schema covering:
 - **Client & Contractor Personnel**: Details of personnel associated with each project.
 - **Contractor Equipment**: Inventory for each project's contractor.
 - **Payment Certificates**: Tracking financial certificates, amounts, and payment status.
-- **Work Plan Activities**: Project scheduling with activity names, dates, and milestones.
+- **Work Plan Activities**: Project scheduling with activity names, dates, and milestones. Uses order-based grouping via `orderIndex` instead of parent-child relationships. Activities are grouped under sections purely by their position in the ordered list.
 - **Roads**: Specific road segments within projects with length and type.
 - **Construction Layers**: Different construction phases (e.g., Excavation, Sub Grade, Base, Asphalt Concrete).
 - **Layer Progress**: Granular progress tracking by chainage ranges and quality status.
@@ -49,7 +49,7 @@ The application uses local username/password authentication with Bcrypt hashing 
 - **Layer Management**: Track construction phases with weighted progress calculation.
 - **Progress Recording**: Record completion by chainage ranges with date and quality.
 - **Visual Progress**: Real-time progress bars comparing planned vs. actual completion.
-- **Work Plan Scheduling**: Plan activities with start dates, durations, and milestone flags. Includes section headers for organizing activities into categorized groups with visual indentation. Kebab menu on each row allows inserting section headers above or below any item. Features inline editing - double-click any activity or section name to edit directly without dialogs, with auto-edit mode for newly inserted sections.
+- **Work Plan Scheduling**: Plan activities with start dates, durations, and milestone flags. Includes section headers for organizing activities into categorized groups with visual indentation. Kebab menu on each row provides four insert options: Insert Section Above/Below and Insert Activity Above/Below, enabling precise positional insertion at any point in the work plan. Features inline editing - double-click any activity or section name to edit directly without dialogs, with auto-edit mode for newly inserted sections. Uses order-based grouping where activities following a section (until the next section) are visually grouped under that section. Section date ranges are calculated dynamically from child activities.
 - **Team Collaboration**: Invite collaborators with role-based access (owner/collaborator).
 - **File Storage**: Upload and manage construction files (photos, documents) via an abstraction layer.
 - **Data Validation**: Client and server-side validation using Zod.
