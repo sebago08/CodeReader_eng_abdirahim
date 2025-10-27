@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { ProjectWithRoads } from "@shared/schema";
+import { Plus, Pencil, Check, X, Trash2 } from "lucide-react";
 
 interface RoadModalProps {
   project: ProjectWithRoads;
@@ -16,7 +17,14 @@ interface RoadModalProps {
   onSuccess: () => void;
 }
 
-const LAYER_OPTIONS = [
+interface LayerOption {
+  id: string;
+  name: string;
+  weight: number;
+  isCustom?: boolean;
+}
+
+const DEFAULT_LAYER_OPTIONS: LayerOption[] = [
   { id: "excavation", name: "Excavation & Earthwork", weight: 1 },
   { id: "bottom-subgrade", name: "Bottom Sub Grade", weight: 1 },
   { id: "top-subgrade", name: "Top Sub Grade", weight: 1 },
@@ -34,7 +42,10 @@ export default function RoadModal({ project, road, onClose, onSuccess }: RoadMod
     roadType: "",
     carriageway: "single",
   });
+  const [layerOptions, setLayerOptions] = useState<LayerOption[]>(DEFAULT_LAYER_OPTIONS);
   const [selectedLayers, setSelectedLayers] = useState<string[]>([]);
+  const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
+  const [editingLayerName, setEditingLayerName] = useState("");
 
   useEffect(() => {
     if (road) {
@@ -44,7 +55,19 @@ export default function RoadModal({ project, road, onClose, onSuccess }: RoadMod
         roadType: road.roadType || "",
         carriageway: road.carriageway || "single",
       });
-      setSelectedLayers(road.layers?.map((l: any) => l.name) || []);
+      
+      // Load existing layers from the road
+      if (road.layers && road.layers.length > 0) {
+        const existingLayers: LayerOption[] = road.layers.map((l: any, index: number) => ({
+          id: l.id || `layer-${index}`,
+          name: l.name,
+          weight: l.weight || 1,
+          isCustom: !DEFAULT_LAYER_OPTIONS.find(opt => opt.name === l.name),
+        }));
+        
+        setLayerOptions(existingLayers);
+        setSelectedLayers(existingLayers.map(l => l.id));
+      }
     } else {
       setSelectedLayers(["excavation", "bottom-subgrade", "top-subgrade", "bottom-subbase", "top-subbase", "base", "asphalt-concrete"]);
     }
@@ -53,14 +76,25 @@ export default function RoadModal({ project, road, onClose, onSuccess }: RoadMod
   const mutation = useMutation({
     mutationFn: async (data: any) => {
       if (road) {
-        await apiRequest("PATCH", `/api/roads/${road.id}`, data);
+        // When editing, also update the layers
+        const layers = layerOptions
+          .filter(layer => selectedLayers.includes(layer.id))
+          .map(layer => ({
+            name: layer.name,
+            weight: layer.weight,
+          }));
+        
+        await apiRequest("PATCH", `/api/roads/${road.id}`, {
+          ...data,
+          layers,
+        });
       } else {
-        const layers = LAYER_OPTIONS.filter(layer => 
-          selectedLayers.includes(layer.id)
-        ).map(layer => ({
-          name: layer.name,
-          weight: layer.weight,
-        }));
+        const layers = layerOptions
+          .filter(layer => selectedLayers.includes(layer.id))
+          .map(layer => ({
+            name: layer.name,
+            weight: layer.weight,
+          }));
         
         await apiRequest("POST", `/api/projects/${project.id}/roads`, {
           ...data,
@@ -105,6 +139,58 @@ export default function RoadModal({ project, road, onClose, onSuccess }: RoadMod
         ? [...prev, layerId]
         : prev.filter(id => id !== layerId)
     );
+  };
+
+  const handleAddLayer = () => {
+    const newLayerId = `custom-${Date.now()}`;
+    const newLayer: LayerOption = {
+      id: newLayerId,
+      name: "New Layer",
+      weight: 1,
+      isCustom: true,
+    };
+    
+    setLayerOptions(prev => [...prev, newLayer]);
+    setSelectedLayers(prev => [...prev, newLayerId]);
+    setEditingLayerId(newLayerId);
+    setEditingLayerName("New Layer");
+  };
+
+  const handleStartEditLayer = (layerId: string, currentName: string) => {
+    setEditingLayerId(layerId);
+    setEditingLayerName(currentName);
+  };
+
+  const handleSaveLayerName = () => {
+    if (editingLayerId && editingLayerName.trim()) {
+      setLayerOptions(prev => 
+        prev.map(layer => 
+          layer.id === editingLayerId 
+            ? { ...layer, name: editingLayerName.trim() }
+            : layer
+        )
+      );
+      setEditingLayerId(null);
+      setEditingLayerName("");
+    }
+  };
+
+  const handleCancelEditLayer = () => {
+    // If it's a new layer that was just added and user cancels, remove it
+    if (editingLayerId?.startsWith('custom-')) {
+      const layer = layerOptions.find(l => l.id === editingLayerId);
+      if (layer && layer.name === "New Layer") {
+        setLayerOptions(prev => prev.filter(l => l.id !== editingLayerId));
+        setSelectedLayers(prev => prev.filter(id => id !== editingLayerId));
+      }
+    }
+    setEditingLayerId(null);
+    setEditingLayerName("");
+  };
+
+  const handleDeleteLayer = (layerId: string) => {
+    setLayerOptions(prev => prev.filter(l => l.id !== layerId));
+    setSelectedLayers(prev => prev.filter(id => id !== layerId));
   };
 
   return (
@@ -183,24 +269,100 @@ export default function RoadModal({ project, road, onClose, onSuccess }: RoadMod
             </div>
           </div>
           
-          {!road && (
-            <div>
-              <Label className="block text-sm font-medium text-muted-foreground mb-2">Construction Layers</Label>
-              <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
-                {LAYER_OPTIONS.map((layer) => (
-                  <label key={layer.id} className="flex items-center space-x-3">
-                    <Checkbox
-                      checked={selectedLayers.includes(layer.id)}
-                      onCheckedChange={(checked) => handleLayerToggle(layer.id, !!checked)}
-                      className="rounded"
-                      data-testid={`checkbox-layer-${layer.id}`}
-                    />
-                    <span className="text-sm">{layer.name}</span>
-                  </label>
-                ))}
-              </div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="block text-sm font-medium text-muted-foreground">Construction Layers</Label>
+              <Button
+                type="button"
+                onClick={handleAddLayer}
+                variant="ghost"
+                size="sm"
+                className="h-8 px-3 text-xs"
+                data-testid="button-add-layer"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add Layer
+              </Button>
             </div>
-          )}
+            <div className="space-y-2 bg-muted/30 p-4 rounded-lg max-h-64 overflow-y-auto">
+              {layerOptions.map((layer) => (
+                <div key={layer.id} className="flex items-center space-x-3 group">
+                  <Checkbox
+                    checked={selectedLayers.includes(layer.id)}
+                    onCheckedChange={(checked) => handleLayerToggle(layer.id, !!checked)}
+                    className="rounded"
+                    data-testid={`checkbox-layer-${layer.id}`}
+                  />
+                  
+                  {editingLayerId === layer.id ? (
+                    <div className="flex items-center space-x-2 flex-1">
+                      <Input
+                        type="text"
+                        value={editingLayerName}
+                        onChange={(e) => setEditingLayerName(e.target.value)}
+                        className="h-8 text-sm"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSaveLayerName();
+                          } else if (e.key === 'Escape') {
+                            handleCancelEditLayer();
+                          }
+                        }}
+                        data-testid={`input-edit-layer-${layer.id}`}
+                      />
+                      <Button
+                        type="button"
+                        onClick={handleSaveLayerName}
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        data-testid={`button-save-layer-${layer.id}`}
+                      >
+                        <Check className="h-4 w-4 text-green-600" />
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleCancelEditLayer}
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        data-testid={`button-cancel-edit-layer-${layer.id}`}
+                      >
+                        <X className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between flex-1">
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditLayer(layer.id, layer.name)}
+                        className="text-sm text-left hover:text-primary transition-colors flex items-center gap-2 flex-1"
+                        data-testid={`button-edit-layer-name-${layer.id}`}
+                      >
+                        {layer.name}
+                        <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                      </button>
+                      
+                      {layer.isCustom && (
+                        <Button
+                          type="button"
+                          onClick={() => handleDeleteLayer(layer.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          data-testid={`button-delete-layer-${layer.id}`}
+                        >
+                          <Trash2 className="h-3 w-3 text-red-600" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
           
           <div className="flex justify-end space-x-4 pt-6 border-t border-border">
             <Button

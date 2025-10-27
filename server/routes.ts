@@ -209,8 +209,32 @@ export function registerRoutes(app: Express): Server {
   app.patch('/api/roads/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const validatedData = insertRoadSchema.partial().parse(req.body);
+      const { layers, ...roadData } = req.body;
+      const validatedData = insertRoadSchema.partial().parse(roadData);
+      
       const road = await storage.updateRoad(id, validatedData);
+      
+      // Update layers if provided
+      if (layers !== undefined) {
+        // First, validate all incoming layers to prevent data loss
+        const validatedLayers = layers.length > 0 
+          ? layers.map((layer: any) => insertLayerSchema.parse(layer))
+          : [];
+        
+        // Only after validation succeeds, get existing layers
+        const existingLayers = await storage.getLayersByRoadId(id);
+        
+        // Delete all existing layers
+        for (const layer of existingLayers) {
+          await storage.deleteLayer(layer.id);
+        }
+        
+        // Then create new validated layers
+        if (validatedLayers.length > 0) {
+          await storage.createLayers(road.id, validatedLayers);
+        }
+      }
+      
       res.json(road);
     } catch (error) {
       console.error("Error updating road:", error);
