@@ -125,6 +125,35 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
     },
   });
 
+  // Insert activity at specific position (atomic server-side operation)
+  const insertActivityMutation = useMutation({
+    mutationFn: async ({ position, targetActivity, activityData }: { 
+      position: "above" | "below"; 
+      targetActivity: WorkPlanActivity;
+      activityData: { activityName: string; startDate?: string; duration?: number; endDate?: string };
+    }): Promise<WorkPlanActivity> => {
+      const response = await apiRequest("POST", `/api/work-plan-activities/${targetActivity.id}/insert-activity`, {
+        position,
+        ...activityData,
+      });
+      return await response.json();
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
+      toast({
+        title: "Activity inserted",
+        description: "Activity has been inserted successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to insert activity. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Update activity/section name mutation
   const updateNameMutation = useMutation({
     mutationFn: async ({ id, activityName }: { id: string; activityName: string }) => {
@@ -225,6 +254,47 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
       position,
       targetActivity,
       sectionName: "New Section",
+    });
+  };
+
+  const handleInsertActivity = (position: "above" | "below", targetActivity: WorkPlanActivity) => {
+    // Prompt user for activity details
+    const activityName = window.prompt("Enter activity name:");
+    if (!activityName || !activityName.trim()) {
+      return; // User cancelled or provided empty name
+    }
+
+    const startDateInput = window.prompt("Enter start date (YYYY-MM-DD):");
+    if (!startDateInput) {
+      return; // User cancelled
+    }
+
+    const durationInput = window.prompt("Enter duration (days):");
+    if (!durationInput) {
+      return; // User cancelled
+    }
+
+    const durationDays = parseInt(durationInput);
+    if (isNaN(durationDays) || durationDays <= 0) {
+      toast({
+        title: "Invalid duration",
+        description: "Duration must be a positive number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const endDate = calculateEndDate(startDateInput, durationDays);
+
+    insertActivityMutation.mutate({
+      position,
+      targetActivity,
+      activityData: {
+        activityName: activityName.trim(),
+        startDate: startDateInput,
+        duration: durationDays,
+        endDate,
+      },
     });
   };
 
@@ -506,15 +576,27 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem 
                                   onClick={() => handleInsertSection("above", activity)}
-                                  data-testid={`menu-insert-above-${activity.id}`}
+                                  data-testid={`menu-insert-section-above-${activity.id}`}
                                 >
                                   Insert Section Above
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   onClick={() => handleInsertSection("below", activity)}
-                                  data-testid={`menu-insert-below-${activity.id}`}
+                                  data-testid={`menu-insert-section-below-${activity.id}`}
                                 >
                                   Insert Section Below
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleInsertActivity("above", activity)}
+                                  data-testid={`menu-insert-activity-above-${activity.id}`}
+                                >
+                                  Insert Activity Above
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleInsertActivity("below", activity)}
+                                  data-testid={`menu-insert-activity-below-${activity.id}`}
+                                >
+                                  Insert Activity Below
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -598,15 +680,27 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem 
                                   onClick={() => handleInsertSection("above", activity)}
-                                  data-testid={`menu-insert-above-${activity.id}`}
+                                  data-testid={`menu-insert-section-above-${activity.id}`}
                                 >
                                   Insert Section Above
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   onClick={() => handleInsertSection("below", activity)}
-                                  data-testid={`menu-insert-below-${activity.id}`}
+                                  data-testid={`menu-insert-section-below-${activity.id}`}
                                 >
                                   Insert Section Below
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleInsertActivity("above", activity)}
+                                  data-testid={`menu-insert-activity-above-${activity.id}`}
+                                >
+                                  Insert Activity Above
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleInsertActivity("below", activity)}
+                                  data-testid={`menu-insert-activity-below-${activity.id}`}
+                                >
+                                  Insert Activity Below
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
