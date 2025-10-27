@@ -38,7 +38,7 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
   const [duration, setDuration] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const [selectedWorkPlanId, setSelectedWorkPlanId] = useState<string>("");
+  const [selectedWorkPlanId, setSelectedWorkPlanId] = useState<string>("all");
   const [isNewWorkPlanDialogOpen, setIsNewWorkPlanDialogOpen] = useState(false);
   const [newWorkPlanName, setNewWorkPlanName] = useState("");
   const [newWorkPlanDescription, setNewWorkPlanDescription] = useState("");
@@ -52,7 +52,7 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
   const { data: activities = [], isLoading } = useQuery<WorkPlanActivity[]>({
     queryKey: [`/api/projects/${projectId}/work-plan-activities`, selectedWorkPlanId],
     queryFn: async () => {
-      const url = selectedWorkPlanId 
+      const url = selectedWorkPlanId && selectedWorkPlanId !== "all"
         ? `/api/projects/${projectId}/work-plan-activities?workPlanId=${selectedWorkPlanId}`
         : `/api/projects/${projectId}/work-plan-activities`;
       const response = await fetch(url, { credentials: "include" });
@@ -66,7 +66,7 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
     mutationFn: async (activity: any) => {
       return await apiRequest("POST", `/api/projects/${projectId}/work-plan-activities`, {
         ...activity,
-        workPlanId: selectedWorkPlanId || undefined,
+        workPlanId: selectedWorkPlanId !== "all" ? selectedWorkPlanId : undefined,
       });
     },
     onSuccess: (_, variables) => {
@@ -483,7 +483,7 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                   <SelectValue placeholder="All work plans" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All work plans</SelectItem>
+                  <SelectItem value="all">All work plans</SelectItem>
                   {workPlans.map((workPlan) => (
                     <SelectItem key={workPlan.id} value={workPlan.id}>
                       {workPlan.name}
