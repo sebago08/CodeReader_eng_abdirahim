@@ -32,7 +32,6 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
   // Use saved data if available, otherwise use live project data
   const displayProject = savedData?.projectSnapshot || project;
   const isSaved = !!savedData;
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [letterNumber, setLetterNumber] = useState(`IL-${project.number}-${new Date().getFullYear()}`);
   const [letterDate, setLetterDate] = useState(new Date().toISOString().split('T')[0]);
   const [subject, setSubject] = useState('');
@@ -159,21 +158,19 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
   };
 
   const handleSaveDocument = () => {
-    setShowSaveDialog(true);
+    const documentName = window.prompt(
+      'Enter document name:',
+      `Instruction Letter - ${project?.number || 'New'}`
+    );
+    if (documentName && documentName.trim()) {
+      onSave(documentId, documentName.trim(), {
+        letterNumber,
+        letterDate,
+        subject,
+        letterContent
+      });
+    }
   };
-
-  const handleConfirmSave = (documentName: string) => {
-    onSave(documentId, documentName, {
-      letterNumber,
-      letterDate,
-      subject,
-      letterContent
-    });
-  };
-
-  // Get current document to use as default name
-  const currentDocument = project.documents?.find(d => d.id === documentId);
-  const defaultDocumentName = currentDocument?.name || `Instruction Letter - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
   return (
     <div>
