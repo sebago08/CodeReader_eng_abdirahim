@@ -38,6 +38,10 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
   const [letterContent, setLetterContent] = useState('');
   const [isExporting, setIsExporting] = useState(false);
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
@@ -205,12 +209,12 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
             </Button>
           )}
           <Button 
-            onClick={handleExportPDF}
-            disabled={isExporting}
+            onClick={handlePrint}
             className="bg-[#1a5276] hover:bg-[#14455f]"
+            data-testid="button-print-pdf"
           >
             <Download className="w-4 h-4 mr-2" />
-            {isExporting ? 'Exporting...' : 'Export PDF'}
+            Download PDF
           </Button>
         </div>
       </div>
