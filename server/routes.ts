@@ -253,6 +253,54 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post('/api/roads/:id/duplicate', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get the original road with layers
+      const projects = await storage.getProjects(req.user.id);
+      let originalRoad: any = null;
+      let projectId: string = '';
+      
+      for (const project of projects) {
+        const road = project.roads.find((r: any) => r.id === id);
+        if (road) {
+          originalRoad = road;
+          projectId = project.id;
+          break;
+        }
+      }
+      
+      if (!originalRoad) {
+        return res.status(404).json({ message: "Road not found" });
+      }
+      
+      // Create duplicate road with " (Copy)" suffix
+      const duplicatedRoad = await storage.createRoad(projectId, {
+        name: `${originalRoad.name} (Copy)`,
+        length: Number(originalRoad.length),
+        roadType: originalRoad.roadType,
+        carriageway: originalRoad.carriageway || "single",
+      });
+      
+      // Duplicate layers if they exist
+      if (originalRoad.layers && originalRoad.layers.length > 0) {
+        await storage.createLayers(
+          duplicatedRoad.id,
+          originalRoad.layers.map((layer: any) => ({
+            name: layer.name,
+            weight: layer.weight || 1,
+          }))
+        );
+      }
+      
+      res.status(201).json(duplicatedRoad);
+    } catch (error) {
+      console.error("Error duplicating road:", error);
+      res.status(500).json({ message: "Failed to duplicate road" });
+    }
+  });
+
   // Progress routes
   app.post('/api/layers/:layerId/progress', isAuthenticated, async (req: any, res) => {
     try {
