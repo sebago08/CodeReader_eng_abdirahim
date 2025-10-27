@@ -148,6 +148,7 @@ export interface IStorage {
   createWorkPlanActivity(projectId: string, activity: InsertWorkPlanActivity): Promise<WorkPlanActivity>;
   deleteWorkPlanActivity(id: string): Promise<void>;
   toggleWorkPlanMilestone(id: string, isMilestone: boolean): Promise<WorkPlanActivity>;
+  updateWorkPlanActivityName(id: string, activityName: string): Promise<WorkPlanActivity>;
   insertSectionAtPosition(projectId: string, targetOrderIndex: number, position: "above" | "below", sectionName: string): Promise<WorkPlanActivity>;
   
   // Project document operations
@@ -1149,6 +1150,14 @@ export class DatabaseStorage implements IStorage {
   async toggleWorkPlanMilestone(id: string, isMilestone: boolean): Promise<WorkPlanActivity> {
     const [result] = await db.update(workPlanActivities)
       .set({ isMilestone, updatedAt: new Date() })
+      .where(eq(workPlanActivities.id, id))
+      .returning();
+    return result;
+  }
+
+  async updateWorkPlanActivityName(id: string, activityName: string): Promise<WorkPlanActivity> {
+    const [result] = await db.update(workPlanActivities)
+      .set({ activityName, updatedAt: new Date() })
       .where(eq(workPlanActivities.id, id))
       .returning();
     return result;
