@@ -194,10 +194,23 @@ export const paymentCertificates = pgTable("payment_certificates", {
   index("payment_certificates_project_idx").on(table.projectId),
 ]);
 
+// Work plans table (multiple work plans per project)
+export const workPlans = pgTable("work_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("work_plans_project_idx").on(table.projectId),
+]);
+
 // Work plan activities table (project schedule and planning)
 export const workPlanActivities = pgTable("work_plan_activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   projectId: varchar("project_id").notNull(),
+  workPlanId: varchar("work_plan_id"), // Foreign key to work_plans, nullable for backward compatibility
   itemType: varchar("item_type").notNull().default("activity"), // "activity" or "section"
   activityName: varchar("activity_name").notNull(),
   startDate: date("start_date"), // Nullable for section headers
@@ -209,6 +222,7 @@ export const workPlanActivities = pgTable("work_plan_activities", {
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("work_plan_activities_project_idx").on(table.projectId),
+  index("work_plan_activities_work_plan_idx").on(table.workPlanId),
 ]);
 
 // Project members table (for team collaboration)
@@ -340,10 +354,22 @@ export const paymentCertificatesRelations = relations(paymentCertificates, ({ on
   }),
 }));
 
+export const workPlansRelations = relations(workPlans, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [workPlans.projectId],
+    references: [projects.id],
+  }),
+  activities: many(workPlanActivities),
+}));
+
 export const workPlanActivitiesRelations = relations(workPlanActivities, ({ one }) => ({
   project: one(projects, {
     fields: [workPlanActivities.projectId],
     references: [projects.id],
+  }),
+  workPlan: one(workPlans, {
+    fields: [workPlanActivities.workPlanId],
+    references: [workPlans.id],
   }),
 }));
 
@@ -474,6 +500,13 @@ export const insertPaymentCertificateSchema = createInsertSchema(paymentCertific
   updatedAt: true,
 });
 
+export const insertWorkPlanSchema = createInsertSchema(workPlans).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertWorkPlanActivitySchema = createInsertSchema(workPlanActivities).omit({
   id: true,
   projectId: true,
@@ -530,6 +563,8 @@ export type ContractorEquipment = typeof contractorEquipment.$inferSelect;
 export type InsertContractorEquipment = z.infer<typeof insertContractorEquipmentSchema>;
 export type PaymentCertificate = typeof paymentCertificates.$inferSelect;
 export type InsertPaymentCertificate = z.infer<typeof insertPaymentCertificateSchema>;
+export type WorkPlan = typeof workPlans.$inferSelect;
+export type InsertWorkPlan = z.infer<typeof insertWorkPlanSchema>;
 export type WorkPlanActivity = typeof workPlanActivities.$inferSelect;
 export type InsertWorkPlanActivity = z.infer<typeof insertWorkPlanActivitySchema>;
 
