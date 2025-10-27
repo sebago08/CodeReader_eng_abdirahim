@@ -198,11 +198,13 @@ export const paymentCertificates = pgTable("payment_certificates", {
 export const workPlanActivities = pgTable("work_plan_activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   projectId: varchar("project_id").notNull(),
+  itemType: varchar("item_type").notNull().default("activity"), // "activity" or "section"
   activityName: varchar("activity_name").notNull(),
-  startDate: date("start_date").notNull(),
-  duration: integer("duration").notNull(), // Duration in days
-  endDate: date("end_date").notNull(), // Calculated: startDate + duration
+  startDate: date("start_date"), // Nullable for section headers
+  duration: integer("duration"), // Nullable for section headers (duration in days)
+  endDate: date("end_date"), // Nullable for section headers (calculated: startDate + duration)
   isMilestone: boolean("is_milestone").default(false).notNull(),
+  orderIndex: integer("order_index").default(0).notNull(), // For manual ordering
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -478,7 +480,11 @@ export const insertWorkPlanActivitySchema = createInsertSchema(workPlanActivitie
   createdAt: true,
   updatedAt: true,
 }).extend({
-  duration: z.coerce.number().int().min(1, "Duration must be at least 1 day"),
+  itemType: z.enum(["activity", "section"]).default("activity"),
+  startDate: z.string().optional(),
+  duration: z.coerce.number().int().min(1, "Duration must be at least 1 day").optional(),
+  endDate: z.string().optional(),
+  orderIndex: z.coerce.number().int().default(0),
 });
 
 export const insertProjectDocumentSchema = createInsertSchema(projectDocuments).omit({
