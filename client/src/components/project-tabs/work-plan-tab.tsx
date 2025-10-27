@@ -94,13 +94,14 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
 
   // Insert section header at specific position (atomic server-side operation)
   const insertSectionMutation = useMutation({
-    mutationFn: async ({ position, targetActivity, sectionName }: { position: "above" | "below"; targetActivity: WorkPlanActivity; sectionName: string }) => {
-      return await apiRequest("POST", `/api/work-plan-activities/${targetActivity.id}/insert-section`, {
+    mutationFn: async ({ position, targetActivity, sectionName }: { position: "above" | "below"; targetActivity: WorkPlanActivity; sectionName: string }): Promise<WorkPlanActivity> => {
+      const response = await apiRequest("POST", `/api/work-plan-activities/${targetActivity.id}/insert-section`, {
         position,
         sectionName,
       });
+      return await response.json();
     },
-    onSuccess: async (data) => {
+    onSuccess: async (data: WorkPlanActivity) => {
       // Invalidate and refetch the query
       await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
       
@@ -273,6 +274,48 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
     return false; // No section header found before this activity
   };
 
+  // Calculate date range for a section based on its child activities
+  const getSectionDateRange = (section: WorkPlanActivity): { startDate: string | null; endDate: string | null } => {
+    // Safety check - ensure we have a valid activities array
+    if (!activities || activities.length === 0) {
+      return { startDate: null, endDate: null };
+    }
+    
+    // Find the index of this section in the activities array
+    const sectionIndex = activities.findIndex(a => a.id === section.id);
+    if (sectionIndex === -1) {
+      return { startDate: null, endDate: null };
+    }
+    
+    let earliestStart: string | null = null;
+    let latestEnd: string | null = null;
+    
+    // Iterate through activities after this section until we hit the next section or end
+    for (let i = sectionIndex + 1; i < activities.length; i++) {
+      const currentActivity = activities[i];
+      
+      // Stop when we encounter the next section
+      if (currentActivity.itemType === "section") {
+        break;
+      }
+      
+      // Process activities with valid dates
+      if (currentActivity.itemType === "activity" && currentActivity.startDate && currentActivity.endDate) {
+        // Update earliest start date
+        if (!earliestStart || currentActivity.startDate < earliestStart) {
+          earliestStart = currentActivity.startDate;
+        }
+        
+        // Update latest end date
+        if (!latestEnd || currentActivity.endDate > latestEnd) {
+          latestEnd = currentActivity.endDate;
+        }
+      }
+    }
+    
+    return { startDate: earliestStart, endDate: latestEnd };
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -406,7 +449,7 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                         className="bg-muted/50 hover:bg-muted/70"
                         data-testid={`row-section-${activity.id}`}
                       >
-                        <TableCell colSpan={5} className="font-bold text-base py-3" data-testid={`text-section-name-${activity.id}`}>
+                        <TableCell className="font-bold text-base py-3" data-testid={`text-section-name-${activity.id}`}>
                           <div className="flex items-center gap-2">
                             <Heading2 className="h-5 w-5 text-[#1a5276]" />
                             {editingId === activity.id ? (
@@ -429,6 +472,24 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                               </span>
                             )}
                           </div>
+                        </TableCell>
+                        <TableCell className="font-semibold" data-testid={`text-section-start-${activity.id}`}>
+                          {(() => {
+                            const { startDate } = getSectionDateRange(activity);
+                            return startDate ? formatDate(startDate) : '-';
+                          })()}
+                        </TableCell>
+                        <TableCell className="font-semibold" data-testid={`text-section-duration-${activity.id}`}>
+                          -
+                        </TableCell>
+                        <TableCell className="font-semibold" data-testid={`text-section-end-${activity.id}`}>
+                          {(() => {
+                            const { endDate } = getSectionDateRange(activity);
+                            return endDate ? formatDate(endDate) : '-';
+                          })()}
+                        </TableCell>
+                        <TableCell>
+                          {/* Empty milestone column for sections */}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
