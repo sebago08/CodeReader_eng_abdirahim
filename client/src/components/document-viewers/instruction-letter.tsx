@@ -217,7 +217,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
 
       {/* Letter Content - A4 Portrait (210mm x 297mm) */}
       <div className="bg-white w-[210mm] h-[297mm] mx-auto shadow-lg overflow-hidden" id="instruction-letter-content">
-        <div className="p-12 print-container h-full flex flex-col">
+        <div className="p-12 h-full flex flex-col print-content">
           {/* Letterhead */}
           <div className="text-center border-b-4 border-[#1a5276] pb-4 mb-6">
             <div className="mb-3">

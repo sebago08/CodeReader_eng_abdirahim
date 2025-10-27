@@ -205,7 +205,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
           {isSaved ? (
             <Badge className="bg-[#27ae60] text-white hover:bg-[#27ae60]">
               <CheckCircle2 className="w-3 h-3 mr-1" />
-              Saved {new Date(savedData.savedAt).toLocaleDateString()}
+              Saved {savedData?.savedAt ? new Date(savedData.savedAt).toLocaleDateString() : ''}
             </Badge>
           ) : (
             <Badge variant="outline" className="text-[#f39c12] border-[#f39c12]">
@@ -244,7 +244,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
 
       {/* Certificate Content - A4 Portrait (210mm x 297mm) */}
       <div className="bg-white w-[210mm] h-[297mm] mx-auto shadow-lg overflow-hidden" id="certificate-content">
-        <div className="p-12 print-container h-full flex flex-col">
+        <div className="p-12 h-full flex flex-col print-content">
           {/* Letterhead */}
           <div className="mb-6 pb-6 border-b-2 border-[#1a5276]">
             <div className="flex justify-between items-start gap-6">

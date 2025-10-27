@@ -316,7 +316,7 @@ export function MeetingMinutes({ project, documentId, savedData, onBack, onSave 
       </div>
 
       {/* Document Preview */}
-      <div className="max-w-[1200px] mx-auto p-6 print:!p-0 print:!max-w-full">
+      <div className="max-w-[1200px] mx-auto p-6 print:!p-0 print:!max-w-full print-content">
         <div id="meeting-minutes-content" className="bg-white rounded-lg border border-border p-12 print:!border-0 print:!rounded-none print:!p-8">
           {/* Letterhead */}
           <div className="text-center border-b-4 border-[#1a5276] pb-4 mb-6">
