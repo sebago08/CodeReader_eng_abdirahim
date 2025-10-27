@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { WorkPlanActivity } from "@shared/schema";
-import { Trash2, Flag, ListCheck, Heading2, MoreVertical } from "lucide-react";
+import type { WorkPlanActivity, WorkPlan } from "@shared/schema";
+import { Trash2, Flag, ListCheck, Heading2, MoreVertical, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -16,6 +16,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface WorkPlanTabProps {
   projectId: string;
@@ -29,16 +38,36 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
   const [duration, setDuration] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [selectedWorkPlanId, setSelectedWorkPlanId] = useState<string>("");
+  const [isNewWorkPlanDialogOpen, setIsNewWorkPlanDialogOpen] = useState(false);
+  const [newWorkPlanName, setNewWorkPlanName] = useState("");
+  const [newWorkPlanDescription, setNewWorkPlanDescription] = useState("");
 
-  // Fetch work plan activities
+  // Fetch work plans
+  const { data: workPlans = [] } = useQuery<WorkPlan[]>({
+    queryKey: [`/api/projects/${projectId}/work-plans`],
+  });
+
+  // Fetch work plan activities (filtered by selected work plan)
   const { data: activities = [], isLoading } = useQuery<WorkPlanActivity[]>({
-    queryKey: [`/api/projects/${projectId}/work-plan-activities`],
+    queryKey: [`/api/projects/${projectId}/work-plan-activities`, selectedWorkPlanId],
+    queryFn: async () => {
+      const url = selectedWorkPlanId 
+        ? `/api/projects/${projectId}/work-plan-activities?workPlanId=${selectedWorkPlanId}`
+        : `/api/projects/${projectId}/work-plan-activities`;
+      const response = await fetch(url, { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch activities");
+      return response.json();
+    },
   });
 
   // Create activity/section mutation
   const createActivityMutation = useMutation({
     mutationFn: async (activity: any) => {
-      return await apiRequest("POST", `/api/projects/${projectId}/work-plan-activities`, activity);
+      return await apiRequest("POST", `/api/projects/${projectId}/work-plan-activities`, {
+        ...activity,
+        workPlanId: selectedWorkPlanId || undefined,
+      });
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
@@ -149,6 +178,32 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
       toast({
         title: "Error",
         description: "Failed to insert activity. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Create work plan mutation
+  const createWorkPlanMutation = useMutation({
+    mutationFn: async (workPlan: { name: string; description?: string; isDefault?: boolean }) => {
+      return await apiRequest("POST", `/api/projects/${projectId}/work-plans`, workPlan);
+    },
+    onSuccess: async (response) => {
+      const newWorkPlan = await response.json();
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plans`] });
+      setSelectedWorkPlanId(newWorkPlan.id);
+      setIsNewWorkPlanDialogOpen(false);
+      setNewWorkPlanName("");
+      setNewWorkPlanDescription("");
+      toast({
+        title: "Work plan created",
+        description: "New work plan has been created successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create work plan. Please try again.",
         variant: "destructive",
       });
     },
@@ -329,6 +384,24 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
     }
   };
 
+  // Handler for creating new work plan
+  const handleCreateWorkPlan = () => {
+    if (!newWorkPlanName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a work plan name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createWorkPlanMutation.mutate({
+      name: newWorkPlanName.trim(),
+      description: newWorkPlanDescription.trim() || undefined,
+      isDefault: workPlans.length === 0, // First work plan is default
+    });
+  };
+
   // Helper to check if an activity is indented (belongs to a section)
   // An activity is indented if there's a section header before it and no other section after that
   const isIndented = (index: number): boolean => {
@@ -393,6 +466,43 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
         <ListCheck className="h-5 w-5" />
         <h3 className="text-lg font-medium">Planned Activities & Work Schedule</h3>
       </div>
+
+      {/* Work Plan Selector */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-end gap-4">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="work-plan-selector" data-testid="label-work-plan">
+                Work Plan
+              </Label>
+              <Select 
+                value={selectedWorkPlanId} 
+                onValueChange={setSelectedWorkPlanId}
+              >
+                <SelectTrigger id="work-plan-selector" data-testid="select-work-plan">
+                  <SelectValue placeholder="All work plans" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All work plans</SelectItem>
+                  {workPlans.map((workPlan) => (
+                    <SelectItem key={workPlan.id} value={workPlan.id}>
+                      {workPlan.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={() => setIsNewWorkPlanDialogOpen(true)}
+              variant="outline"
+              data-testid="button-add-work-plan"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Work Plan
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Add Activity/Section Form */}
       <Card>
@@ -724,6 +834,65 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* New Work Plan Dialog */}
+      <Dialog open={isNewWorkPlanDialogOpen} onOpenChange={setIsNewWorkPlanDialogOpen}>
+        <DialogContent data-testid="dialog-new-work-plan">
+          <DialogHeader>
+            <DialogTitle>Create New Work Plan</DialogTitle>
+            <DialogDescription>
+              Add a new work plan to organize different phases or subdivisions of your project.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-work-plan-name" data-testid="label-new-work-plan-name">
+                Work Plan Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="new-work-plan-name"
+                placeholder="e.g., Main Road, Phase 1, Building A"
+                value={newWorkPlanName}
+                onChange={(e) => setNewWorkPlanName(e.target.value)}
+                data-testid="input-new-work-plan-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-work-plan-description" data-testid="label-new-work-plan-description">
+                Description (Optional)
+              </Label>
+              <Textarea
+                id="new-work-plan-description"
+                placeholder="Additional details about this work plan..."
+                value={newWorkPlanDescription}
+                onChange={(e) => setNewWorkPlanDescription(e.target.value)}
+                rows={3}
+                data-testid="textarea-new-work-plan-description"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsNewWorkPlanDialogOpen(false);
+                setNewWorkPlanName("");
+                setNewWorkPlanDescription("");
+              }}
+              data-testid="button-cancel-work-plan"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateWorkPlan}
+              disabled={createWorkPlanMutation.isPending}
+              data-testid="button-create-work-plan"
+            >
+              {createWorkPlanMutation.isPending ? "Creating..." : "Create Work Plan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
