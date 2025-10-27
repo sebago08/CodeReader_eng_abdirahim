@@ -337,6 +337,11 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
   const totalInProcess = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.inProcessAmount || "0"), 0);
   const totalPaid = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.amountPaid || "0"), 0);
 
+  // Calculate overall project progress from activities
+  const overallProgress = activities.length > 0
+    ? Math.round(activities.reduce((sum, activity) => sum + activity.progress, 0) / activities.length)
+    : 0;
+
   return (
     <div className="space-y-6">
       {/* Nested Sub-Tabs */}
@@ -380,9 +385,9 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium">Overall Project Progress</span>
-                    <span className="text-sm font-medium">56%</span>
+                    <span className="text-sm font-medium" data-testid="text-overall-progress">{overallProgress}%</span>
                   </div>
-                  <Progress value={56} className="h-3" />
+                  <Progress value={overallProgress} className="h-3" data-testid="progress-overall" />
                 </div>
               </div>
             </CardContent>
