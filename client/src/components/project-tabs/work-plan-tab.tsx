@@ -27,6 +27,8 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
   const [activityName, setActivityName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [duration, setDuration] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
 
   // Fetch work plan activities
   const { data: activities = [], isLoading } = useQuery<WorkPlanActivity[]>({
@@ -98,17 +100,48 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
         sectionName,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
+    onSuccess: async (data) => {
+      // Invalidate and refetch the query
+      await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
+      
+      // Set editing state after a small delay to ensure the component has re-rendered with new data
+      setTimeout(() => {
+        setEditingId(data.id);
+        setEditingName(data.activityName);
+      }, 100);
+      
       toast({
         title: "Section inserted",
-        description: "Section header has been inserted successfully.",
+        description: "Double-click the section name to edit it.",
       });
     },
     onError: () => {
       toast({
         title: "Error",
         description: "Failed to insert section. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update activity/section name mutation
+  const updateNameMutation = useMutation({
+    mutationFn: async ({ id, activityName }: { id: string; activityName: string }) => {
+      return await apiRequest("PATCH", `/api/work-plan-activities/${id}/name`, { activityName });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
+      setEditingId(null);
+      setEditingName("");
+      toast({
+        title: "Name updated",
+        description: "Activity name has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update name. Please try again.",
         variant: "destructive",
       });
     },
@@ -186,16 +219,43 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
   };
 
   const handleInsertSection = (position: "above" | "below", targetActivity: WorkPlanActivity) => {
-    const sectionName = window.prompt(`Enter section name to insert ${position}:`);
-    if (!sectionName || !sectionName.trim()) {
-      return;
-    }
-    
+    // Insert with default name and automatically enter edit mode
     insertSectionMutation.mutate({
       position,
       targetActivity,
-      sectionName: sectionName.trim(),
+      sectionName: "New Section",
     });
+  };
+
+  const handleDoubleClick = (activity: WorkPlanActivity) => {
+    setEditingId(activity.id);
+    setEditingName(activity.activityName);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingId || !editingName.trim()) {
+      setEditingId(null);
+      setEditingName("");
+      return;
+    }
+    
+    updateNameMutation.mutate({
+      id: editingId,
+      activityName: editingName.trim(),
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingName("");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSaveEdit();
+    } else if (e.key === "Escape") {
+      handleCancelEdit();
+    }
   };
 
   // Helper to check if an activity is indented (belongs to a section)
@@ -349,7 +409,25 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                         <TableCell colSpan={5} className="font-bold text-base py-3" data-testid={`text-section-name-${activity.id}`}>
                           <div className="flex items-center gap-2">
                             <Heading2 className="h-5 w-5 text-[#1a5276]" />
-                            <span>{activity.activityName}</span>
+                            {editingId === activity.id ? (
+                              <Input
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                onBlur={handleSaveEdit}
+                                onKeyDown={handleKeyDown}
+                                autoFocus
+                                className="max-w-md"
+                                data-testid={`input-edit-name-${activity.id}`}
+                              />
+                            ) : (
+                              <span 
+                                onDoubleClick={() => handleDoubleClick(activity)}
+                                className="cursor-pointer hover:text-blue-600"
+                                title="Double-click to edit"
+                              >
+                                {activity.activityName}
+                              </span>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
@@ -395,7 +473,25 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                       <TableRow key={activity.id} data-testid={`row-activity-${activity.id}`}>
                         <TableCell className="font-medium" data-testid={`text-activity-name-${activity.id}`}>
                           <div className={isIndented(index) ? "pl-8" : ""}>
-                            {activity.activityName}
+                            {editingId === activity.id ? (
+                              <Input
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                onBlur={handleSaveEdit}
+                                onKeyDown={handleKeyDown}
+                                autoFocus
+                                className="max-w-md"
+                                data-testid={`input-edit-name-${activity.id}`}
+                              />
+                            ) : (
+                              <span 
+                                onDoubleClick={() => handleDoubleClick(activity)}
+                                className="cursor-pointer hover:text-blue-600"
+                                title="Double-click to edit"
+                              >
+                                {activity.activityName}
+                              </span>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell data-testid={`text-start-date-${activity.id}`}>

@@ -991,6 +991,40 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch('/api/work-plan-activities/:id/name', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      // Validate request body
+      const nameSchema = z.object({
+        activityName: z.string().min(1),
+      });
+      const { activityName } = nameSchema.parse(req.body);
+      
+      // Get the activity to find its project
+      const activity = await storage.getWorkPlanActivityById(id);
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      
+      // Verify user has access to the activity's project
+      const project = await storage.getProject(activity.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const updatedActivity = await storage.updateWorkPlanActivityName(id, activityName);
+      res.json(updatedActivity);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error updating activity name:", error);
+      res.status(500).json({ message: "Failed to update activity name" });
+    }
+  });
+
   // Project Document Routes
   app.get('/api/projects/:projectId/documents', isAuthenticated, async (req, res) => {
     try {
