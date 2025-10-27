@@ -852,15 +852,32 @@ export function registerRoutes(app: Express): Server {
       // Validate request body
       const validated = insertWorkPlanActivitySchema.parse(req.body);
       
-      // Recalculate end date server-side (duration - 1 days from start)
-      const startDate = new Date(validated.startDate);
-      const endDate = new Date(startDate);
-      endDate.setDate(startDate.getDate() + (validated.duration - 1));
+      let activityData;
       
-      const activityData = {
-        ...validated,
-        endDate: endDate.toISOString().split('T')[0],
-      };
+      // If it's a section header, don't calculate dates
+      if (validated.itemType === 'section') {
+        activityData = {
+          itemType: validated.itemType,
+          activityName: validated.activityName,
+          orderIndex: validated.orderIndex,
+          isMilestone: false,
+        };
+      } else {
+        // For activities, recalculate end date server-side (duration - 1 days from start)
+        if (!validated.startDate || !validated.duration) {
+          return res.status(400).json({ message: "Activities must have start date and duration" });
+        }
+        const startDate = new Date(validated.startDate);
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + (validated.duration - 1));
+        
+        activityData = {
+          ...validated,
+          startDate: validated.startDate,
+          duration: validated.duration,
+          endDate: endDate.toISOString().split('T')[0],
+        };
+      }
       
       const activity = await storage.createWorkPlanActivity(projectId, activityData);
       res.status(201).json(activity);

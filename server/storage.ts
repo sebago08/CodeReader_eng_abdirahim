@@ -1123,7 +1123,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(workPlanActivities)
       .where(eq(workPlanActivities.projectId, projectId))
-      .orderBy(workPlanActivities.startDate);
+      .orderBy(workPlanActivities.orderIndex);
   }
 
   async getWorkPlanActivityById(id: string): Promise<WorkPlanActivity | undefined> {

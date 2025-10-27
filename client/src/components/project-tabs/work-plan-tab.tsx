@@ -7,8 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { WorkPlanActivity } from "@shared/schema";
-import { Trash2, Flag, ListCheck } from "lucide-react";
+import { Trash2, Flag, ListCheck, Heading2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface WorkPlanTabProps {
   projectId: string;
@@ -16,6 +17,7 @@ interface WorkPlanTabProps {
 
 export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
   const { toast } = useToast();
+  const [itemType, setItemType] = useState<"activity" | "section">("activity");
   const [activityName, setActivityName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [duration, setDuration] = useState("");
@@ -25,25 +27,27 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
     queryKey: [`/api/projects/${projectId}/work-plan-activities`],
   });
 
-  // Create activity mutation
+  // Create activity/section mutation
   const createActivityMutation = useMutation({
-    mutationFn: async (activity: { activityName: string; startDate: string; duration: number; endDate: string }) => {
+    mutationFn: async (activity: any) => {
       return await apiRequest("POST", `/api/projects/${projectId}/work-plan-activities`, activity);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
       setActivityName("");
       setStartDate("");
       setDuration("");
       toast({
-        title: "Activity added",
-        description: "Work plan activity has been added successfully.",
+        title: variables.itemType === "section" ? "Section added" : "Activity added",
+        description: variables.itemType === "section" 
+          ? "Section header has been added successfully." 
+          : "Work plan activity has been added successfully.",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to add activity. Please try again.",
+        description: "Failed to add item. Please try again.",
         variant: "destructive",
       });
     },
@@ -91,7 +95,28 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
   };
 
   const handleAddActivity = () => {
-    if (!activityName.trim() || !startDate || !duration) {
+    if (!activityName.trim()) {
+      toast({
+        title: "Missing name",
+        description: itemType === "section" ? "Please enter a section name." : "Please enter an activity name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // For sections, we don't need dates
+    if (itemType === "section") {
+      const nextOrderIndex = activities.length;
+      createActivityMutation.mutate({
+        itemType: "section",
+        activityName: activityName.trim(),
+        orderIndex: nextOrderIndex,
+      });
+      return;
+    }
+
+    // For activities, validate dates and duration
+    if (!startDate || !duration) {
       toast({
         title: "Missing fields",
         description: "Please fill in all fields to add an activity.",
@@ -111,11 +136,14 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
     }
 
     const endDate = calculateEndDate(startDate, durationDays);
+    const nextOrderIndex = activities.length;
     createActivityMutation.mutate({
+      itemType: "activity",
       activityName: activityName.trim(),
       startDate,
       duration: durationDays,
       endDate,
+      orderIndex: nextOrderIndex,
     });
   };
 
@@ -135,56 +163,91 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
         <h3 className="text-lg font-medium">Planned Activities & Work Schedule</h3>
       </div>
 
-      {/* Add Activity Form */}
+      {/* Add Activity/Section Form */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div className="space-y-2">
-              <Label htmlFor="activity-name" data-testid="label-activity-name">
-                Activity Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="activity-name"
-                placeholder="e.g., Site Clearing"
-                value={activityName}
-                onChange={(e) => setActivityName(e.target.value)}
-                data-testid="input-activity-name"
-              />
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="item-type" data-testid="label-item-type">
+                  Type <span className="text-red-500">*</span>
+                </Label>
+                <Select value={itemType} onValueChange={(value: "activity" | "section") => setItemType(value)}>
+                  <SelectTrigger id="item-type" data-testid="select-item-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="activity">Activity</SelectItem>
+                    <SelectItem value="section">Section Header</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="activity-name" data-testid="label-activity-name">
+                  {itemType === "section" ? "Section Name" : "Activity Name"} <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="activity-name"
+                  placeholder={itemType === "section" ? "e.g., Excavation Works" : "e.g., Site Clearing"}
+                  value={activityName}
+                  onChange={(e) => setActivityName(e.target.value)}
+                  data-testid="input-activity-name"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="start-date" data-testid="label-start-date">
-                Start Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                data-testid="input-start-date"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="duration" data-testid="label-duration">
-                Duration (days) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="duration"
-                type="number"
-                placeholder="e.g., 14"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                min="1"
-                data-testid="input-duration"
-              />
-            </div>
-            <Button
-              onClick={handleAddActivity}
-              disabled={createActivityMutation.isPending}
-              className="w-full md:w-auto"
-              data-testid="button-add-activity"
-            >
-              {createActivityMutation.isPending ? "Adding..." : "Add Activity"}
-            </Button>
+            
+            {itemType === "activity" && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="start-date" data-testid="label-start-date">
+                    Start Date <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    data-testid="input-start-date"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="duration" data-testid="label-duration">
+                    Duration (days) <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    placeholder="e.g., 14"
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    min="1"
+                    data-testid="input-duration"
+                  />
+                </div>
+                <Button
+                  onClick={handleAddActivity}
+                  disabled={createActivityMutation.isPending}
+                  className="w-full md:w-auto"
+                  data-testid="button-add-activity"
+                >
+                  {createActivityMutation.isPending ? "Adding..." : "Add Activity"}
+                </Button>
+              </div>
+            )}
+            
+            {itemType === "section" && (
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleAddActivity}
+                  disabled={createActivityMutation.isPending}
+                  className="w-full md:w-auto"
+                  data-testid="button-add-section"
+                >
+                  <Heading2 className="h-4 w-4 mr-2" />
+                  {createActivityMutation.isPending ? "Adding..." : "Add Section Header"}
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -219,50 +282,76 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                 </TableHeader>
                 <TableBody>
                   {activities.map((activity) => (
-                    <TableRow key={activity.id} data-testid={`row-activity-${activity.id}`}>
-                      <TableCell className="font-medium" data-testid={`text-activity-name-${activity.id}`}>
-                        {activity.activityName}
-                      </TableCell>
-                      <TableCell data-testid={`text-start-date-${activity.id}`}>
-                        {formatDate(activity.startDate)}
-                      </TableCell>
-                      <TableCell data-testid={`text-duration-${activity.id}`}>
-                        {activity.duration} days
-                      </TableCell>
-                      <TableCell data-testid={`text-end-date-${activity.id}`}>
-                        {formatDate(activity.endDate)}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            toggleMilestoneMutation.mutate({
-                              id: activity.id,
-                              isMilestone: !activity.isMilestone,
-                            })
-                          }
-                          data-testid={`button-milestone-${activity.id}`}
-                        >
-                          <Flag
-                            className={`h-4 w-4 ${
-                              activity.isMilestone ? "fill-yellow-500 text-yellow-500" : "text-gray-400"
-                            }`}
-                          />
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteActivityMutation.mutate(activity.id)}
-                          disabled={deleteActivityMutation.isPending}
-                          data-testid={`button-delete-${activity.id}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                    activity.itemType === "section" ? (
+                      <TableRow 
+                        key={activity.id} 
+                        className="bg-muted/50 hover:bg-muted/70"
+                        data-testid={`row-section-${activity.id}`}
+                      >
+                        <TableCell colSpan={5} className="font-bold text-base py-3" data-testid={`text-section-name-${activity.id}`}>
+                          <div className="flex items-center gap-2">
+                            <Heading2 className="h-5 w-5 text-[#1a5276]" />
+                            <span>{activity.activityName}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteActivityMutation.mutate(activity.id)}
+                            disabled={deleteActivityMutation.isPending}
+                            data-testid={`button-delete-${activity.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      <TableRow key={activity.id} data-testid={`row-activity-${activity.id}`}>
+                        <TableCell className="font-medium" data-testid={`text-activity-name-${activity.id}`}>
+                          {activity.activityName}
+                        </TableCell>
+                        <TableCell data-testid={`text-start-date-${activity.id}`}>
+                          {activity.startDate ? formatDate(activity.startDate) : '-'}
+                        </TableCell>
+                        <TableCell data-testid={`text-duration-${activity.id}`}>
+                          {activity.duration ? `${activity.duration} days` : '-'}
+                        </TableCell>
+                        <TableCell data-testid={`text-end-date-${activity.id}`}>
+                          {activity.endDate ? formatDate(activity.endDate) : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              toggleMilestoneMutation.mutate({
+                                id: activity.id,
+                                isMilestone: !activity.isMilestone,
+                              })
+                            }
+                            data-testid={`button-milestone-${activity.id}`}
+                          >
+                            <Flag
+                              className={`h-4 w-4 ${
+                                activity.isMilestone ? "fill-yellow-500 text-yellow-500" : "text-gray-400"
+                              }`}
+                            />
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteActivityMutation.mutate(activity.id)}
+                            disabled={deleteActivityMutation.isPending}
+                            data-testid={`button-delete-${activity.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
                   ))}
                 </TableBody>
               </Table>
