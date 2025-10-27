@@ -49,7 +49,7 @@ The application uses local username/password authentication with Bcrypt hashing 
 - **Layer Management**: Track construction phases with weighted progress calculation.
 - **Progress Recording**: Record completion by chainage ranges with date and quality.
 - **Visual Progress**: Real-time progress bars comparing planned vs. actual completion.
-- **Work Plan Scheduling**: Plan activities with start dates, durations, and milestone flags.
+- **Work Plan Scheduling**: Plan activities with start dates, durations, and milestone flags. Includes section headers for organizing activities into categorized groups with visual indentation. Kebab menu on each row allows inserting section headers above or below any item.
 - **Team Collaboration**: Invite collaborators with role-based access (owner/collaborator).
 - **File Storage**: Upload and manage construction files (photos, documents) via an abstraction layer.
 - **Data Validation**: Client and server-side validation using Zod.
