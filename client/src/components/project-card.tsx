@@ -9,6 +9,8 @@ interface ProjectCardProps {
   onDuplicate: () => void;
   onAddRoad: () => void;
   onEditRoad: (road: any) => void;
+  onDeleteRoad: (road: any) => void;
+  onDuplicateRoad: (road: any) => void;
   onAddProgress: (road: any, layerId: string) => void;
   onResetProgress: (layerId: string) => void;
 }
@@ -20,6 +22,8 @@ export default function ProjectCard({
   onDuplicate,
   onAddRoad,
   onEditRoad,
+  onDeleteRoad,
+  onDuplicateRoad,
   onAddProgress,
   onResetProgress,
 }: ProjectCardProps) {
@@ -225,9 +229,26 @@ export default function ProjectCard({
                       <button
                         onClick={() => onEditRoad(road)}
                         className="text-xs text-muted-foreground hover:text-secondary"
+                        title="Edit Road"
                         data-testid="button-edit-road"
                       >
                         <i className="fas fa-edit"></i>
+                      </button>
+                      <button
+                        onClick={() => onDuplicateRoad(road)}
+                        className="text-xs text-muted-foreground hover:text-blue-600"
+                        title="Duplicate Road"
+                        data-testid="button-duplicate-road"
+                      >
+                        <i className="fas fa-copy"></i>
+                      </button>
+                      <button
+                        onClick={() => onDeleteRoad(road)}
+                        className="text-xs text-muted-foreground hover:text-destructive"
+                        title="Delete Road"
+                        data-testid="button-delete-road"
+                      >
+                        <i className="fas fa-trash"></i>
                       </button>
                     </div>
                   </div>

@@ -146,6 +146,57 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
     form.reset();
   };
 
+  // Road delete and duplicate mutations
+  const deleteRoadMutation = useMutation({
+    mutationFn: async (roadId: string) => {
+      await apiRequest("DELETE", `/api/roads/${roadId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      toast({
+        title: "Success",
+        description: "Road deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete road",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const duplicateRoadMutation = useMutation({
+    mutationFn: async (roadId: string) => {
+      await apiRequest("POST", `/api/roads/${roadId}/duplicate`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      toast({
+        title: "Success",
+        description: "Road duplicated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to duplicate road",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteRoad = (road: any) => {
+    if (window.confirm(`Are you sure you want to delete "${road.name}"? This will also delete all layer progress data.`)) {
+      deleteRoadMutation.mutate(road.id);
+    }
+  };
+
+  const handleDuplicateRoad = (road: any) => {
+    duplicateRoadMutation.mutate(road.id);
+  };
+
   // Financial tab state and queries
   const [advancePayment, setAdvancePayment] = useState<string>(project.advancePayment || "0");
   const [newCertificate, setNewCertificate] = useState({
@@ -719,6 +770,8 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                 onDuplicate={() => {}}
                 onAddRoad={() => onAddRoad(project)}
                 onEditRoad={(road) => onEditRoad(project, road)}
+                onDeleteRoad={handleDeleteRoad}
+                onDuplicateRoad={handleDuplicateRoad}
                 onAddProgress={(road, layerId) => onAddProgress(project, road, layerId)}
                 onResetProgress={onResetProgress}
               />
