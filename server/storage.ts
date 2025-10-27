@@ -12,6 +12,7 @@ import {
   contractorPersonnel,
   contractorEquipment,
   paymentCertificates,
+  workPlans,
   workPlanActivities,
   projectDocuments,
   type User,
@@ -43,6 +44,8 @@ import {
   type InsertContractorEquipment,
   type PaymentCertificate,
   type InsertPaymentCertificate,
+  type WorkPlan,
+  type InsertWorkPlan,
   type WorkPlanActivity,
   type InsertWorkPlanActivity,
   type ProjectDocument,
@@ -142,14 +145,21 @@ export interface IStorage {
   updatePaymentCertificate(id: string, certificate: Partial<InsertPaymentCertificate>): Promise<PaymentCertificate>;
   deletePaymentCertificate(id: string): Promise<void>;
 
+  // Work plan operations
+  getWorkPlans(projectId: string): Promise<WorkPlan[]>;
+  getWorkPlan(id: string): Promise<WorkPlan | undefined>;
+  createWorkPlan(projectId: string, workPlan: InsertWorkPlan): Promise<WorkPlan>;
+  updateWorkPlan(id: string, workPlan: Partial<InsertWorkPlan>): Promise<WorkPlan>;
+  deleteWorkPlan(id: string): Promise<void>;
+
   // Work plan activity operations
-  getWorkPlanActivities(projectId: string): Promise<WorkPlanActivity[]>;
+  getWorkPlanActivities(projectId: string, workPlanId?: string): Promise<WorkPlanActivity[]>;
   getWorkPlanActivityById(id: string): Promise<WorkPlanActivity | undefined>;
   createWorkPlanActivity(projectId: string, activity: InsertWorkPlanActivity): Promise<WorkPlanActivity>;
   deleteWorkPlanActivity(id: string): Promise<void>;
   toggleWorkPlanMilestone(id: string, isMilestone: boolean): Promise<WorkPlanActivity>;
   updateWorkPlanActivityName(id: string, activityName: string): Promise<WorkPlanActivity>;
-  insertSectionAtPosition(projectId: string, targetOrderIndex: number, position: "above" | "below", sectionName: string): Promise<WorkPlanActivity>;
+  insertSectionAtPosition(projectId: string, targetOrderIndex: number, position: "above" | "below", sectionName: string, workPlanId?: string): Promise<WorkPlanActivity>;
   insertActivityAtPosition(projectId: string, targetOrderIndex: number, position: "above" | "below", activity: InsertWorkPlanActivity): Promise<WorkPlanActivity>;
   
   // Project document operations
@@ -1121,11 +1131,50 @@ export class DatabaseStorage implements IStorage {
     await db.delete(paymentCertificates).where(eq(paymentCertificates.id, id));
   }
 
+  // Work plan operations
+  async getWorkPlans(projectId: string): Promise<WorkPlan[]> {
+    return await db.select()
+      .from(workPlans)
+      .where(eq(workPlans.projectId, projectId))
+      .orderBy(workPlans.createdAt);
+  }
+
+  async getWorkPlan(id: string): Promise<WorkPlan | undefined> {
+    const [result] = await db.select()
+      .from(workPlans)
+      .where(eq(workPlans.id, id))
+      .limit(1);
+    return result;
+  }
+
+  async createWorkPlan(projectId: string, workPlan: InsertWorkPlan): Promise<WorkPlan> {
+    const [result] = await db.insert(workPlans)
+      .values({ ...workPlan, projectId })
+      .returning();
+    return result;
+  }
+
+  async updateWorkPlan(id: string, workPlan: Partial<InsertWorkPlan>): Promise<WorkPlan> {
+    const [result] = await db.update(workPlans)
+      .set({ ...workPlan, updatedAt: new Date() })
+      .where(eq(workPlans.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteWorkPlan(id: string): Promise<void> {
+    await db.delete(workPlans).where(eq(workPlans.id, id));
+  }
+
   // Work plan activity operations
-  async getWorkPlanActivities(projectId: string): Promise<WorkPlanActivity[]> {
+  async getWorkPlanActivities(projectId: string, workPlanId?: string): Promise<WorkPlanActivity[]> {
+    const conditions = [eq(workPlanActivities.projectId, projectId)];
+    if (workPlanId) {
+      conditions.push(eq(workPlanActivities.workPlanId, workPlanId));
+    }
     return await db.select()
       .from(workPlanActivities)
-      .where(eq(workPlanActivities.projectId, projectId))
+      .where(and(...conditions))
       .orderBy(workPlanActivities.orderIndex);
   }
 
@@ -1168,30 +1217,36 @@ export class DatabaseStorage implements IStorage {
     projectId: string,
     targetOrderIndex: number,
     position: "above" | "below",
-    sectionName: string
+    sectionName: string,
+    workPlanId?: string
   ): Promise<WorkPlanActivity> {
     // Calculate the insert position
     const insertIndex = position === "above" ? targetOrderIndex : targetOrderIndex + 1;
     
     // Execute in a transaction to ensure atomicity
     return await db.transaction(async (tx) => {
+      // Build conditions for the update query
+      const updateConditions = [
+        eq(workPlanActivities.projectId, projectId),
+        gte(workPlanActivities.orderIndex, insertIndex),
+      ];
+      if (workPlanId) {
+        updateConditions.push(eq(workPlanActivities.workPlanId, workPlanId));
+      }
+
       // First, shift all items at or after the insert position by 1
       await tx.update(workPlanActivities)
         .set({ 
           orderIndex: sql`${workPlanActivities.orderIndex} + 1`,
           updatedAt: new Date()
         })
-        .where(
-          and(
-            eq(workPlanActivities.projectId, projectId),
-            gte(workPlanActivities.orderIndex, insertIndex)
-          )
-        );
+        .where(and(...updateConditions));
       
       // Then insert the new section at the calculated position
       const [newSection] = await tx.insert(workPlanActivities)
         .values({
           projectId,
+          workPlanId,
           activityName: sectionName,
           itemType: "section",
           orderIndex: insertIndex,
@@ -1214,18 +1269,22 @@ export class DatabaseStorage implements IStorage {
     
     // Execute in a transaction to ensure atomicity
     return await db.transaction(async (tx) => {
+      // Build conditions for the update query
+      const updateConditions = [
+        eq(workPlanActivities.projectId, projectId),
+        gte(workPlanActivities.orderIndex, insertIndex),
+      ];
+      if (activity.workPlanId) {
+        updateConditions.push(eq(workPlanActivities.workPlanId, activity.workPlanId));
+      }
+
       // First, shift all items at or after the insert position by 1
       await tx.update(workPlanActivities)
         .set({ 
           orderIndex: sql`${workPlanActivities.orderIndex} + 1`,
           updatedAt: new Date()
         })
-        .where(
-          and(
-            eq(workPlanActivities.projectId, projectId),
-            gte(workPlanActivities.orderIndex, insertIndex)
-          )
-        );
+        .where(and(...updateConditions));
       
       // Then insert the new activity at the calculated position
       const [newActivity] = await tx.insert(workPlanActivities)
