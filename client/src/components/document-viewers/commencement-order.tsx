@@ -32,7 +32,6 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
   // Use saved data if available, otherwise use live project data
   const displayProject = savedData?.projectSnapshot || project;
   const isSaved = !!savedData;
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [orderNumber, setOrderNumber] = useState(`CO-${project.number}-${new Date().getFullYear()}`);
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
   const [commencementDate, setCommencementDate] = useState(new Date().toISOString().split('T')[0]);
@@ -164,21 +163,19 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
   };
 
   const handleSaveDocument = () => {
-    setShowSaveDialog(true);
+    const documentName = window.prompt(
+      'Enter document name:',
+      `Commencement Order - ${project?.number || 'New'}`
+    );
+    if (documentName && documentName.trim()) {
+      onSave(documentId, documentName.trim(), {
+        orderNumber,
+        orderDate,
+        commencementDate,
+        completionDate
+      });
+    }
   };
-
-  const handleConfirmSave = (documentName: string) => {
-    onSave(documentId, documentName, {
-      orderNumber,
-      orderDate,
-      commencementDate,
-      completionDate
-    });
-  };
-
-  // Get current document to use as default name
-  const currentDocument = project.documents?.find(d => d.id === documentId);
-  const defaultDocumentName = currentDocument?.name || `Commencement Order - ${project.number}`;
 
   return (
     <div>
@@ -236,18 +233,18 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
           {/* Letterhead */}
           <div className="text-center border-b-4 border-[#1a5276] pb-4 mb-6">
             <div className="mb-3">
-              <p className="text-center mb-4 text-[28px] font-bold">{displayProject.client.name}</p>
+              <p className="text-center mb-4 text-[28px] font-bold">{displayProject?.client?.name || 'Client Name'}</p>
               {displayProject?.client?.logo && (
                 <div className="flex justify-center">
                   <img 
                     src={displayProject.client.logo} 
-                    alt={`${displayProject.client.name} logo`}
+                    alt={`${displayProject?.client?.name || 'Client'} logo`}
                     className="h-16 w-auto object-contain"
                   />
                 </div>
               )}
             </div>
-            {displayProject.client.address && (
+            {displayProject?.client?.address && (
               <p className="text-[12px] text-muted-foreground mt-2">{displayProject.client.address}</p>
             )}
           </div>
@@ -267,26 +264,26 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
 
             <div className="mb-4">
               <p className="text-muted-foreground text-[13px]">To:</p>
-              <p>{displayProject.contractor.name}</p>
-              <p className="text-[13px]">Attn: {displayProject.contractor.contact}</p>
+              <p>{displayProject?.contractor?.name || 'Contractor Name'}</p>
+              <p className="text-[13px]">Attn: {displayProject?.contractor?.contact || 'Contractor Contact'}</p>
             </div>
 
             <div className="mb-4">
               <p className="text-muted-foreground text-[13px]">From:</p>
-              <p>{displayProject.client.name}</p>
+              <p>{displayProject?.client?.name || 'Client Name'}</p>
             </div>
           </div>
 
           {/* Subject */}
           <div className="mb-6">
             <p className="text-[14px] mb-2"><strong>RE: COMMENCEMENT ORDER</strong></p>
-            <p className="text-[14px]"><strong>Project: {displayProject.name}</strong></p>
+            <p className="text-[14px]"><strong>Project: {displayProject?.name || 'Project Name'}</strong></p>
           </div>
 
           {/* Letter Body */}
           <div className="mb-6 flex-grow text-[14px] space-y-4">
             <p className="leading-relaxed">
-              Dear {displayProject.contractor.contact},
+              Dear {displayProject?.contractor?.contact || 'Contractor Contact'},
             </p>
 
             <p className="leading-relaxed">
@@ -372,14 +369,6 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
         </div>
       </div>
 
-      {/* Save Document Dialog */}
-      <SaveDocumentDialog
-        open={showSaveDialog}
-        onOpenChange={setShowSaveDialog}
-        onSave={handleConfirmSave}
-        defaultName={defaultDocumentName}
-        documentType="commencement order"
-      />
     </div>
   );
 }

@@ -224,19 +224,19 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
           {/* Letterhead */}
           <div className="text-center border-b-4 border-[#1a5276] pb-4 mb-6">
             <div className="mb-3">
-              <p className="text-center mb-4 text-[28px] font-bold">{displayProject.client.name}</p>
-              {displayProject.client.logo && (
+              <p className="text-center mb-4 text-[28px] font-bold">{displayProject?.client?.name || "Client Name"}</p>
+              {displayProject?.client?.logo && (
                 <div className="flex justify-center">
                   <img 
-                    src={displayProject.client.logo} 
-                    alt={`${displayProject.client.name} logo`}
+                    src={displayProject?.client?.logo} 
+                    alt={`${displayProject?.client?.name || "Client Name"} logo`}
                     className="h-16 w-auto object-contain"
                   />
                 </div>
               )}
             </div>
-            {displayProject.client.address && (
-              <p className="text-[12px] text-muted-foreground mt-2">{displayProject.client.address}</p>
+            {displayProject?.client?.address && (
+              <p className="text-[12px] text-muted-foreground mt-2">{displayProject?.client?.address}</p>
             )}
           </div>
 
@@ -255,14 +255,14 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
 
             <div className="mb-4">
               <p className="text-muted-foreground text-[13px]">To:</p>
-              <p>{displayProject.contractor.name}</p>
-              <p className="text-[13px]">Attn: {displayProject.contractor.contact}</p>
+              <p>{displayProject?.contractor?.name || "Contractor Name"}</p>
+              <p className="text-[13px]">Attn: {displayProject?.contractor?.contact || "Contractor Contact"}</p>
             </div>
 
             <div className="mb-4">
               <p className="text-muted-foreground text-[13px]">From:</p>
-              <p>{displayProject.client.name}</p>
-              <p className="text-[13px]">Project Engineer: {displayProject.client.contact}</p>
+              <p>{displayProject?.client?.name || "Client Name"}</p>
+              <p className="text-[13px]">Project Engineer: {displayProject?.client?.contact || "Client Contact"}</p>
             </div>
           </div>
 
@@ -277,7 +277,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
           {/* Letter Body */}
           <div className="mb-6 flex-grow text-[14px]">
             <div className="leading-relaxed whitespace-pre-wrap">
-              {letterContent || 'Dear ' + displayProject.contractor.contact + ',\n\n[Enter your letter content here]\n\nSincerely,'}
+              {letterContent || 'Dear ' + displayProject?.contractor?.contact || "Contractor Contact" + ',\n\n[Enter your letter content here]\n\nSincerely,'}
             </div>
           </div>
 
@@ -288,8 +288,8 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
               <div>
                 <div className="mb-12 border-b-2 border-gray-400"></div>
                 <div className="text-[13px]">
-                  <p>{displayProject.client.contact}</p>
-                  <p className="text-muted-foreground text-[12px] mt-1">{displayProject.client.name}</p>
+                  <p>{displayProject?.client?.contact || "Client Contact"}</p>
+                  <p className="text-muted-foreground text-[12px] mt-1">{displayProject?.client?.name || "Client Name"}</p>
                   <p className="text-muted-foreground text-[11px] mt-1">Project Engineer - Signature & Date</p>
                 </div>
               </div>
@@ -335,7 +335,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
             <textarea
               value={letterContent}
               onChange={(e) => setLetterContent(e.target.value)}
-              placeholder={`Dear ${project.contractor.contact},\n\n[Enter your letter content here]\n\nSincerely,`}
+              placeholder={`Dear ${project?.contractor?.contact || 'Contractor Contact'},\n\n[Enter your letter content here]\n\nSincerely,`}
               rows={15}
               className="w-full px-3 py-2 border border-gray-300 rounded font-mono text-sm"
             />

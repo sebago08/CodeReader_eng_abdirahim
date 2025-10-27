@@ -34,7 +34,6 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
   // Use saved data if available, otherwise use live project data
   const displayProject = savedData?.projectSnapshot || project;
   const isSaved = !!savedData;
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [certificateNumber, setCertificateNumber] = useState(`TOC-${project.number}-${new Date().getFullYear()}`);
   const [certificateDate, setCertificateDate] = useState(new Date().toISOString().split('T')[0]);
   const [takingOverDate, setTakingOverDate] = useState(new Date().toISOString().split('T')[0]);
@@ -179,21 +178,19 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
   };
 
   const handleSaveDocument = () => {
-    setShowSaveDialog(true);
+    const documentName = window.prompt(
+      'Enter document name:',
+      `Taking Over Certificate - ${project?.number || 'New'}`
+    );
+    if (documentName && documentName.trim()) {
+      onSave(documentId, documentName.trim(), {
+        certificateNumber,
+        certificateDate,
+        takingOverDate,
+        outstandingWork
+      });
+    }
   };
-
-  const handleConfirmSave = (documentName: string) => {
-    onSave(documentId, documentName, {
-      certificateNumber,
-      certificateDate,
-      takingOverDate,
-      outstandingWork
-    });
-  };
-
-  // Get current document to use as default name
-  const currentDocument = project.documents?.find(d => d.id === documentId);
-  const defaultDocumentName = currentDocument?.name || `Taking Over Certificate - ${project.number}`;
 
   return (
     <div>
@@ -251,20 +248,20 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
           {/* Letterhead */}
           <div className="mb-6 pb-6 border-b-2 border-[#1a5276]">
             <div className="flex justify-between items-start gap-6">
-              {displayProject.client.logo && (
+              {displayProject?.client?.logo && (
                 <div className="flex-shrink-0">
                   <img 
-                    src={displayProject.client.logo} 
-                    alt={displayProject.client.name}
+                    src={displayProject?.client?.logo} 
+                    alt={displayProject?.client?.name || "Client Name"}
                     className="h-28 w-auto object-contain"
                   />
                 </div>
               )}
               <div className="text-right flex-1">
-                <h2 className="text-[#1a5276] mb-1 text-[18px]">{displayProject.client.name}</h2>
-                <p className="text-[13px] text-muted-foreground">{displayProject.client.address}</p>
-                <p className="text-[13px] text-muted-foreground">{displayProject.client.phone}</p>
-                <p className="text-[13px] text-muted-foreground">{displayProject.client.email}</p>
+                <h2 className="text-[#1a5276] mb-1 text-[18px]">{displayProject?.client?.name || "Client Name"}</h2>
+                <p className="text-[13px] text-muted-foreground">{displayProject?.client?.address}</p>
+                <p className="text-[13px] text-muted-foreground">{displayProject?.client?.phone}</p>
+                <p className="text-[13px] text-muted-foreground">{displayProject?.client?.email}</p>
               </div>
             </div>
           </div>
@@ -308,11 +305,11 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
               <div className="grid grid-cols-2 gap-3 text-[14px]">
                 <div>
                   <span className="text-muted-foreground text-[13px]">Employer:</span>
-                  <p>{displayProject.client.name}</p>
+                  <p>{displayProject?.client?.name || "Client Name"}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground text-[13px]">Contractor:</span>
-                  <p>{displayProject.contractor.name}</p>
+                  <p>{displayProject?.contractor?.name || "Contractor Name"}</p>
                 </div>
               </div>
 
@@ -366,7 +363,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
                 <div className="text-center text-[13px]">
                   <p>Contractor</p>
                   <p className="text-[11px] text-muted-foreground mt-1">Signature & Date</p>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">Name: {displayProject.contractor.contact}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Name: {displayProject?.contractor?.contact || "Contractor Contact"}</p>
                 </div>
               </div>
 
@@ -376,7 +373,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
                 <div className="text-center text-[13px]">
                   <p>Employer/Employer's Representative</p>
                   <p className="text-[11px] text-muted-foreground mt-1">Signature & Date</p>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">Name: {displayProject.client.contact}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Name: {displayProject?.client?.contact || "Client Contact"}</p>
                 </div>
               </div>
             </div>
@@ -432,15 +429,6 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
           </div>
         </div>
       </div>
-
-      {/* Save Document Dialog */}
-      <SaveDocumentDialog
-        open={showSaveDialog}
-        onOpenChange={setShowSaveDialog}
-        onSave={handleConfirmSave}
-        defaultName={defaultDocumentName}
-        documentType="taking over certificate"
-      />
     </div>
   );
 }
