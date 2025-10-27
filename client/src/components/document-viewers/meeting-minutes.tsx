@@ -42,6 +42,10 @@ export function MeetingMinutes({ project, documentId, savedData, onBack, onSave 
   const [nextMeeting, setNextMeeting] = useState('');
   const [isExporting, setIsExporting] = useState(false);
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
@@ -218,12 +222,12 @@ export function MeetingMinutes({ project, documentId, savedData, onBack, onSave 
                 Save Document
               </Button>
               <Button 
-                onClick={handleExportPDF}
+                onClick={handlePrint}
                 className="bg-[#1a5276] hover:bg-[#1a5276]/90"
-                disabled={isExporting}
+                data-testid="button-print-pdf"
               >
                 <Download className="w-4 h-4 mr-2" />
-                {isExporting ? 'Generating...' : 'Export PDF'}
+                Download PDF
               </Button>
             </div>
           </div>
