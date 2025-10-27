@@ -337,8 +337,38 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
   const totalInProcess = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.inProcessAmount || "0"), 0);
   const totalPaid = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.amountPaid || "0"), 0);
 
-  // Calculate overall project progress from activities
-  const overallProgress = activities.length > 0
+  // Calculate physical progress from road tracker (same calculation as project card)
+  const calculatePhysicalProgress = () => {
+    if (!project.roads || project.roads.length === 0) return 0;
+    
+    let totalProgress = 0;
+    let totalWeight = 0;
+    
+    project.roads.forEach(road => {
+      if (road.layers && road.layers.length > 0) {
+        road.layers.forEach(layer => {
+          const layerWeight = layer.weight || 1;
+          totalWeight += layerWeight;
+          
+          if (layer.progress && layer.progress.length > 0) {
+            const completedLength = layer.progress.reduce((sum, prog) => {
+              return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+            }, 0);
+            
+            const layerProgress = (completedLength / Number(road.length)) * 100;
+            totalProgress += layerProgress * layerWeight;
+          }
+        });
+      }
+    });
+    
+    return totalWeight > 0 ? Math.min(100, Math.round(totalProgress / totalWeight)) : 0;
+  };
+
+  const physicalProgress = calculatePhysicalProgress();
+
+  // Calculate activity progress from BOQ items
+  const activityProgress = activities.length > 0
     ? Math.round(activities.reduce((sum, activity) => sum + activity.progress, 0) / activities.length)
     : 0;
 
@@ -382,12 +412,24 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {/* Physical Progress - Only for Road projects */}
+                {project.projectType === "Road" && (
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">Physical Progress (Road Construction)</span>
+                      <span className="text-sm font-medium" data-testid="text-physical-progress">{physicalProgress}%</span>
+                    </div>
+                    <Progress value={physicalProgress} className="h-3" data-testid="progress-physical" />
+                  </div>
+                )}
+                
+                {/* Activity Progress - For all projects */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Overall Project Progress</span>
-                    <span className="text-sm font-medium" data-testid="text-overall-progress">{overallProgress}%</span>
+                    <span className="text-sm font-medium">Activity Progress (BOQ Items)</span>
+                    <span className="text-sm font-medium" data-testid="text-activity-progress">{activityProgress}%</span>
                   </div>
-                  <Progress value={overallProgress} className="h-3" data-testid="progress-overall" />
+                  <Progress value={activityProgress} className="h-3" data-testid="progress-activity" />
                 </div>
               </div>
             </CardContent>
