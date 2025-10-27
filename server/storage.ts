@@ -150,6 +150,7 @@ export interface IStorage {
   toggleWorkPlanMilestone(id: string, isMilestone: boolean): Promise<WorkPlanActivity>;
   updateWorkPlanActivityName(id: string, activityName: string): Promise<WorkPlanActivity>;
   insertSectionAtPosition(projectId: string, targetOrderIndex: number, position: "above" | "below", sectionName: string): Promise<WorkPlanActivity>;
+  insertActivityAtPosition(projectId: string, targetOrderIndex: number, position: "above" | "below", activity: InsertWorkPlanActivity): Promise<WorkPlanActivity>;
   
   // Project document operations
   getProjectDocuments(projectId: string): Promise<ProjectDocument[]>;
@@ -1199,6 +1200,43 @@ export class DatabaseStorage implements IStorage {
         .returning();
       
       return newSection;
+    });
+  }
+
+  async insertActivityAtPosition(
+    projectId: string,
+    targetOrderIndex: number,
+    position: "above" | "below",
+    activity: InsertWorkPlanActivity
+  ): Promise<WorkPlanActivity> {
+    // Calculate the insert position
+    const insertIndex = position === "above" ? targetOrderIndex : targetOrderIndex + 1;
+    
+    // Execute in a transaction to ensure atomicity
+    return await db.transaction(async (tx) => {
+      // First, shift all items at or after the insert position by 1
+      await tx.update(workPlanActivities)
+        .set({ 
+          orderIndex: sql`${workPlanActivities.orderIndex} + 1`,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(workPlanActivities.projectId, projectId),
+            gte(workPlanActivities.orderIndex, insertIndex)
+          )
+        );
+      
+      // Then insert the new activity at the calculated position
+      const [newActivity] = await tx.insert(workPlanActivities)
+        .values({
+          ...activity,
+          projectId,
+          orderIndex: insertIndex,
+        })
+        .returning();
+      
+      return newActivity;
     });
   }
   

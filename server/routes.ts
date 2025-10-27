@@ -991,6 +991,56 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post('/api/work-plan-activities/:targetId/insert-activity', isAuthenticated, async (req, res) => {
+    try {
+      const { targetId } = req.params;
+      const userId = req.user!.id;
+      
+      // Validate request body
+      const insertSchema = z.object({
+        position: z.enum(['above', 'below']),
+        activityName: z.string().min(1),
+        startDate: z.string().optional(),
+        duration: z.number().optional(),
+        endDate: z.string().optional(),
+      });
+      const { position, ...activityData } = insertSchema.parse(req.body);
+      
+      // Get the target activity to find its project and orderIndex
+      const targetActivity = await storage.getWorkPlanActivityById(targetId);
+      if (!targetActivity) {
+        return res.status(404).json({ message: "Target activity not found" });
+      }
+      
+      // Verify user has access to the activity's project
+      const project = await storage.getProject(targetActivity.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      // Insert activity and reorder atomically
+      const newActivity = await storage.insertActivityAtPosition(
+        targetActivity.projectId,
+        targetActivity.orderIndex,
+        position,
+        {
+          ...activityData,
+          itemType: "activity",
+          isMilestone: false,
+          orderIndex: 0, // Will be overridden by insertActivityAtPosition
+        }
+      );
+      
+      res.json(newActivity);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error inserting activity:", error);
+      res.status(500).json({ message: "Failed to insert activity" });
+    }
+  });
+
   app.patch('/api/work-plan-activities/:id/name', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
