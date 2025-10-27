@@ -13,6 +13,8 @@ import ProjectsOverview from "@/pages/projects-overview";
 import ProjectDetail from "@/pages/project-detail";
 import AdminDashboard from "@/pages/admin-dashboard";
 import Bootstrap from "@/pages/bootstrap";
+import Reports from "@/pages/reports";
+import Team from "@/pages/team";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -23,6 +25,8 @@ function Router() {
       <Route path="/bootstrap" component={Bootstrap} />
       <AdminRoute path="/admin" component={AdminDashboard} />
       <ProtectedRoute path="/dashboard" component={Dashboard} />
+      <ProtectedRoute path="/reports" component={Reports} />
+      <ProtectedRoute path="/team" component={Team} />
       <ProtectedRoute path="/projects" component={ProjectsOverview} />
       <ProtectedRoute path="/projects/:id" component={ProjectDetail} />
       <Route component={NotFound} />
