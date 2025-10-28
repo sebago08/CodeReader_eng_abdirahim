@@ -21,6 +21,7 @@ import { z } from "zod";
 import ProjectCard from "@/components/project-card";
 import RoadModal from "@/components/road-modal";
 import ProgressModal from "@/components/progress-modal";
+import BOQProgressTracker from "@/components/project-tabs/boq-progress-tracker";
 
 interface ProgressTabProps {
   project: ProjectWithRoads;
@@ -377,11 +378,14 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
       {/* Nested Sub-Tabs */}
       <Tabs defaultValue="progress-tracking" className="w-full">
         <TabsList 
-          className={`grid w-full mb-6 ${project.projectType === "Road" ? "grid-cols-5" : "grid-cols-4"}`} 
+          className={`grid w-full mb-6 ${project.projectType === "Road" ? "grid-cols-6" : "grid-cols-5"}`} 
           data-testid="progress-subtabs"
         >
           <TabsTrigger value="progress-tracking" data-testid="tab-progress-tracking">
             Progress Tracking
+          </TabsTrigger>
+          <TabsTrigger value="boq-tracker" data-testid="tab-boq-tracker">
+            BOQ Tracker
           </TabsTrigger>
           <TabsTrigger value="milestones" data-testid="tab-milestones">
             Milestones
@@ -512,6 +516,11 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* BOQ Tracker Sub-Tab */}
+        <TabsContent value="boq-tracker" className="space-y-6">
+          <BOQProgressTracker project={project} />
         </TabsContent>
 
         {/* Milestones Sub-Tab */}
