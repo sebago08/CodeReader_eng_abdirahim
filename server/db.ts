@@ -19,8 +19,8 @@ if (!databaseUrl) {
 // Check if we're using Supabase (use standard PostgreSQL) or Neon (use serverless driver)
 const isSupabase = databaseUrl.includes('supabase.com');
 
-let pool: PgPool | NeonPool;
-let db: ReturnType<typeof drizzlePg> | ReturnType<typeof drizzleNeon>;
+let pool: any;
+let db: any;
 
 if (isSupabase) {
   // Use standard PostgreSQL driver for Supabase
