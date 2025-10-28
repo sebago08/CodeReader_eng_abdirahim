@@ -71,11 +71,14 @@ export const projects = pgTable("projects", {
   contractorEmail: varchar("contractor_email"),
   contractorPhone: varchar("contractor_phone"),
   
-  // Project scope
+  // Introduction/Report sections
+  executiveSummary: text("executive_summary"),
+  projectLocation: text("project_location"), // Detailed location description
   scopeOfWork: text("scope_of_work"),
   
-  // Client logo (file path)
+  // Logos (file paths)
   clientLogo: varchar("client_logo"),
+  contractorLogo: varchar("contractor_logo"),
   
   // Financial tracking
   advancePayment: decimal("advance_payment", { precision: 15, scale: 2 }).default("0"),
