@@ -270,6 +270,39 @@ export const projectDocuments = pgTable("project_documents", {
   index("project_documents_type_idx").on(table.documentType),
 ]);
 
+// Progress trackers table (BOQ-based progress tracking from work plans)
+export const progressTrackers = pgTable("progress_trackers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  workPlanId: varchar("work_plan_id"), // Work plan used to generate tracker
+  name: varchar("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("progress_trackers_project_idx").on(table.projectId),
+  index("progress_trackers_work_plan_idx").on(table.workPlanId),
+]);
+
+// Progress tracker items table (individual line items in the tracker)
+export const progressTrackerItems = pgTable("progress_tracker_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  progressTrackerId: varchar("progress_tracker_id").notNull(),
+  projectId: varchar("project_id").notNull(),
+  activityId: varchar("activity_id"), // Reference to original work plan activity
+  itemType: varchar("item_type").notNull().default("activity"), // "activity" or "section"
+  description: varchar("description").notNull(), // From work plan activity name
+  orderIndex: integer("order_index").default(0).notNull(),
+  qtyInBoq: decimal("qty_in_boq", { precision: 15, scale: 2 }).default("0"), // Quantity in Bill of Quantities
+  qtyDone: decimal("qty_done", { precision: 15, scale: 2 }).default("0"), // Quantity completed
+  weightedRatio: decimal("weighted_ratio", { precision: 10, scale: 4 }).default("1"), // Weight for progress calculation
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("progress_tracker_items_tracker_idx").on(table.progressTrackerId),
+  index("progress_tracker_items_project_idx").on(table.projectId),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
@@ -410,6 +443,33 @@ export const projectDocumentsRelations = relations(projectDocuments, ({ one }) =
   }),
 }));
 
+export const progressTrackersRelations = relations(progressTrackers, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [progressTrackers.projectId],
+    references: [projects.id],
+  }),
+  workPlan: one(workPlans, {
+    fields: [progressTrackers.workPlanId],
+    references: [workPlans.id],
+  }),
+  items: many(progressTrackerItems),
+}));
+
+export const progressTrackerItemsRelations = relations(progressTrackerItems, ({ one }) => ({
+  progressTracker: one(progressTrackers, {
+    fields: [progressTrackerItems.progressTrackerId],
+    references: [progressTrackers.id],
+  }),
+  project: one(projects, {
+    fields: [progressTrackerItems.projectId],
+    references: [projects.id],
+  }),
+  activity: one(workPlanActivities, {
+    fields: [progressTrackerItems.activityId],
+    references: [workPlanActivities.id],
+  }),
+}));
+
 // Insert schemas
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
@@ -527,6 +587,26 @@ export const insertProjectDocumentSchema = createInsertSchema(projectDocuments).
   createdAt: true,
 });
 
+export const insertProgressTrackerSchema = createInsertSchema(progressTrackers).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProgressTrackerItemSchema = createInsertSchema(progressTrackerItems).omit({
+  id: true,
+  projectId: true,
+  progressTrackerId: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  qtyInBoq: z.coerce.number().default(0),
+  qtyDone: z.coerce.number().default(0),
+  weightedRatio: z.coerce.number().default(1),
+  orderIndex: z.coerce.number().int().default(0),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
@@ -579,6 +659,15 @@ export type ProjectInvitationWithDetails = ProjectInvitation & {
 
 export type ProjectDocument = typeof projectDocuments.$inferSelect;
 export type InsertProjectDocument = z.infer<typeof insertProjectDocumentSchema>;
+
+export type ProgressTracker = typeof progressTrackers.$inferSelect;
+export type InsertProgressTracker = z.infer<typeof insertProgressTrackerSchema>;
+export type ProgressTrackerItem = typeof progressTrackerItems.$inferSelect;
+export type InsertProgressTrackerItem = z.infer<typeof insertProgressTrackerItemSchema>;
+
+export type ProgressTrackerWithItems = ProgressTracker & {
+  items: ProgressTrackerItem[];
+};
 
 // Document type enum
 export type DocumentType = 
