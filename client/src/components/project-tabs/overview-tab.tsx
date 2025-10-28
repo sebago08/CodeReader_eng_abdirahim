@@ -83,21 +83,47 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           return; // Skip roads with invalid lengths
         }
 
+        const isDualCarriageway = road.carriageway === 'dual';
+
         road.layers?.forEach((layer) => {
           totalLayers++;
           if (layer.progress && layer.progress.length > 0) {
-            // Calculate percentage complete for this layer
-            const completedLength = layer.progress.reduce((sum, prog) => {
-              const start = parseFloat(prog.startChainage as any);
-              const end = parseFloat(prog.endChainage as any);
-              // Validate chainage values and ensure end > start
-              if (isNaN(start) || isNaN(end) || end <= start) {
-                return sum;
-              }
-              return sum + (end - start);
-            }, 0);
-            const layerProgress = (completedLength / roadLength) * 100;
-            totalProgress += Math.min(layerProgress, 100);
+            if (isDualCarriageway) {
+              // For dual carriageway, calculate LHS and RHS separately and average them
+              const lhsProgress = layer.progress
+                .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'LHS' || prog.carriagewaySide?.toLowerCase() === 'both')
+                .reduce((sum: number, prog: any) => {
+                  const start = parseFloat(prog.startChainage as any);
+                  const end = parseFloat(prog.endChainage as any);
+                  if (isNaN(start) || isNaN(end) || end <= start) return sum;
+                  return sum + (end - start);
+                }, 0);
+              
+              const rhsProgress = layer.progress
+                .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'RHS' || prog.carriagewaySide?.toLowerCase() === 'both')
+                .reduce((sum: number, prog: any) => {
+                  const start = parseFloat(prog.startChainage as any);
+                  const end = parseFloat(prog.endChainage as any);
+                  if (isNaN(start) || isNaN(end) || end <= start) return sum;
+                  return sum + (end - start);
+                }, 0);
+              
+              const lhsPercentage = Math.min(100, (lhsProgress / roadLength) * 100);
+              const rhsPercentage = Math.min(100, (rhsProgress / roadLength) * 100);
+              const layerProgress = (lhsPercentage + rhsPercentage) / 2;
+              
+              totalProgress += layerProgress;
+            } else {
+              // For single carriageway, sum all progress
+              const completedLength = layer.progress.reduce((sum, prog) => {
+                const start = parseFloat(prog.startChainage as any);
+                const end = parseFloat(prog.endChainage as any);
+                if (isNaN(start) || isNaN(end) || end <= start) return sum;
+                return sum + (end - start);
+              }, 0);
+              const layerProgress = Math.min(100, (completedLength / roadLength) * 100);
+              totalProgress += layerProgress;
+            }
           }
         });
       });
@@ -152,20 +178,46 @@ export default function OverviewTab({ project }: OverviewTabProps) {
     }
 
     let totalProgress = 0;
+    const isDualCarriageway = road.carriageway === 'dual';
 
     road.layers.forEach((layer: any) => {
       if (layer.progress && layer.progress.length > 0) {
-        const completedLength = layer.progress.reduce((sum: number, prog: any) => {
-          const start = parseFloat(prog.startChainage);
-          const end = parseFloat(prog.endChainage);
-          // Validate chainage values and ensure end > start
-          if (isNaN(start) || isNaN(end) || end <= start) {
-            return sum;
-          }
-          return sum + (end - start);
-        }, 0);
-        const layerProgress = (completedLength / roadLength) * 100;
-        totalProgress += Math.min(layerProgress, 100);
+        if (isDualCarriageway) {
+          // For dual carriageway, calculate LHS and RHS separately and average them
+          const lhsProgress = layer.progress
+            .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'LHS' || prog.carriagewaySide?.toLowerCase() === 'both')
+            .reduce((sum: number, prog: any) => {
+              const start = parseFloat(prog.startChainage);
+              const end = parseFloat(prog.endChainage);
+              if (isNaN(start) || isNaN(end) || end <= start) return sum;
+              return sum + (end - start);
+            }, 0);
+          
+          const rhsProgress = layer.progress
+            .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'RHS' || prog.carriagewaySide?.toLowerCase() === 'both')
+            .reduce((sum: number, prog: any) => {
+              const start = parseFloat(prog.startChainage);
+              const end = parseFloat(prog.endChainage);
+              if (isNaN(start) || isNaN(end) || end <= start) return sum;
+              return sum + (end - start);
+            }, 0);
+          
+          const lhsPercentage = Math.min(100, (lhsProgress / roadLength) * 100);
+          const rhsPercentage = Math.min(100, (rhsProgress / roadLength) * 100);
+          const layerProgress = (lhsPercentage + rhsPercentage) / 2;
+          
+          totalProgress += layerProgress;
+        } else {
+          // For single carriageway, sum all progress
+          const completedLength = layer.progress.reduce((sum: number, prog: any) => {
+            const start = parseFloat(prog.startChainage);
+            const end = parseFloat(prog.endChainage);
+            if (isNaN(start) || isNaN(end) || end <= start) return sum;
+            return sum + (end - start);
+          }, 0);
+          const layerProgress = Math.min(100, (completedLength / roadLength) * 100);
+          totalProgress += layerProgress;
+        }
       }
     });
 

@@ -57,20 +57,41 @@ export default function ProjectCard({
     let totalWeight = 0;
     
     project.roads.forEach(road => {
+      const isDualCarriageway = road.carriageway === 'dual';
+      
       if (road.layers && road.layers.length > 0) {
         road.layers.forEach(layer => {
           const layerWeight = layer.weight || 1;
           totalWeight += layerWeight;
           
           if (layer.progress && layer.progress.length > 0) {
-            const completedLength = layer.progress.reduce((sum, prog) => {
-              return sum + (Number(prog.endChainage) - Number(prog.startChainage));
-            }, 0);
-            
-            // Calculate layer progress and cap at 100%
-            // For dual carriageway, both LHS and RHS might be recorded, so we cap to prevent >100%
-            const layerProgress = Math.min(100, (completedLength / Number(road.length)) * 100);
-            totalProgress += layerProgress * layerWeight;
+            if (isDualCarriageway) {
+              // For dual carriageway, calculate LHS and RHS separately and average them
+              const lhsProgress = layer.progress
+                .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'LHS' || prog.carriagewaySide?.toLowerCase() === 'both')
+                .reduce((sum: number, prog: any) => {
+                  return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+                }, 0);
+              
+              const rhsProgress = layer.progress
+                .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'RHS' || prog.carriagewaySide?.toLowerCase() === 'both')
+                .reduce((sum: number, prog: any) => {
+                  return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+                }, 0);
+              
+              const lhsPercentage = Math.min(100, (lhsProgress / Number(road.length)) * 100);
+              const rhsPercentage = Math.min(100, (rhsProgress / Number(road.length)) * 100);
+              const layerProgress = (lhsPercentage + rhsPercentage) / 2;
+              
+              totalProgress += layerProgress * layerWeight;
+            } else {
+              // For single carriageway, sum all progress
+              const completedLength = layer.progress.reduce((sum, prog) => {
+                return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+              }, 0);
+              const layerProgress = Math.min(100, (completedLength / Number(road.length)) * 100);
+              totalProgress += layerProgress * layerWeight;
+            }
           }
         });
       }
@@ -88,20 +109,40 @@ export default function ProjectCard({
     
     let totalProgress = 0;
     let totalWeight = 0;
+    const isDualCarriageway = road.carriageway === 'dual';
     
     road.layers.forEach((layer: any) => {
       const layerWeight = layer.weight || 1;
       totalWeight += layerWeight;
       
       if (layer.progress && layer.progress.length > 0) {
-        const completedLength = layer.progress.reduce((sum: number, prog: any) => {
-          return sum + (Number(prog.endChainage) - Number(prog.startChainage));
-        }, 0);
-        
-        // Calculate layer progress and cap at 100%
-        // For dual carriageway, both LHS and RHS might be recorded, so we cap to prevent >100%
-        const layerProgress = Math.min(100, (completedLength / Number(road.length)) * 100);
-        totalProgress += layerProgress * layerWeight;
+        if (isDualCarriageway) {
+          // For dual carriageway, calculate LHS and RHS separately and average them
+          const lhsProgress = layer.progress
+            .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'LHS' || prog.carriagewaySide?.toLowerCase() === 'both')
+            .reduce((sum: number, prog: any) => {
+              return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+            }, 0);
+          
+          const rhsProgress = layer.progress
+            .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'RHS' || prog.carriagewaySide?.toLowerCase() === 'both')
+            .reduce((sum: number, prog: any) => {
+              return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+            }, 0);
+          
+          const lhsPercentage = Math.min(100, (lhsProgress / Number(road.length)) * 100);
+          const rhsPercentage = Math.min(100, (rhsProgress / Number(road.length)) * 100);
+          const layerProgress = (lhsPercentage + rhsPercentage) / 2;
+          
+          totalProgress += layerProgress * layerWeight;
+        } else {
+          // For single carriageway, sum all progress
+          const completedLength = layer.progress.reduce((sum: number, prog: any) => {
+            return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+          }, 0);
+          const layerProgress = Math.min(100, (completedLength / Number(road.length)) * 100);
+          totalProgress += layerProgress * layerWeight;
+        }
       }
       // Layers without progress contribute 0%, which is implicit
     });
