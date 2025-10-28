@@ -1248,10 +1248,24 @@ export function registerRoutes(app: Express): Server {
       // Get activities from the work plan if provided
       let activities: any[] = [];
       if (validated.workPlanId) {
+        console.log(`Fetching activities for work plan: ${validated.workPlanId}`);
         activities = await storage.getWorkPlanActivities(projectId, validated.workPlanId);
+        console.log(`Found ${activities.length} activities for specific work plan`);
+        
+        // Fallback: if work plan has no activities, use all project activities
+        if (activities.length === 0) {
+          console.log('Work plan has no activities, falling back to all project activities');
+          activities = await storage.getWorkPlanActivities(projectId); // Get all activities for project
+          console.log(`Fallback found ${activities.length} total project activities`);
+        }
+      } else {
+        console.log('No work plan ID provided, fetching all project activities');
+        activities = await storage.getWorkPlanActivities(projectId);
+        console.log(`Found ${activities.length} project activities`);
       }
       
       const tracker = await storage.createProgressTracker(projectId, validated, activities);
+      console.log(`Created tracker with ${tracker.items.length} items`);
       res.status(201).json(tracker);
     } catch (error) {
       if (error instanceof ZodError) {

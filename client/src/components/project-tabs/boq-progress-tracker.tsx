@@ -136,7 +136,21 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
       });
       return;
     }
-    createTrackerMutation.mutate(formData);
+    if (!formData.workPlanId) {
+      toast({
+        title: "Error",
+        description: "Please select a work plan",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Only send workPlanId if it's not empty
+    const payload = {
+      ...formData,
+      workPlanId: formData.workPlanId || undefined,
+    };
+    createTrackerMutation.mutate(payload);
   };
 
   const handleItemUpdate = (itemId: string, field: string, value: number) => {

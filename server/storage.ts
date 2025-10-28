@@ -1188,10 +1188,30 @@ export class DatabaseStorage implements IStorage {
     if (workPlanId) {
       conditions.push(eq(workPlanActivities.workPlanId, workPlanId));
     }
-    return await db.select()
+    
+    console.log(`getWorkPlanActivities called with projectId=${projectId}, workPlanId=${workPlanId}`);
+    
+    const results = await db.select()
       .from(workPlanActivities)
       .where(and(...conditions))
       .orderBy(workPlanActivities.orderIndex);
+    
+    console.log(`getWorkPlanActivities query returned ${results.length} activities`);
+    if (results.length > 0) {
+      console.log('Sample activity:', JSON.stringify(results[0]));
+    }
+    
+    // Also check total activities for this project
+    const allProjectActivities = await db.select()
+      .from(workPlanActivities)
+      .where(eq(workPlanActivities.projectId, projectId));
+    console.log(`Total activities in project ${projectId}: ${allProjectActivities.length}`);
+    if (allProjectActivities.length > 0 && workPlanId) {
+      const workPlanIds = [...new Set(allProjectActivities.map(a => a.workPlanId))];
+      console.log('All work plan IDs in project:', workPlanIds);
+    }
+    
+    return results;
   }
 
   async getWorkPlanActivityById(id: string): Promise<WorkPlanActivity | undefined> {
