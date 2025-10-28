@@ -15,6 +15,8 @@ import {
   workPlans,
   workPlanActivities,
   projectDocuments,
+  progressTrackers,
+  progressTrackerItems,
   type User,
   type InsertUser,
   type Project,
@@ -50,6 +52,11 @@ import {
   type InsertWorkPlanActivity,
   type ProjectDocument,
   type InsertProjectDocument,
+  type ProgressTracker,
+  type InsertProgressTracker,
+  type ProgressTrackerItem,
+  type InsertProgressTrackerItem,
+  type ProgressTrackerWithItems,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, inArray, sql, gte } from "drizzle-orm";
@@ -169,6 +176,14 @@ export interface IStorage {
   createDocument(projectId: string, userId: string, document: InsertProjectDocument): Promise<ProjectDocument>;
   updateDocument(id: string, updates: Partial<Pick<InsertProjectDocument, 'documentName' | 'customContent'>>): Promise<ProjectDocument>;
   deleteDocument(id: string): Promise<void>;
+  
+  // Progress tracker operations
+  getProgressTrackers(projectId: string): Promise<ProgressTracker[]>;
+  getProgressTracker(id: string): Promise<ProgressTrackerWithItems | undefined>;
+  createProgressTracker(projectId: string, tracker: InsertProgressTracker, activities: WorkPlanActivity[]): Promise<ProgressTrackerWithItems>;
+  updateProgressTracker(id: string, tracker: Partial<InsertProgressTracker>): Promise<ProgressTracker>;
+  deleteProgressTracker(id: string): Promise<void>;
+  updateProgressTrackerItem(id: string, item: Partial<InsertProgressTrackerItem>): Promise<ProgressTrackerItem>;
 }
 
 // In-memory storage implementation
@@ -1333,6 +1348,106 @@ export class DatabaseStorage implements IStorage {
   
   async deleteDocument(id: string): Promise<void> {
     await db.delete(projectDocuments).where(eq(projectDocuments.id, id));
+  }
+  
+  // Progress tracker operations
+  async getProgressTrackers(projectId: string): Promise<ProgressTracker[]> {
+    return await db.select()
+      .from(progressTrackers)
+      .where(eq(progressTrackers.projectId, projectId))
+      .orderBy(desc(progressTrackers.createdAt));
+  }
+  
+  async getProgressTracker(id: string): Promise<ProgressTrackerWithItems | undefined> {
+    const [tracker] = await db.select()
+      .from(progressTrackers)
+      .where(eq(progressTrackers.id, id))
+      .limit(1);
+    
+    if (!tracker) return undefined;
+    
+    const items = await db.select()
+      .from(progressTrackerItems)
+      .where(eq(progressTrackerItems.progressTrackerId, id))
+      .orderBy(progressTrackerItems.orderIndex);
+    
+    return { ...tracker, items };
+  }
+  
+  async createProgressTracker(
+    projectId: string, 
+    tracker: InsertProgressTracker, 
+    activities: WorkPlanActivity[]
+  ): Promise<ProgressTrackerWithItems> {
+    return await db.transaction(async (tx) => {
+      // Create the tracker
+      const [newTracker] = await tx.insert(progressTrackers)
+        .values({ ...tracker, projectId })
+        .returning();
+      
+      // Create items from activities
+      if (activities.length > 0) {
+        const items = activities.map((activity, index) => ({
+          progressTrackerId: newTracker.id,
+          projectId,
+          activityId: activity.id,
+          itemType: activity.itemType,
+          description: activity.activityName,
+          orderIndex: activity.orderIndex ?? index,
+          qtyInBoq: "0",
+          qtyDone: "0",
+          weightedRatio: "1",
+        }));
+        
+        const createdItems = await tx.insert(progressTrackerItems)
+          .values(items)
+          .returning();
+        
+        return { ...newTracker, items: createdItems };
+      }
+      
+      return { ...newTracker, items: [] };
+    });
+  }
+  
+  async updateProgressTracker(id: string, tracker: Partial<InsertProgressTracker>): Promise<ProgressTracker> {
+    const [result] = await db.update(progressTrackers)
+      .set({ ...tracker, updatedAt: new Date() })
+      .where(eq(progressTrackers.id, id))
+      .returning();
+    return result;
+  }
+  
+  async deleteProgressTracker(id: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete all items first
+      await tx.delete(progressTrackerItems)
+        .where(eq(progressTrackerItems.progressTrackerId, id));
+      
+      // Delete the tracker
+      await tx.delete(progressTrackers)
+        .where(eq(progressTrackers.id, id));
+    });
+  }
+  
+  async updateProgressTrackerItem(id: string, item: Partial<InsertProgressTrackerItem>): Promise<ProgressTrackerItem> {
+    // Convert numeric values to strings for decimal fields
+    const updates: any = { ...item, updatedAt: new Date() };
+    if (typeof updates.qtyInBoq === 'number') {
+      updates.qtyInBoq = updates.qtyInBoq.toString();
+    }
+    if (typeof updates.qtyDone === 'number') {
+      updates.qtyDone = updates.qtyDone.toString();
+    }
+    if (typeof updates.weightedRatio === 'number') {
+      updates.weightedRatio = updates.weightedRatio.toString();
+    }
+    
+    const [result] = await db.update(progressTrackerItems)
+      .set(updates)
+      .where(eq(progressTrackerItems.id, id))
+      .returning();
+    return result;
   }
 }
 
