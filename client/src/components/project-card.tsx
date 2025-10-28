@@ -67,7 +67,9 @@ export default function ProjectCard({
               return sum + (Number(prog.endChainage) - Number(prog.startChainage));
             }, 0);
             
-            const layerProgress = (completedLength / Number(road.length)) * 100;
+            // Calculate layer progress and cap at 100%
+            // For dual carriageway, both LHS and RHS might be recorded, so we cap to prevent >100%
+            const layerProgress = Math.min(100, (completedLength / Number(road.length)) * 100);
             totalProgress += layerProgress * layerWeight;
           }
         });
@@ -86,41 +88,25 @@ export default function ProjectCard({
     
     let totalProgress = 0;
     let totalWeight = 0;
-    let layersWithProgress = 0;
-    let layersWithoutProgress = 0;
     
     road.layers.forEach((layer: any) => {
       const layerWeight = layer.weight || 1;
       totalWeight += layerWeight;
       
       if (layer.progress && layer.progress.length > 0) {
-        layersWithProgress++;
         const completedLength = layer.progress.reduce((sum: number, prog: any) => {
           return sum + (Number(prog.endChainage) - Number(prog.startChainage));
         }, 0);
         
-        const layerProgress = (completedLength / Number(road.length)) * 100;
+        // Calculate layer progress and cap at 100%
+        // For dual carriageway, both LHS and RHS might be recorded, so we cap to prevent >100%
+        const layerProgress = Math.min(100, (completedLength / Number(road.length)) * 100);
         totalProgress += layerProgress * layerWeight;
-      } else {
-        layersWithoutProgress++;
       }
+      // Layers without progress contribute 0%, which is implicit
     });
     
-    const result = totalWeight > 0 ? Math.min(100, Math.round(totalProgress / totalWeight)) : 0;
-    
-    // Diagnostic logging
-    console.log(`Road: ${road.name}`, {
-      totalLayers: road.layers.length,
-      layersWithProgress,
-      layersWithoutProgress,
-      totalProgress,
-      totalWeight,
-      roadLength: road.length,
-      result: `${result}%`,
-      expectedIfAllEqualWeight: `${Math.round((layersWithProgress / road.layers.length) * 100)}%`
-    });
-    
-    return result;
+    return totalWeight > 0 ? Math.min(100, Math.round(totalProgress / totalWeight)) : 0;
   };
 
   return (
