@@ -135,31 +135,11 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", async (req, res) => {
-    // In development mode, auto-login as dev user
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        let devUser = await storage.getUserByUsername('devuser');
-        
-        if (!devUser) {
-          devUser = await storage.createUser({
-            username: 'devuser',
-            email: 'dev@example.com',
-            password: await hashPassword('devpassword'),
-            firstName: 'Dev',
-            lastName: 'User',
-            isAdmin: true,
-            isApproved: true,
-          });
-        }
-        
-        return res.json(devUser);
-      } catch (error) {
-        console.error("Error setting up dev user:", error);
-      }
+    // Check authentication first, even in development
+    if (!req.isAuthenticated()) {
+      return res.sendStatus(401);
     }
     
-    // Production mode - require authentication
-    if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });
 }
