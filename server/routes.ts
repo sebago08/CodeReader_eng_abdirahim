@@ -10,12 +10,15 @@ import {
   insertSafetyIncidentSchema,
   insertWorkPlanSchema,
   insertWorkPlanActivitySchema,
-  insertProjectDocumentSchema
+  insertProjectDocumentSchema,
+  progressTrackerItems
 } from "@shared/schema";
 import { ZodError, z } from "zod";
 import { setupAuth } from "./auth";
 import multer from "multer";
 import { getStorageService, getMockStorage } from "./storage-service";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // Development mode auto-login user
 let devUser: any = null;
@@ -1177,6 +1180,186 @@ export function registerRoutes(app: Express): Server {
       }
       console.error("Error updating activity name:", error);
       res.status(500).json({ message: "Failed to update activity name" });
+    }
+  });
+
+  // Progress Tracker Routes
+  app.get('/api/projects/:projectId/progress-trackers', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const trackers = await storage.getProgressTrackers(projectId);
+      res.json(trackers);
+    } catch (error) {
+      console.error("Error fetching progress trackers:", error);
+      res.status(500).json({ message: "Failed to fetch progress trackers" });
+    }
+  });
+
+  app.get('/api/progress-trackers/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      const tracker = await storage.getProgressTracker(id);
+      if (!tracker) {
+        return res.status(404).json({ message: "Progress tracker not found" });
+      }
+      
+      // Verify user has access to the tracker's project
+      const project = await storage.getProject(tracker.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      res.json(tracker);
+    } catch (error) {
+      console.error("Error fetching progress tracker:", error);
+      res.status(500).json({ message: "Failed to fetch progress tracker" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/progress-trackers', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      // Validate request body
+      const createSchema = z.object({
+        name: z.string().min(1),
+        description: z.string().optional(),
+        workPlanId: z.string().optional(),
+      });
+      const validated = createSchema.parse(req.body);
+      
+      // Get activities from the work plan if provided
+      let activities: any[] = [];
+      if (validated.workPlanId) {
+        activities = await storage.getWorkPlanActivities(projectId, validated.workPlanId);
+      }
+      
+      const tracker = await storage.createProgressTracker(projectId, validated, activities);
+      res.status(201).json(tracker);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error creating progress tracker:", error);
+      res.status(500).json({ message: "Failed to create progress tracker" });
+    }
+  });
+
+  app.patch('/api/progress-trackers/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      const tracker = await storage.getProgressTracker(id);
+      if (!tracker) {
+        return res.status(404).json({ message: "Progress tracker not found" });
+      }
+      
+      // Verify user has access to the tracker's project
+      const project = await storage.getProject(tracker.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      // Validate request body
+      const updateSchema = z.object({
+        name: z.string().min(1).optional(),
+        description: z.string().optional(),
+      });
+      const validated = updateSchema.parse(req.body);
+      
+      const updated = await storage.updateProgressTracker(id, validated);
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error updating progress tracker:", error);
+      res.status(500).json({ message: "Failed to update progress tracker" });
+    }
+  });
+
+  app.delete('/api/progress-trackers/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      const tracker = await storage.getProgressTracker(id);
+      if (!tracker) {
+        return res.status(404).json({ message: "Progress tracker not found" });
+      }
+      
+      // Verify user has access to the tracker's project
+      const project = await storage.getProject(tracker.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      await storage.deleteProgressTracker(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting progress tracker:", error);
+      res.status(500).json({ message: "Failed to delete progress tracker" });
+    }
+  });
+
+  app.patch('/api/progress-tracker-items/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      // Get the item to find its tracker and project
+      const items = await db.select()
+        .from(progressTrackerItems)
+        .where(eq(progressTrackerItems.id, id))
+        .limit(1);
+      
+      if (items.length === 0) {
+        return res.status(404).json({ message: "Progress tracker item not found" });
+      }
+      
+      const item = items[0];
+      
+      // Verify user has access to the item's project
+      const project = await storage.getProject(item.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      // Validate request body
+      const updateSchema = z.object({
+        qtyInBoq: z.number().optional(),
+        qtyDone: z.number().optional(),
+        weightedRatio: z.number().optional(),
+        description: z.string().optional(),
+      });
+      const validated = updateSchema.parse(req.body);
+      
+      const updated = await storage.updateProgressTrackerItem(id, validated);
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error updating progress tracker item:", error);
+      res.status(500).json({ message: "Failed to update progress tracker item" });
     }
   });
 
