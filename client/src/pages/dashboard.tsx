@@ -1,4 +1,5 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,12 +16,21 @@ import {
 } from "@/components/ui/table";
 import { Sidebar } from "@/components/sidebar";
 import { useAuth } from "@/hooks/use-auth";
-import { Search, Bell, Plus, FileText, AlertTriangle, CheckCircle, MessageSquare, TrendingUp, TrendingDown } from "lucide-react";
+import { Search, Bell, Plus, FileText, AlertTriangle, CheckCircle, MessageSquare, TrendingUp, TrendingDown, LogOut, User as UserIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { ProjectWithRoads, Activity, SafetyIncident } from "@shared/schema";
 import ProjectModal from "@/components/project-modal";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const [showProjectModal, setShowProjectModal] = useState(false);
 
   // Fetch all projects
@@ -207,9 +217,45 @@ export default function Dashboard() {
                   <circle cx="12" cy="17" r="0.5" fill="currentColor" strokeWidth="1"></circle>
                 </svg>
               </Button>
-              <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                {user?.firstName?.[0] || 'U'}
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="flex items-center gap-2 hover:bg-gray-100 px-3 py-2 h-auto"
+                    data-testid="button-user-menu"
+                  >
+                    <Avatar className="w-10 h-10">
+                      <AvatarFallback className="bg-gradient-to-br from-pink-400 to-pink-600 text-white font-semibold">
+                        {user?.firstName?.[0] || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium text-gray-700 max-w-[120px] truncate" data-testid="text-username">
+                      {user?.username || user?.email || 'User'}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user?.firstName} {user?.lastName}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={async () => {
+                      await logoutMutation.mutateAsync();
+                      queryClient.clear();
+                      window.location.href = "/auth";
+                    }}
+                    className="cursor-pointer"
+                    data-testid="button-sign-out"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
