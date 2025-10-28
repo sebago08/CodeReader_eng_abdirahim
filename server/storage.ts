@@ -55,11 +55,12 @@ import { db } from "./db";
 import { eq, and, desc, or, inArray, sql, gte } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import type { Store } from "express-session";
 
 // Interface for storage operations
 export interface IStorage {
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: Store;
   
   // User operations
   getUser(id: string): Promise<User | undefined>;
@@ -172,7 +173,7 @@ export interface IStorage {
 
 // In-memory storage implementation
 export class MemStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: Store;
   private users = new Map<string, User>();
   private projects = new Map<string, Project>();
   private roads = new Map<string, Road>();
@@ -577,7 +578,7 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: Store;
 
   constructor() {
     const PostgresSessionStore = connectPg(session);
