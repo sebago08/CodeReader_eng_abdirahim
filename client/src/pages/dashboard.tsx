@@ -246,7 +246,7 @@ export default function Dashboard() {
                     onClick={async () => {
                       await logoutMutation.mutateAsync();
                       queryClient.clear();
-                      window.location.href = "/auth";
+                      window.location.href = "/";
                     }}
                     className="cursor-pointer"
                     data-testid="button-sign-out"
