@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { X, Trash2, Plus } from "lucide-react";
+import { X, Trash2, Plus, Upload, Image as ImageIcon } from "lucide-react";
 import type { ProjectWithRoads, InsertProject, ClientPersonnel, ContractorPersonnel, ContractorEquipment } from "@shared/schema";
 
 interface ProjectModalProps {
@@ -42,7 +42,11 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
     contractorContactPerson: "",
     contractorEmail: "",
     contractorPhone: "",
+    executiveSummary: "",
+    projectLocation: "",
     scopeOfWork: "",
+    clientLogo: "",
+    contractorLogo: "",
   });
 
   // Sub-tab states for Client and Contractor
@@ -57,6 +61,12 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
   
   // Contractor equipment state
   const [newContractorEquipment, setNewContractorEquipment] = useState({ equipmentName: "", type: "", quantity: "1", condition: "" });
+
+  // File refs for logo uploads
+  const clientLogoInputRef = useRef<HTMLInputElement>(null);
+  const contractorLogoInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingClientLogo, setIsUploadingClientLogo] = useState(false);
+  const [isUploadingContractorLogo, setIsUploadingContractorLogo] = useState(false);
 
   // Fetch personnel and equipment if editing
   const { data: clientPersonnel = [] } = useQuery<ClientPersonnel[]>({
@@ -99,7 +109,11 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
         contractorContactPerson: project.contractorContactPerson || "",
         contractorEmail: project.contractorEmail || "",
         contractorPhone: project.contractorPhone || "",
+        executiveSummary: project.executiveSummary || "",
+        projectLocation: project.projectLocation || "",
         scopeOfWork: project.scopeOfWork || "",
+        clientLogo: project.clientLogo || "",
+        contractorLogo: project.contractorLogo || "",
       });
     }
   }, [project]);
@@ -231,6 +245,68 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
     }));
   };
 
+  const handleLogoUpload = async (file: File, type: 'client' | 'contractor') => {
+    if (!project?.id) {
+      toast({
+        title: "Error",
+        description: "Please save the project first before uploading logos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (type === 'client') {
+      setIsUploadingClientLogo(true);
+    } else {
+      setIsUploadingContractorLogo(true);
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const path = `${project.id}/${type}-logo-${Date.now()}.${file.name.split('.').pop()}`;
+      
+      const response = await fetch(`/api/storage/project-logos/${path}`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Upload failed');
+
+      const { url } = await response.json();
+
+      // Update project with logo URL
+      const updateData = type === 'client' ? { clientLogo: url } : { contractorLogo: url };
+      await apiRequest("PATCH", `/api/projects/${project.id}`, updateData);
+
+      setFormData(prev => ({
+        ...prev,
+        [type === 'client' ? 'clientLogo' : 'contractorLogo']: url,
+      }));
+
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+
+      toast({
+        title: "Success",
+        description: `${type === 'client' ? 'Client' : 'Contractor'} logo uploaded successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload logo",
+        variant: "destructive",
+      });
+    } finally {
+      if (type === 'client') {
+        setIsUploadingClientLogo(false);
+      } else {
+        setIsUploadingContractorLogo(false);
+      }
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
@@ -260,7 +336,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                 Contractor
               </TabsTrigger>
               <TabsTrigger value="scope" className="data-[state=active]:border-b-2 data-[state=active]:border-[#0EA5E9] rounded-none">
-                Project Scope
+                Introduction
               </TabsTrigger>
             </TabsList>
 
@@ -533,6 +609,52 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                       data-testid="textarea-client-address"
                     />
                   </div>
+
+                  <div>
+                    <Label className="block text-sm font-medium text-gray-700 mb-2">Client Logo</Label>
+                    <input
+                      ref={clientLogoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleLogoUpload(file, 'client');
+                      }}
+                      data-testid="input-client-logo"
+                    />
+                    <div className="flex items-center gap-4">
+                      {formData.clientLogo ? (
+                        <div className="relative w-32 h-32 border-2 border-gray-200 rounded-lg overflow-hidden">
+                          <img
+                            src={formData.clientLogo}
+                            alt="Client logo"
+                            className="w-full h-full object-contain"
+                            data-testid="img-client-logo"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                          <ImageIcon className="w-12 h-12 text-gray-400" />
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => clientLogoInputRef.current?.click()}
+                          disabled={isUploadingClientLogo || !project}
+                          data-testid="button-upload-client-logo"
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          {isUploadingClientLogo ? "Uploading..." : formData.clientLogo ? "Change Logo" : "Upload Logo"}
+                        </Button>
+                        {!project && (
+                          <p className="text-xs text-gray-500">Save project first to upload logo</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -714,6 +836,52 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                         placeholder="+1 (555) 123-4567"
                         data-testid="input-contractor-phone"
                       />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="block text-sm font-medium text-gray-700 mb-2">Contractor Logo</Label>
+                    <input
+                      ref={contractorLogoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleLogoUpload(file, 'contractor');
+                      }}
+                      data-testid="input-contractor-logo"
+                    />
+                    <div className="flex items-center gap-4">
+                      {formData.contractorLogo ? (
+                        <div className="relative w-32 h-32 border-2 border-gray-200 rounded-lg overflow-hidden">
+                          <img
+                            src={formData.contractorLogo}
+                            alt="Contractor logo"
+                            className="w-full h-full object-contain"
+                            data-testid="img-contractor-logo"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                          <ImageIcon className="w-12 h-12 text-gray-400" />
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => contractorLogoInputRef.current?.click()}
+                          disabled={isUploadingContractorLogo || !project}
+                          data-testid="button-upload-contractor-logo"
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          {isUploadingContractorLogo ? "Uploading..." : formData.contractorLogo ? "Change Logo" : "Upload Logo"}
+                        </Button>
+                        {!project && (
+                          <p className="text-xs text-gray-500">Save project first to upload logo</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -903,15 +1071,41 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
               )}
             </TabsContent>
 
-            {/* Project Scope Tab */}
+            {/* Introduction Tab */}
             <TabsContent value="scope" className="p-6 space-y-6 min-h-[500px]">
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">Executive Summary</Label>
+                <Textarea
+                  name="executiveSummary"
+                  value={formData.executiveSummary}
+                  onChange={handleChange}
+                  rows={4}
+                  className="w-full"
+                  placeholder="Enter executive summary for the project..."
+                  data-testid="textarea-executive-summary"
+                />
+              </div>
+
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">Location</Label>
+                <Textarea
+                  name="projectLocation"
+                  value={formData.projectLocation}
+                  onChange={handleChange}
+                  rows={4}
+                  className="w-full"
+                  placeholder="Enter detailed location description..."
+                  data-testid="textarea-project-location"
+                />
+              </div>
+
               <div>
                 <Label className="block text-sm font-medium text-gray-700 mb-2">Scope of Work</Label>
                 <Textarea
                   name="scopeOfWork"
                   value={formData.scopeOfWork}
                   onChange={handleChange}
-                  rows={10}
+                  rows={6}
                   className="w-full"
                   placeholder="Enter detailed scope of work..."
                   data-testid="textarea-scope-of-work"
