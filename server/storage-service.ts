@@ -8,9 +8,48 @@ export interface StorageService {
 }
 
 class SupabaseStorageService implements StorageService {
+  private async ensureBucketExists(bucket: string) {
+    if (!supabase) {
+      return { error: 'Supabase not configured' };
+    }
+
+    // Check if bucket exists
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error('Error listing buckets:', listError);
+      return { error: listError.message };
+    }
+
+    const bucketExists = buckets?.some(b => b.name === bucket);
+    
+    if (!bucketExists) {
+      // Create the bucket with public access
+      const { error: createError } = await supabase.storage.createBucket(bucket, {
+        public: true,
+        fileSizeLimit: 5242880, // 5MB limit
+      });
+
+      if (createError) {
+        console.error(`Error creating bucket ${bucket}:`, createError);
+        return { error: createError.message };
+      }
+
+      console.log(`Created bucket: ${bucket}`);
+    }
+
+    return {};
+  }
+
   async uploadFile(bucket: string, path: string, file: Buffer, contentType: string) {
     if (!supabase) {
       return { url: '', error: 'Supabase not configured' };
+    }
+
+    // Ensure bucket exists before uploading
+    const bucketCheck = await this.ensureBucketExists(bucket);
+    if (bucketCheck.error) {
+      return { url: '', error: bucketCheck.error };
     }
 
     const { data, error } = await supabase.storage
@@ -21,6 +60,7 @@ class SupabaseStorageService implements StorageService {
       });
 
     if (error) {
+      console.error(`Upload error for ${bucket}/${path}:`, error);
       return { url: '', error: error.message };
     }
 
