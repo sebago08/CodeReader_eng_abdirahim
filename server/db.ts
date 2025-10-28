@@ -25,12 +25,15 @@ let db: any;
 if (isSupabase) {
   // Use standard PostgreSQL driver for Supabase
   pool = new PgPool({ connectionString: databaseUrl });
-  db = drizzlePg(pool, { schema });
+  db = drizzlePg(pool, { schema, logger: true });
 } else {
   // Use Neon serverless driver for Replit's database
   neonConfig.webSocketConstructor = ws;
   pool = new NeonPool({ connectionString: databaseUrl });
-  db = drizzleNeon(pool, { schema });
+  db = drizzleNeon(pool, { schema, logger: true });
 }
+
+// Debug: Log project schema columns
+console.log('[DB] Projects table columns:', Object.keys(schema.projects));
 
 export { pool, db };
