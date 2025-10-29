@@ -326,6 +326,40 @@ export const preCommencementItems = pgTable("pre_commencement_items", {
   index("pre_commencement_items_status_idx").on(table.status),
 ]);
 
+// Daily logs table (one per project per day)
+export const dailyLogs = pgTable("daily_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  date: date("date").notNull(),
+  weather: varchar("weather"),
+  workSummary: text("work_summary"),
+  issues: text("issues"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("daily_logs_project_idx").on(table.projectId),
+  index("daily_logs_date_idx").on(table.date),
+]);
+
+// Action points table (linked to daily logs and projects)
+export const actionPoints = pgTable("action_points", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  dailyLogId: varchar("daily_log_id"), // Optional - can be standalone or linked to a log
+  projectId: varchar("project_id").notNull(),
+  description: text("description").notNull(),
+  assignedTo: varchar("assigned_to"),
+  priority: varchar("priority").notNull().default("medium"), // "low", "medium", "high"
+  status: varchar("status").notNull().default("open"), // "open", "completed"
+  dueDate: date("due_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("action_points_daily_log_idx").on(table.dailyLogId),
+  index("action_points_project_idx").on(table.projectId),
+  index("action_points_status_idx").on(table.status),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
@@ -344,6 +378,8 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   contractorEquipment: many(contractorEquipment),
   paymentCertificates: many(paymentCertificates),
   preCommencementItems: many(preCommencementItems),
+  dailyLogs: many(dailyLogs),
+  actionPoints: many(actionPoints),
 }));
 
 export const roadsRelations = relations(roads, ({ one, many }) => ({
@@ -501,6 +537,25 @@ export const preCommencementItemsRelations = relations(preCommencementItems, ({ 
   }),
 }));
 
+export const dailyLogsRelations = relations(dailyLogs, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [dailyLogs.projectId],
+    references: [projects.id],
+  }),
+  actionPoints: many(actionPoints),
+}));
+
+export const actionPointsRelations = relations(actionPoints, ({ one }) => ({
+  project: one(projects, {
+    fields: [actionPoints.projectId],
+    references: [projects.id],
+  }),
+  dailyLog: one(dailyLogs, {
+    fields: [actionPoints.dailyLogId],
+    references: [dailyLogs.id],
+  }),
+}));
+
 // Insert schemas
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
@@ -648,6 +703,24 @@ export const insertPreCommencementItemSchema = createInsertSchema(preCommencemen
   orderIndex: z.coerce.number().int().default(0),
 });
 
+export const insertDailyLogSchema = createInsertSchema(dailyLogs).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertActionPointSchema = createInsertSchema(actionPoints).omit({
+  id: true,
+  dailyLogId: true,
+  projectId: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  priority: z.enum(["low", "medium", "high"]).default("medium"),
+  status: z.enum(["open", "completed"]).default("open"),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
@@ -712,6 +785,15 @@ export type ProgressTrackerWithItems = ProgressTracker & {
 
 export type PreCommencementItem = typeof preCommencementItems.$inferSelect;
 export type InsertPreCommencementItem = z.infer<typeof insertPreCommencementItemSchema>;
+
+export type DailyLog = typeof dailyLogs.$inferSelect;
+export type InsertDailyLog = z.infer<typeof insertDailyLogSchema>;
+export type ActionPoint = typeof actionPoints.$inferSelect;
+export type InsertActionPoint = z.infer<typeof insertActionPointSchema>;
+
+export type DailyLogWithActionPoints = DailyLog & {
+  actionPoints: ActionPoint[];
+};
 
 // Document type enum
 export type DocumentType = 
