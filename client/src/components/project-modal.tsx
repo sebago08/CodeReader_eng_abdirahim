@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { X, Trash2, Plus, Upload, Image as ImageIcon } from "lucide-react";
@@ -61,6 +62,17 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
   
   // Contractor equipment state
   const [newContractorEquipment, setNewContractorEquipment] = useState({ equipmentName: "", type: "", quantity: "1", condition: "" });
+
+  // Pre-commencement edit state
+  const [editingPreCommItem, setEditingPreCommItem] = useState<PreCommencementItem | null>(null);
+  const [editPreCommData, setEditPreCommData] = useState({
+    itemName: "",
+    status: "pending" as const,
+    deadline: "",
+    dateSubmitted: "",
+    responsibleParty: "",
+    notes: "",
+  });
 
   // File refs for logo uploads
   const clientLogoInputRef = useRef<HTMLInputElement>(null);
@@ -228,6 +240,23 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
     },
   });
 
+  // Pre-commencement item mutation
+  const updatePreCommItemMutation = useMutation({
+    mutationFn: async (data: { id: string; updates: any }) => {
+      await apiRequest("PATCH", `/api/pre-commencement/${data.id}`, data.updates);
+    },
+    onSuccess: () => {
+      if (project?.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/pre-commencement`] });
+      }
+      setEditingPreCommItem(null);
+      toast({ title: "Success", description: "Checklist item updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update checklist item", variant: "destructive" });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -310,6 +339,40 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
         setIsUploadingContractorLogo(false);
       }
     }
+  };
+
+  const handleEditPreCommItem = (item: PreCommencementItem) => {
+    setEditingPreCommItem(item);
+    setEditPreCommData({
+      itemName: item.itemName,
+      status: item.status,
+      deadline: item.deadline || "",
+      dateSubmitted: item.dateSubmitted || "",
+      responsibleParty: item.responsibleParty || "",
+      notes: item.notes || "",
+    });
+  };
+
+  const handlePreCommDataChange = (field: string, value: string) => {
+    setEditPreCommData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSavePreCommItem = () => {
+    if (!editingPreCommItem) return;
+    
+    updatePreCommItemMutation.mutate({
+      id: editingPreCommItem.id,
+      updates: {
+        ...editPreCommData,
+        deadline: editPreCommData.deadline || null,
+        dateSubmitted: editPreCommData.dateSubmitted || null,
+        responsibleParty: editPreCommData.responsibleParty || null,
+        notes: editPreCommData.notes || null,
+      },
+    });
   };
 
   return (
@@ -1191,6 +1254,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                               <td className="px-4 py-3 text-sm">
                                 <button
                                   type="button"
+                                  onClick={() => handleEditPreCommItem(item)}
                                   className="text-gray-400 hover:text-gray-600"
                                   data-testid={`button-edit-item-${item.id}`}
                                 >
@@ -1228,6 +1292,113 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
             </Button>
           </div>
         </form>
+
+        {/* Edit Pre-Commencement Item Dialog */}
+        <Dialog open={!!editingPreCommItem} onOpenChange={(open) => !open && setEditingPreCommItem(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Checklist Item</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">Item Name</Label>
+                <Input
+                  type="text"
+                  value={editPreCommData.itemName}
+                  onChange={(e) => handlePreCommDataChange('itemName', e.target.value)}
+                  className="w-full"
+                  data-testid="input-edit-item-name"
+                />
+              </div>
+              
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">Status</Label>
+                <Select
+                  value={editPreCommData.status}
+                  onValueChange={(value) => handlePreCommDataChange('status', value)}
+                >
+                  <SelectTrigger className="w-full" data-testid="select-edit-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="submitted">Submitted</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-2">Deadline</Label>
+                  <Input
+                    type="date"
+                    value={editPreCommData.deadline}
+                    onChange={(e) => handlePreCommDataChange('deadline', e.target.value)}
+                    className="w-full"
+                    data-testid="input-edit-deadline"
+                  />
+                </div>
+
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-2">Date Submitted</Label>
+                  <Input
+                    type="date"
+                    value={editPreCommData.dateSubmitted}
+                    onChange={(e) => handlePreCommDataChange('dateSubmitted', e.target.value)}
+                    className="w-full"
+                    data-testid="input-edit-date-submitted"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">Responsible Party</Label>
+                <Input
+                  type="text"
+                  value={editPreCommData.responsibleParty}
+                  onChange={(e) => handlePreCommDataChange('responsibleParty', e.target.value)}
+                  className="w-full"
+                  placeholder="Enter name or organization"
+                  data-testid="input-edit-responsible-party"
+                />
+              </div>
+
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">Notes</Label>
+                <Textarea
+                  value={editPreCommData.notes}
+                  onChange={(e) => handlePreCommDataChange('notes', e.target.value)}
+                  rows={4}
+                  className="w-full"
+                  placeholder="Add any additional notes or comments..."
+                  data-testid="textarea-edit-notes"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditingPreCommItem(null)}
+                data-testid="button-cancel-edit"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSavePreCommItem}
+                disabled={updatePreCommItemMutation.isPending}
+                className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white"
+                data-testid="button-save-edit"
+              >
+                {updatePreCommItemMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
