@@ -17,6 +17,7 @@ import {
   projectDocuments,
   progressTrackers,
   progressTrackerItems,
+  preCommencementItems,
   type User,
   type InsertUser,
   type Project,
@@ -57,6 +58,8 @@ import {
   type ProgressTrackerItem,
   type InsertProgressTrackerItem,
   type ProgressTrackerWithItems,
+  type PreCommencementItem,
+  type InsertPreCommencementItem,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, inArray, sql, gte } from "drizzle-orm";
@@ -184,6 +187,13 @@ export interface IStorage {
   updateProgressTracker(id: string, tracker: Partial<InsertProgressTracker>): Promise<ProgressTracker>;
   deleteProgressTracker(id: string): Promise<void>;
   updateProgressTrackerItem(id: string, item: Partial<InsertProgressTrackerItem>): Promise<ProgressTrackerItem>;
+  
+  // Pre-commencement checklist operations
+  getPreCommencementItems(projectId: string): Promise<PreCommencementItem[]>;
+  createPreCommencementItem(projectId: string, item: InsertPreCommencementItem): Promise<PreCommencementItem>;
+  updatePreCommencementItem(id: string, item: Partial<InsertPreCommencementItem>): Promise<PreCommencementItem>;
+  deletePreCommencementItem(id: string): Promise<void>;
+  createDefaultChecklistItems(projectId: string): Promise<PreCommencementItem[]>;
 }
 
 // In-memory storage implementation
@@ -590,6 +600,21 @@ export class MemStorage implements IStorage {
   async createDocument(): Promise<ProjectDocument> { throw new Error('Not supported in MemStorage'); }
   async updateDocument(): Promise<ProjectDocument> { throw new Error('Not supported in MemStorage'); }
   async deleteDocument(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+  
+  // Pre-commencement checklist stubs (MemStorage doesn't support this)
+  async getPreCommencementItems(): Promise<PreCommencementItem[]> { return []; }
+  async createPreCommencementItem(): Promise<PreCommencementItem> { throw new Error('Not supported in MemStorage'); }
+  async updatePreCommencementItem(): Promise<PreCommencementItem> { throw new Error('Not supported in MemStorage'); }
+  async deletePreCommencementItem(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+  async createDefaultChecklistItems(): Promise<PreCommencementItem[]> { throw new Error('Not supported in MemStorage'); }
+  
+  // Progress tracker stubs
+  async getProgressTrackers(): Promise<ProgressTracker[]> { return []; }
+  async getProgressTracker(): Promise<ProgressTrackerWithItems | undefined> { return undefined; }
+  async createProgressTracker(): Promise<ProgressTrackerWithItems> { throw new Error('Not supported in MemStorage'); }
+  async updateProgressTracker(): Promise<ProgressTracker> { throw new Error('Not supported in MemStorage'); }
+  async deleteProgressTracker(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+  async updateProgressTrackerItem(): Promise<ProgressTrackerItem> { throw new Error('Not supported in MemStorage'); }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1468,6 +1493,66 @@ export class DatabaseStorage implements IStorage {
       .where(eq(progressTrackerItems.id, id))
       .returning();
     return result;
+  }
+  
+  // Pre-commencement checklist operations
+  async getPreCommencementItems(projectId: string): Promise<PreCommencementItem[]> {
+    return await db.select()
+      .from(preCommencementItems)
+      .where(eq(preCommencementItems.projectId, projectId))
+      .orderBy(preCommencementItems.orderIndex);
+  }
+  
+  async createPreCommencementItem(projectId: string, item: InsertPreCommencementItem): Promise<PreCommencementItem> {
+    const [newItem] = await db.insert(preCommencementItems)
+      .values({
+        ...item,
+        projectId,
+      })
+      .returning();
+    return newItem;
+  }
+  
+  async updatePreCommencementItem(id: string, item: Partial<InsertPreCommencementItem>): Promise<PreCommencementItem> {
+    const [result] = await db.update(preCommencementItems)
+      .set({ ...item, updatedAt: new Date() })
+      .where(eq(preCommencementItems.id, id))
+      .returning();
+    return result;
+  }
+  
+  async deletePreCommencementItem(id: string): Promise<void> {
+    await db.delete(preCommencementItems)
+      .where(eq(preCommencementItems.id, id));
+  }
+  
+  async createDefaultChecklistItems(projectId: string): Promise<PreCommencementItem[]> {
+    const defaultItems = [
+      { itemName: "Insurance Certificate", orderIndex: 0 },
+      { itemName: "Performance Security/Bond", orderIndex: 1 },
+      { itemName: "Environmental Impact Assessment", orderIndex: 2 },
+      { itemName: "Safety & Health Plan", orderIndex: 3 },
+      { itemName: "Labor Compliance Documents", orderIndex: 4 },
+      { itemName: "Tax Clearance Certificate", orderIndex: 5 },
+      { itemName: "Equipment Inspection Certificates", orderIndex: 6 },
+      { itemName: "Site Possession Handover", orderIndex: 7 },
+      { itemName: "Design Drawings Approval", orderIndex: 8 },
+      { itemName: "Method Statement Approval", orderIndex: 9 },
+      { itemName: "Material Testing Reports", orderIndex: 10 },
+      { itemName: "Contractor License/Registration", orderIndex: 11 },
+    ];
+    
+    const createdItems = await db.insert(preCommencementItems)
+      .values(defaultItems.map(item => ({
+        projectId,
+        itemName: item.itemName,
+        orderIndex: item.orderIndex,
+        status: "pending" as const,
+        isDefault: true,
+      })))
+      .returning();
+      
+    return createdItems;
   }
 }
 
