@@ -306,6 +306,26 @@ export const progressTrackerItems = pgTable("progress_tracker_items", {
   index("progress_tracker_items_project_idx").on(table.projectId),
 ]);
 
+// Pre-commencement checklist items table
+export const preCommencementItems = pgTable("pre_commencement_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  itemName: varchar("item_name").notNull(),
+  status: varchar("status").notNull().default("pending"), // "pending", "submitted", "approved", "rejected", "expired"
+  deadline: date("deadline"),
+  dateSubmitted: date("date_submitted"),
+  responsibleParty: varchar("responsible_party"),
+  notes: text("notes"),
+  fileUrl: varchar("file_url"),
+  isDefault: boolean("is_default").default(true).notNull(), // true if from default template
+  orderIndex: integer("order_index").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("pre_commencement_items_project_idx").on(table.projectId),
+  index("pre_commencement_items_status_idx").on(table.status),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
@@ -323,6 +343,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   contractorPersonnel: many(contractorPersonnel),
   contractorEquipment: many(contractorEquipment),
   paymentCertificates: many(paymentCertificates),
+  preCommencementItems: many(preCommencementItems),
 }));
 
 export const roadsRelations = relations(roads, ({ one, many }) => ({
@@ -473,6 +494,13 @@ export const progressTrackerItemsRelations = relations(progressTrackerItems, ({ 
   }),
 }));
 
+export const preCommencementItemsRelations = relations(preCommencementItems, ({ one }) => ({
+  project: one(projects, {
+    fields: [preCommencementItems.projectId],
+    references: [projects.id],
+  }),
+}));
+
 // Insert schemas
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
@@ -610,6 +638,16 @@ export const insertProgressTrackerItemSchema = createInsertSchema(progressTracke
   orderIndex: z.coerce.number().int().default(0),
 });
 
+export const insertPreCommencementItemSchema = createInsertSchema(preCommencementItems).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  status: z.enum(["pending", "submitted", "approved", "rejected", "expired"]).default("pending"),
+  orderIndex: z.coerce.number().int().default(0),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
@@ -671,6 +709,9 @@ export type InsertProgressTrackerItem = z.infer<typeof insertProgressTrackerItem
 export type ProgressTrackerWithItems = ProgressTracker & {
   items: ProgressTrackerItem[];
 };
+
+export type PreCommencementItem = typeof preCommencementItems.$inferSelect;
+export type InsertPreCommencementItem = z.infer<typeof insertPreCommencementItemSchema>;
 
 // Document type enum
 export type DocumentType = 
