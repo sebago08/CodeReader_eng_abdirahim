@@ -18,6 +18,8 @@ import {
   progressTrackers,
   progressTrackerItems,
   preCommencementItems,
+  dailyLogs,
+  actionPoints,
   type User,
   type InsertUser,
   type Project,
@@ -60,6 +62,11 @@ import {
   type ProgressTrackerWithItems,
   type PreCommencementItem,
   type InsertPreCommencementItem,
+  type DailyLog,
+  type InsertDailyLog,
+  type ActionPoint,
+  type InsertActionPoint,
+  type DailyLogWithActionPoints,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, or, inArray, sql, gte } from "drizzle-orm";
@@ -192,6 +199,21 @@ export interface IStorage {
   getPreCommencementItems(projectId: string): Promise<PreCommencementItem[]>;
   createPreCommencementItem(projectId: string, item: InsertPreCommencementItem): Promise<PreCommencementItem>;
   updatePreCommencementItem(id: string, item: Partial<InsertPreCommencementItem>): Promise<PreCommencementItem>;
+  
+  // Daily logs operations
+  getDailyLogs(projectId: string): Promise<DailyLog[]>;
+  getDailyLog(id: string): Promise<DailyLogWithActionPoints | undefined>;
+  getDailyLogByDate(projectId: string, date: string): Promise<DailyLogWithActionPoints | undefined>;
+  createDailyLog(projectId: string, log: InsertDailyLog): Promise<DailyLog>;
+  updateDailyLog(id: string, log: Partial<InsertDailyLog>): Promise<DailyLog>;
+  deleteDailyLog(id: string): Promise<void>;
+  
+  // Action points operations
+  getActionPoints(projectId: string, status?: string): Promise<ActionPoint[]>;
+  getActionPointsByLog(dailyLogId: string): Promise<ActionPoint[]>;
+  createActionPoint(projectId: string, dailyLogId: string | null, actionPoint: InsertActionPoint): Promise<ActionPoint>;
+  updateActionPoint(id: string, actionPoint: Partial<InsertActionPoint>): Promise<ActionPoint>;
+  deleteActionPoint(id: string): Promise<void>;
   deletePreCommencementItem(id: string): Promise<void>;
   createDefaultChecklistItems(projectId: string): Promise<PreCommencementItem[]>;
 }
@@ -607,6 +629,21 @@ export class MemStorage implements IStorage {
   async updatePreCommencementItem(): Promise<PreCommencementItem> { throw new Error('Not supported in MemStorage'); }
   async deletePreCommencementItem(): Promise<void> { throw new Error('Not supported in MemStorage'); }
   async createDefaultChecklistItems(): Promise<PreCommencementItem[]> { throw new Error('Not supported in MemStorage'); }
+  
+  // Daily logs stubs
+  async getDailyLogs(): Promise<DailyLog[]> { return []; }
+  async getDailyLog(): Promise<DailyLogWithActionPoints | undefined> { return undefined; }
+  async getDailyLogByDate(): Promise<DailyLogWithActionPoints | undefined> { return undefined; }
+  async createDailyLog(): Promise<DailyLog> { throw new Error('Not supported in MemStorage'); }
+  async updateDailyLog(): Promise<DailyLog> { throw new Error('Not supported in MemStorage'); }
+  async deleteDailyLog(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+  
+  // Action points stubs
+  async getActionPoints(): Promise<ActionPoint[]> { return []; }
+  async getActionPointsByLog(): Promise<ActionPoint[]> { return []; }
+  async createActionPoint(): Promise<ActionPoint> { throw new Error('Not supported in MemStorage'); }
+  async updateActionPoint(): Promise<ActionPoint> { throw new Error('Not supported in MemStorage'); }
+  async deleteActionPoint(): Promise<void> { throw new Error('Not supported in MemStorage'); }
   
   // Progress tracker stubs
   async getProgressTrackers(): Promise<ProgressTracker[]> { return []; }
@@ -1553,6 +1590,128 @@ export class DatabaseStorage implements IStorage {
       .returning();
       
     return createdItems;
+  }
+  
+  // Daily logs operations
+  async getDailyLogs(projectId: string): Promise<DailyLog[]> {
+    return await db.select()
+      .from(dailyLogs)
+      .where(eq(dailyLogs.projectId, projectId))
+      .orderBy(desc(dailyLogs.date));
+  }
+  
+  async getDailyLog(id: string): Promise<DailyLogWithActionPoints | undefined> {
+    const [log] = await db.select()
+      .from(dailyLogs)
+      .where(eq(dailyLogs.id, id));
+      
+    if (!log) return undefined;
+    
+    const logActionPoints = await db.select()
+      .from(actionPoints)
+      .where(eq(actionPoints.dailyLogId, id))
+      .orderBy(actionPoints.createdAt);
+    
+    return {
+      ...log,
+      actionPoints: logActionPoints,
+    };
+  }
+  
+  async getDailyLogByDate(projectId: string, date: string): Promise<DailyLogWithActionPoints | undefined> {
+    const [log] = await db.select()
+      .from(dailyLogs)
+      .where(
+        and(
+          eq(dailyLogs.projectId, projectId),
+          eq(dailyLogs.date, date)
+        )
+      );
+      
+    if (!log) return undefined;
+    
+    const logActionPoints = await db.select()
+      .from(actionPoints)
+      .where(eq(actionPoints.dailyLogId, log.id))
+      .orderBy(actionPoints.createdAt);
+    
+    return {
+      ...log,
+      actionPoints: logActionPoints,
+    };
+  }
+  
+  async createDailyLog(projectId: string, log: InsertDailyLog): Promise<DailyLog> {
+    const [newLog] = await db.insert(dailyLogs)
+      .values({
+        ...log,
+        projectId,
+      })
+      .returning();
+    return newLog;
+  }
+  
+  async updateDailyLog(id: string, log: Partial<InsertDailyLog>): Promise<DailyLog> {
+    const [result] = await db.update(dailyLogs)
+      .set({ ...log, updatedAt: new Date() })
+      .where(eq(dailyLogs.id, id))
+      .returning();
+    return result;
+  }
+  
+  async deleteDailyLog(id: string): Promise<void> {
+    // First delete all associated action points
+    await db.delete(actionPoints)
+      .where(eq(actionPoints.dailyLogId, id));
+    
+    // Then delete the log
+    await db.delete(dailyLogs)
+      .where(eq(dailyLogs.id, id));
+  }
+  
+  // Action points operations
+  async getActionPoints(projectId: string, status?: string): Promise<ActionPoint[]> {
+    const conditions = [eq(actionPoints.projectId, projectId)];
+    
+    if (status) {
+      conditions.push(eq(actionPoints.status, status));
+    }
+    
+    return await db.select()
+      .from(actionPoints)
+      .where(and(...conditions))
+      .orderBy(desc(actionPoints.createdAt));
+  }
+  
+  async getActionPointsByLog(dailyLogId: string): Promise<ActionPoint[]> {
+    return await db.select()
+      .from(actionPoints)
+      .where(eq(actionPoints.dailyLogId, dailyLogId))
+      .orderBy(actionPoints.createdAt);
+  }
+  
+  async createActionPoint(projectId: string, dailyLogId: string | null, actionPoint: InsertActionPoint): Promise<ActionPoint> {
+    const [newActionPoint] = await db.insert(actionPoints)
+      .values({
+        ...actionPoint,
+        projectId,
+        dailyLogId,
+      })
+      .returning();
+    return newActionPoint;
+  }
+  
+  async updateActionPoint(id: string, actionPoint: Partial<InsertActionPoint>): Promise<ActionPoint> {
+    const [result] = await db.update(actionPoints)
+      .set({ ...actionPoint, updatedAt: new Date() })
+      .where(eq(actionPoints.id, id))
+      .returning();
+    return result;
+  }
+  
+  async deleteActionPoint(id: string): Promise<void> {
+    await db.delete(actionPoints)
+      .where(eq(actionPoints.id, id));
   }
 }
 
