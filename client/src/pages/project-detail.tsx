@@ -16,6 +16,7 @@ import SafetyTab from "@/components/project-tabs/safety-tab";
 import TeamTab from "@/components/project-tabs/team-tab";
 import WorkPlanTab from "@/components/project-tabs/work-plan-tab";
 import { DocumentsTab } from "@/components/project-tabs/documents-tab";
+import { SiteLogsTab } from "@/components/tabs/site-logs-tab";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ProjectWithRoads, ProjectDocument } from "@shared/schema";
 
@@ -205,6 +206,9 @@ export default function ProjectDetail() {
               <TabsTrigger value="documents" data-testid="tab-documents">
                 Documents
               </TabsTrigger>
+              <TabsTrigger value="site-logs" data-testid="tab-site-logs">
+                Site Logs
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" data-testid="tab-content-overview">
@@ -244,6 +248,10 @@ export default function ProjectDetail() {
 
             <TabsContent value="documents" data-testid="tab-content-documents">
               <DocumentsTab project={project} />
+            </TabsContent>
+
+            <TabsContent value="site-logs" data-testid="tab-content-site-logs">
+              {projectId && <SiteLogsTab projectId={projectId} />}
             </TabsContent>
           </Tabs>
         </main>
