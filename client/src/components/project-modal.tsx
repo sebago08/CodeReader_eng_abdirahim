@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { X, Trash2, Plus, Upload, Image as ImageIcon } from "lucide-react";
-import type { ProjectWithRoads, InsertProject, ClientPersonnel, ContractorPersonnel, ContractorEquipment } from "@shared/schema";
+import type { ProjectWithRoads, InsertProject, ClientPersonnel, ContractorPersonnel, ContractorEquipment, PreCommencementItem } from "@shared/schema";
 
 interface ProjectModalProps {
   project?: ProjectWithRoads | null;
@@ -81,6 +81,11 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
   const { data: contractorEquipment = [] } = useQuery<ContractorEquipment[]>({
     queryKey: [`/api/projects/${project?.id}/contractor-equipment`],
+    enabled: !!project?.id,
+  });
+
+  const { data: preCommencementItems = [], isLoading: isLoadingPreCommencement } = useQuery<PreCommencementItem[]>({
+    queryKey: [`/api/projects/${project?.id}/pre-commencement`],
     enabled: !!project?.id,
   });
 
@@ -338,6 +343,11 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
               <TabsTrigger value="scope" className="data-[state=active]:border-b-2 data-[state=active]:border-[#0EA5E9] rounded-none">
                 Introduction
               </TabsTrigger>
+              {project?.id && (
+                <TabsTrigger value="pre-commencement" className="data-[state=active]:border-b-2 data-[state=active]:border-[#0EA5E9] rounded-none">
+                  Pre-Commencement
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {/* Basic Information Tab */}
@@ -1112,6 +1122,90 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                 />
               </div>
             </TabsContent>
+
+            {/* Pre-Commencement Checklist Tab */}
+            {project?.id && (
+              <TabsContent value="pre-commencement" className="p-6 space-y-6 min-h-[500px]">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900">Pre-Commencement Document Checklist</h4>
+                      <p className="text-sm text-gray-600 mt-1">Track critical documents required before construction begins</p>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {preCommencementItems.filter(item => item.status === 'approved').length} of {preCommencementItems.length} items approved
+                    </div>
+                  </div>
+
+                  {isLoadingPreCommencement ? (
+                    <div className="text-center py-8 text-gray-500">Loading checklist...</div>
+                  ) : preCommencementItems.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">No checklist items found</div>
+                  ) : (
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Submitted</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsible Party</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {preCommencementItems.map((item) => (
+                            <tr key={item.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 text-sm text-gray-900" data-testid={`text-item-name-${item.id}`}>
+                                {item.itemName}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    item.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                    item.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
+                                    item.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}
+                                  data-testid={`status-${item.id}`}
+                                >
+                                  {item.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600" data-testid={`text-deadline-${item.id}`}>
+                                {item.deadline ? new Date(item.deadline).toLocaleDateString() : '-'}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600" data-testid={`text-date-submitted-${item.id}`}>
+                                {item.dateSubmitted ? new Date(item.dateSubmitted).toLocaleDateString() : '-'}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600" data-testid={`text-responsible-${item.id}`}>
+                                {item.responsibleParty || '-'}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600" data-testid={`text-notes-${item.id}`}>
+                                <div className="max-w-xs truncate" title={item.notes || ''}>
+                                  {item.notes || '-'}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <button
+                                  type="button"
+                                  className="text-gray-400 hover:text-gray-600"
+                                  data-testid={`button-edit-item-${item.id}`}
+                                >
+                                  Edit
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
 
           <div className="flex justify-end space-x-4 px-6 py-4 border-t border-gray-200 bg-gray-50">
