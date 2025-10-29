@@ -12,7 +12,9 @@ import {
   insertWorkPlanActivitySchema,
   insertProjectDocumentSchema,
   progressTrackerItems,
-  preCommencementItems
+  preCommencementItems,
+  insertDailyLogSchema,
+  insertActionPointSchema
 } from "@shared/schema";
 import { ZodError, z } from "zod";
 import { setupAuth } from "./auth";
@@ -1688,6 +1690,204 @@ export function registerRoutes(app: Express): Server {
     } catch (error: any) {
       console.error("Error retrieving file:", error);
       res.status(500).json({ message: error.message || "Failed to retrieve file" });
+    }
+  });
+
+  // Daily Logs Routes
+  app.get('/api/projects/:projectId/daily-logs', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const logs = await storage.getDailyLogs(projectId);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching daily logs:", error);
+      res.status(500).json({ message: "Failed to fetch daily logs" });
+    }
+  });
+
+  app.get('/api/daily-logs/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const log = await storage.getDailyLog(id);
+      
+      if (!log) {
+        return res.status(404).json({ message: "Daily log not found" });
+      }
+      
+      res.json(log);
+    } catch (error) {
+      console.error("Error fetching daily log:", error);
+      res.status(500).json({ message: "Failed to fetch daily log" });
+    }
+  });
+
+  app.get('/api/projects/:projectId/daily-logs/date/:date', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId, date } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const log = await storage.getDailyLogByDate(projectId, date);
+      res.json(log || null);
+    } catch (error) {
+      console.error("Error fetching daily log by date:", error);
+      res.status(500).json({ message: "Failed to fetch daily log" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/daily-logs', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      // Validate request body
+      const validated = insertDailyLogSchema.parse(req.body);
+      
+      const log = await storage.createDailyLog(projectId, validated);
+      res.status(201).json(log);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error creating daily log:", error);
+      res.status(500).json({ message: "Failed to create daily log" });
+    }
+  });
+
+  app.patch('/api/daily-logs/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Validate request body
+      const validated = insertDailyLogSchema.partial().parse(req.body);
+      
+      const log = await storage.updateDailyLog(id, validated);
+      res.json(log);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error updating daily log:", error);
+      res.status(500).json({ message: "Failed to update daily log" });
+    }
+  });
+
+  app.delete('/api/daily-logs/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteDailyLog(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting daily log:", error);
+      res.status(500).json({ message: "Failed to delete daily log" });
+    }
+  });
+
+  // Action Points Routes
+  app.get('/api/projects/:projectId/action-points', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      const status = req.query.status as string | undefined;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const actionPoints = await storage.getActionPoints(projectId, status);
+      res.json(actionPoints);
+    } catch (error) {
+      console.error("Error fetching action points:", error);
+      res.status(500).json({ message: "Failed to fetch action points" });
+    }
+  });
+
+  app.get('/api/daily-logs/:dailyLogId/action-points', isAuthenticated, async (req, res) => {
+    try {
+      const { dailyLogId } = req.params;
+      const actionPoints = await storage.getActionPointsByLog(dailyLogId);
+      res.json(actionPoints);
+    } catch (error) {
+      console.error("Error fetching action points for log:", error);
+      res.status(500).json({ message: "Failed to fetch action points" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/action-points', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      // Validate request body
+      const validated = insertActionPointSchema.parse(req.body);
+      
+      // dailyLogId can be null for standalone action points
+      const dailyLogId = req.body.dailyLogId || null;
+      
+      const actionPoint = await storage.createActionPoint(projectId, dailyLogId, validated);
+      res.status(201).json(actionPoint);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error creating action point:", error);
+      res.status(500).json({ message: "Failed to create action point" });
+    }
+  });
+
+  app.patch('/api/action-points/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Validate request body
+      const validated = insertActionPointSchema.partial().parse(req.body);
+      
+      const actionPoint = await storage.updateActionPoint(id, validated);
+      res.json(actionPoint);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error updating action point:", error);
+      res.status(500).json({ message: "Failed to update action point" });
+    }
+  });
+
+  app.delete('/api/action-points/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteActionPoint(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting action point:", error);
+      res.status(500).json({ message: "Failed to delete action point" });
     }
   });
 
