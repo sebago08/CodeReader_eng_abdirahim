@@ -114,6 +114,10 @@ export function registerRoutes(app: Express): Server {
       const userId = req.user.id;
       const validatedData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject(userId, validatedData);
+      
+      // Create default pre-commencement checklist items for new project
+      await storage.createDefaultChecklistItems(project.id);
+      
       res.status(201).json(project);
     } catch (error) {
       console.error("Error creating project:", error);
