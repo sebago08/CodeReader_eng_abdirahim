@@ -11,7 +11,8 @@ import {
   insertWorkPlanSchema,
   insertWorkPlanActivitySchema,
   insertProjectDocumentSchema,
-  progressTrackerItems
+  progressTrackerItems,
+  preCommencementItems
 } from "@shared/schema";
 import { ZodError, z } from "zod";
 import { setupAuth } from "./auth";
@@ -1374,6 +1375,140 @@ export function registerRoutes(app: Express): Server {
       }
       console.error("Error updating progress tracker item:", error);
       res.status(500).json({ message: "Failed to update progress tracker item" });
+    }
+  });
+
+  // Pre-Commencement Checklist Routes
+  app.get('/api/projects/:projectId/pre-commencement', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const items = await storage.getPreCommencementItems(projectId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching pre-commencement items:", error);
+      res.status(500).json({ message: "Failed to fetch pre-commencement items" });
+    }
+  });
+
+  app.post('/api/projects/:projectId/pre-commencement', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user has access to this project
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      // Validate request body
+      const createSchema = z.object({
+        itemName: z.string().min(1),
+        status: z.enum(['pending', 'submitted', 'approved', 'rejected']).default('pending'),
+        deadline: z.string().optional(),
+        dateSubmitted: z.string().optional(),
+        responsibleParty: z.string().optional(),
+        notes: z.string().optional(),
+        fileUrl: z.string().optional(),
+        isDefault: z.boolean().default(false),
+        orderIndex: z.number(),
+      });
+      const validated = createSchema.parse(req.body);
+      
+      const item = await storage.createPreCommencementItem(projectId, validated);
+      res.status(201).json(item);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error creating pre-commencement item:", error);
+      res.status(500).json({ message: "Failed to create pre-commencement item" });
+    }
+  });
+
+  app.patch('/api/pre-commencement/:itemId', isAuthenticated, async (req, res) => {
+    try {
+      const { itemId } = req.params;
+      const userId = req.user!.id;
+      
+      // Get the item to verify access
+      const items = await db.select()
+        .from(preCommencementItems)
+        .where(eq(preCommencementItems.id, itemId))
+        .limit(1);
+      
+      if (items.length === 0) {
+        return res.status(404).json({ message: "Pre-commencement item not found" });
+      }
+      
+      const item = items[0];
+      
+      // Verify user has access to the item's project
+      const project = await storage.getProject(item.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      // Validate request body
+      const updateSchema = z.object({
+        itemName: z.string().min(1).optional(),
+        status: z.enum(['pending', 'submitted', 'approved', 'rejected']).optional(),
+        deadline: z.string().optional().nullable(),
+        dateSubmitted: z.string().optional().nullable(),
+        responsibleParty: z.string().optional().nullable(),
+        notes: z.string().optional().nullable(),
+        fileUrl: z.string().optional().nullable(),
+        orderIndex: z.number().optional(),
+      });
+      const validated = updateSchema.parse(req.body);
+      
+      const updated = await storage.updatePreCommencementItem(itemId, validated);
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error updating pre-commencement item:", error);
+      res.status(500).json({ message: "Failed to update pre-commencement item" });
+    }
+  });
+
+  app.delete('/api/pre-commencement/:itemId', isAuthenticated, async (req, res) => {
+    try {
+      const { itemId } = req.params;
+      const userId = req.user!.id;
+      
+      // Get the item to verify access
+      const items = await db.select()
+        .from(preCommencementItems)
+        .where(eq(preCommencementItems.id, itemId))
+        .limit(1);
+      
+      if (items.length === 0) {
+        return res.status(404).json({ message: "Pre-commencement item not found" });
+      }
+      
+      const item = items[0];
+      
+      // Verify user has access to the item's project
+      const project = await storage.getProject(item.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      await storage.deletePreCommencementItem(itemId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting pre-commencement item:", error);
+      res.status(500).json({ message: "Failed to delete pre-commencement item" });
     }
   });
 
