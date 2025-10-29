@@ -1705,8 +1705,21 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Project not found or access denied" });
       }
       
+      // Get all logs for the project
       const logs = await storage.getDailyLogs(projectId);
-      res.json(logs);
+      
+      // For each log, fetch its action points
+      const logsWithActionPoints = await Promise.all(
+        logs.map(async (log) => {
+          const actionPoints = await storage.getActionPointsByLog(log.id);
+          return {
+            ...log,
+            actionPoints,
+          };
+        })
+      );
+      
+      res.json(logsWithActionPoints);
     } catch (error) {
       console.error("Error fetching daily logs:", error);
       res.status(500).json({ message: "Failed to fetch daily logs" });

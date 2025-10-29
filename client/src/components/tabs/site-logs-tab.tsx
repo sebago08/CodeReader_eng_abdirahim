@@ -23,8 +23,8 @@ export function SiteLogsTab({ projectId }: SiteLogsTabProps) {
   const [editingActionPoint, setEditingActionPoint] = useState<ActionPoint | undefined>(undefined);
   const { toast } = useToast();
 
-  // Fetch daily logs
-  const { data: dailyLogs = [], isLoading: logsLoading } = useQuery<DailyLog[]>({
+  // Fetch daily logs with action points
+  const { data: dailyLogs = [], isLoading: logsLoading } = useQuery<DailyLogWithActionPoints[]>({
     queryKey: ['/api/projects', projectId, 'daily-logs'],
   });
 
@@ -38,9 +38,8 @@ export function SiteLogsTab({ projectId }: SiteLogsTabProps) {
     setDailyLogDialogOpen(true);
   };
 
-  const handleEditLog = (log: DailyLog) => {
-    // Convert to DailyLogWithActionPoints by adding empty action points array
-    setEditingLog({ ...log, actionPoints: [] });
+  const handleEditLog = (log: DailyLogWithActionPoints) => {
+    setEditingLog(log);
     setDailyLogDialogOpen(true);
   };
 

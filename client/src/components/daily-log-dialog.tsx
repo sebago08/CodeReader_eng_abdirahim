@@ -7,11 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { insertDailyLogSchema, type DailyLog, type DailyLogWithActionPoints } from "@shared/schema";
+import { insertDailyLogSchema, type DailyLog, type DailyLogWithActionPoints, type ActionPoint } from "@shared/schema";
 import { format } from "date-fns";
 import { z } from "zod";
+import { Plus, CheckCircle, Clock, Trash2 } from "lucide-react";
+import { ActionPointDialog } from "@/components/action-point-dialog";
 
 interface DailyLogDialogProps {
   open: boolean;
@@ -29,6 +33,8 @@ type FormData = z.infer<typeof formSchema>;
 export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialogProps) {
   const { toast } = useToast();
   const isEditing = !!log;
+  const [actionPointDialogOpen, setActionPointDialogOpen] = useState(false);
+  const [editingActionPoint, setEditingActionPoint] = useState<ActionPoint | undefined>(undefined);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -103,6 +109,48 @@ export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialog
     },
   });
 
+  const deleteActionPointMutation = useMutation({
+    mutationFn: async (actionPointId: string) => {
+      return await apiRequest("DELETE", `/api/action-points/${actionPointId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Action point deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'daily-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'action-points'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete action point",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddActionPoint = () => {
+    setEditingActionPoint(undefined);
+    setActionPointDialogOpen(true);
+  };
+
+  const handleEditActionPoint = (actionPoint: ActionPoint) => {
+    setEditingActionPoint(actionPoint);
+    setActionPointDialogOpen(true);
+  };
+
+  const handleDeleteActionPoint = (actionPointId: string) => {
+    if (confirm("Are you sure you want to delete this action point?")) {
+      deleteActionPointMutation.mutate(actionPointId);
+    }
+  };
+
+  const handleCloseActionPointDialog = () => {
+    setActionPointDialogOpen(false);
+    setEditingActionPoint(undefined);
+  };
+
   const onSubmit = (data: FormData) => {
     if (isEditing) {
       updateMutation.mutate(data);
@@ -175,6 +223,92 @@ export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialog
             />
           </div>
 
+          {/* Action Points Section - Only show when editing an existing log */}
+          {isEditing && log && (
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-base">Action Points</Label>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Track follow-up items for this daily log
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddActionPoint}
+                  data-testid="button-add-action-point-in-log"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Action Point
+                </Button>
+              </div>
+
+              {log.actionPoints && log.actionPoints.length > 0 ? (
+                <div className="space-y-2">
+                  {log.actionPoints.map((actionPoint) => (
+                    <Card key={actionPoint.id} className="bg-gray-50">
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-2 flex-1">
+                            {actionPoint.status === 'completed' ? (
+                              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            ) : (
+                              <Clock className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                            )}
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-900">{actionPoint.description}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {actionPoint.priority}
+                                </Badge>
+                                {actionPoint.assignedTo && (
+                                  <span className="text-xs text-gray-600">
+                                    {actionPoint.assignedTo}
+                                  </span>
+                                )}
+                                {actionPoint.dueDate && (
+                                  <span className="text-xs text-gray-600">
+                                    Due: {format(new Date(actionPoint.dueDate), 'MMM d')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditActionPoint(actionPoint)}
+                              data-testid={`button-edit-action-point-${actionPoint.id}`}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteActionPoint(actionPoint.id)}
+                              data-testid={`button-delete-action-point-${actionPoint.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 py-3 text-center">
+                  No action points yet. Click "Add Action Point" to create one.
+                </p>
+              )}
+            </div>
+          )}
+
           <DialogFooter>
             <Button
               type="button"
@@ -195,6 +329,17 @@ export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialog
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Nested Action Point Dialog */}
+      {isEditing && log && (
+        <ActionPointDialog
+          open={actionPointDialogOpen}
+          onClose={handleCloseActionPointDialog}
+          projectId={projectId}
+          dailyLogId={log.id}
+          actionPoint={editingActionPoint}
+        />
+      )}
     </Dialog>
   );
 }

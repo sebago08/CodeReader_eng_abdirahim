@@ -10,6 +10,7 @@ import {
   integer,
   date,
   boolean,
+  unique,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -340,6 +341,7 @@ export const dailyLogs = pgTable("daily_logs", {
 }, (table) => [
   index("daily_logs_project_idx").on(table.projectId),
   index("daily_logs_date_idx").on(table.date),
+  unique("daily_logs_project_date_unique").on(table.projectId, table.date),
 ]);
 
 // Action points table (linked to daily logs and projects)
