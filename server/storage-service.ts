@@ -156,6 +156,11 @@ class MockStorageService implements StorageService {
 const mockStorage = new MockStorageService();
 
 export function getStorageService(): StorageService {
+  // Always use mock storage in development mode
+  if (process.env.NODE_ENV === 'development') {
+    return mockStorage;
+  }
+  
   if (isSupabaseConfigured()) {
     return new SupabaseStorageService();
   }

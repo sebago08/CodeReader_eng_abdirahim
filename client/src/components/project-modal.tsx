@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { X, Trash2, Plus, Upload, Image as ImageIcon } from "lucide-react";
+import { X, Trash2, Plus, Upload, Image as ImageIcon, FileText } from "lucide-react";
 import type { ProjectWithRoads, InsertProject, ClientPersonnel, ContractorPersonnel, ContractorEquipment, PreCommencementItem } from "@shared/schema";
 
 interface ProjectModalProps {
@@ -73,6 +73,10 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
     responsibleParty: "",
     notes: "",
   });
+
+  // Pre-commencement file upload state
+  const [selectedPreCommFile, setSelectedPreCommFile] = useState<File | null>(null);
+  const [isUploadingPreCommFile, setIsUploadingPreCommFile] = useState(false);
 
   // File refs for logo uploads
   const clientLogoInputRef = useRef<HTMLInputElement>(null);
@@ -351,6 +355,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
       responsibleParty: item.responsibleParty || "",
       notes: item.notes || "",
     });
+    setSelectedPreCommFile(null);
   };
 
   const handlePreCommDataChange = (field: string, value: string) => {
@@ -360,19 +365,52 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
     }));
   };
 
-  const handleSavePreCommItem = () => {
-    if (!editingPreCommItem) return;
+  const handleSavePreCommItem = async () => {
+    if (!editingPreCommItem || !project?.id) return;
     
-    updatePreCommItemMutation.mutate({
-      id: editingPreCommItem.id,
-      updates: {
-        ...editPreCommData,
-        deadline: editPreCommData.deadline || null,
-        dateSubmitted: editPreCommData.dateSubmitted || null,
-        responsibleParty: editPreCommData.responsibleParty || null,
-        notes: editPreCommData.notes || null,
-      },
-    });
+    setIsUploadingPreCommFile(true);
+    let fileUrl = editingPreCommItem.fileUrl;
+
+    try {
+      // Upload file if selected
+      if (selectedPreCommFile) {
+        const formData = new FormData();
+        formData.append('file', selectedPreCommFile);
+
+        const path = `${project.id}/pre-commencement/${editingPreCommItem.id}-${Date.now()}.${selectedPreCommFile.name.split('.').pop()}`;
+        
+        const response = await fetch(`/api/storage/pre-commencement/${path}`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error('Upload failed');
+
+        const { url } = await response.json();
+        fileUrl = url;
+      }
+
+      // Update item with file URL if uploaded
+      updatePreCommItemMutation.mutate({
+        id: editingPreCommItem.id,
+        updates: {
+          ...editPreCommData,
+          deadline: editPreCommData.deadline || null,
+          dateSubmitted: editPreCommData.dateSubmitted || null,
+          responsibleParty: editPreCommData.responsibleParty || null,
+          notes: editPreCommData.notes || null,
+          fileUrl: fileUrl || null,
+        },
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload file",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingPreCommFile(false);
+    }
   };
 
   return (
@@ -1215,6 +1253,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Submitted</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsible Party</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                           </tr>
                         </thead>
@@ -1250,6 +1289,22 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                                 <div className="max-w-xs truncate" title={item.notes || ''}>
                                   {item.notes || '-'}
                                 </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                {item.fileUrl ? (
+                                  <a
+                                    href={item.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                    data-testid={`link-document-${item.id}`}
+                                  >
+                                    <FileText className="w-4 h-4" />
+                                    View
+                                  </a>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
                               </td>
                               <td className="px-4 py-3 text-sm">
                                 <button
@@ -1376,6 +1431,38 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                   data-testid="textarea-edit-notes"
                 />
               </div>
+
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
+                  Attach Document
+                </Label>
+                {editingPreCommItem?.fileUrl && !selectedPreCommFile && (
+                  <div className="mb-2 flex items-center gap-2">
+                    <a
+                      href={editingPreCommItem.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
+                      data-testid="link-current-file"
+                    >
+                      <FileText className="w-4 h-4" />
+                      View current document
+                    </a>
+                  </div>
+                )}
+                <Input
+                  type="file"
+                  onChange={(e) => setSelectedPreCommFile(e.target.files?.[0] || null)}
+                  className="w-full"
+                  data-testid="input-file-upload"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls"
+                />
+                {selectedPreCommFile && (
+                  <p className="text-sm text-gray-600 mt-1" data-testid="text-selected-file">
+                    Selected: {selectedPreCommFile.name}
+                  </p>
+                )}
+              </div>
             </div>
 
             <DialogFooter>
@@ -1390,11 +1477,11 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
               <Button
                 type="button"
                 onClick={handleSavePreCommItem}
-                disabled={updatePreCommItemMutation.isPending}
+                disabled={updatePreCommItemMutation.isPending || isUploadingPreCommFile}
                 className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white"
                 data-testid="button-save-edit"
               >
-                {updatePreCommItemMutation.isPending ? "Saving..." : "Save Changes"}
+                {isUploadingPreCommFile ? "Uploading..." : updatePreCommItemMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </DialogFooter>
           </DialogContent>
