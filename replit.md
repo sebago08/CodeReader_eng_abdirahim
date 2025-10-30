@@ -9,6 +9,28 @@ Key capabilities include:
 - **Comprehensive Project Information**: Track client and contractor personnel, and contractor equipment.
 - **Multi-Project Type Support**: Adaptable for various construction project types beyond just roads.
 - **Team Collaboration**: Facilitates collaboration among project stakeholders.
+- **Rich Text Editing**: TipTap-based rich text editors with bullet lists, numbered lists, and basic formatting across all major text input fields.
+
+# Recent Changes
+
+## October 30, 2025 - Rich Text Editor Integration
+- **Created RichTextEditor component** using TipTap library with StarterKit and bullet/numbered list extensions
+- **Integrated across all text input fields:**
+  - Project Modal: Description, Executive Summary, Scope of Work
+  - Daily Logs: Work Summary, Issues/Challenges, Additional Notes  
+  - Meeting Minutes: Attendees, Agenda, Discussions & Decisions, Action Items
+  - Safety Incidents: Incident Description
+  - Progress Tracker: Notes field
+  - BOQ Progress Tracker: Description field
+- **Features**: Toolbar with bold, bullet lists, numbered lists buttons; stores HTML content; preserves formatting on save/load
+- **Implementation**: Uses Controller component for react-hook-form integration; maintains all existing test IDs
+
+## Previous Updates
+- Completed Supabase Authentication migration with full security fixes
+- Implemented auto-profile creation from verified JWTs
+- Secured all API routes with JWT verification  
+- Added Google OAuth support via Supabase Auth
+- Hybrid authentication middleware supporting Supabase Auth in production and dev mode fallback
 
 # User Preferences
 
