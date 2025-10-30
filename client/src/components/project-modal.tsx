@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -514,13 +515,11 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
               <div>
                 <Label className="block text-sm font-medium text-gray-700 mb-2">Project Description</Label>
-                <Textarea
-                  name="description"
+                <RichTextEditor
                   value={formData.description}
-                  onChange={handleChange}
-                  rows={3}
-                  className="w-full"
+                  onChange={(value) => setFormData({ ...formData, description: value })}
                   placeholder="Enter project description"
+                  minHeight="120px"
                   data-testid="textarea-project-description"
                 />
               </div>
@@ -1186,13 +1185,11 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
             <TabsContent value="scope" className="p-6 space-y-6 min-h-[500px]">
               <div>
                 <Label className="block text-sm font-medium text-gray-700 mb-2">Executive Summary</Label>
-                <Textarea
-                  name="executiveSummary"
+                <RichTextEditor
                   value={formData.executiveSummary}
-                  onChange={handleChange}
-                  rows={4}
-                  className="w-full"
+                  onChange={(value) => setFormData({ ...formData, executiveSummary: value })}
                   placeholder="Enter executive summary for the project..."
+                  minHeight="150px"
                   data-testid="textarea-executive-summary"
                 />
               </div>
@@ -1212,13 +1209,11 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
               <div>
                 <Label className="block text-sm font-medium text-gray-700 mb-2">Scope of Work</Label>
-                <Textarea
-                  name="scopeOfWork"
+                <RichTextEditor
                   value={formData.scopeOfWork}
-                  onChange={handleChange}
-                  rows={6}
-                  className="w-full"
+                  onChange={(value) => setFormData({ ...formData, scopeOfWork: value })}
                   placeholder="Enter detailed scope of work..."
+                  minHeight="200px"
                   data-testid="textarea-scope-of-work"
                 />
               </div>
