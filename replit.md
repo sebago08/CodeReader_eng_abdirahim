@@ -46,7 +46,35 @@ PostgreSQL database with a normalized schema covering:
 
 ## Authentication & Authorization
 
-The application uses local username/password authentication with Bcrypt hashing and PostgreSQL-backed sessions (1-week TTL). All project and data routes are protected. A development mode bypass allows for faster iteration with a default "devuser" account when `NODE_ENV=development`. The authentication flow redirects authenticated users to `/projects` and unauthenticated users to the `/auth` page for sign-in/sign-up. Users can only access their own project data.
+The application uses **Supabase Authentication** with JWT token-based authorization, supporting:
+- **Email/Password Authentication**: Traditional signup and login with Supabase Auth
+- **Google OAuth**: One-click "Sign in with Google" integration via Supabase
+- **JWT Tokens**: Frontend sends JWT tokens in Authorization headers for API requests
+- **Auto-Profile Creation**: Backend middleware verifies tokens and auto-creates user profiles from Supabase Auth users
+- **Development Mode**: Falls back to auto-login "devuser" when Supabase isn't configured (`NODE_ENV=development`)
+
+**Authentication Flow:**
+1. User signs up/logs in via Supabase Auth (email or Google OAuth)
+2. Supabase returns JWT access token and refresh token
+3. Frontend stores session and sends JWT token with all API requests
+4. Backend verifies token and auto-creates/loads user profile
+5. All protected routes validate JWT tokens via `supabaseAuthMiddleware`
+
+**Security Features:**
+- Server-side JWT verification with Supabase
+- Automatic user profile sync from verified tokens
+- Session persistence with automatic token refresh
+- Protected API endpoints with role-based access control
+- Admin-only routes with `supabaseAdminMiddleware`
+
+**Users Database Schema:**
+- `authId`: Links to Supabase Auth user ID (unique)
+- `email`: User email (unique, required)
+- `username`, `firstName`, `lastName`: Profile information
+- `password`: Nullable (null for OAuth users, hashed for email/password users)
+- `isAdmin`, `isApproved`: Authorization flags
+
+Users can only access their own project data. All project and data routes are protected.
 
 ## Key Features
 
@@ -79,8 +107,35 @@ The application supports development (Replit) and production (Vercel + Supabase)
 # External Dependencies
 
 - **PostgreSQL**: Primary database for all application data and session storage.
-- **Replit Auth**: Used for authentication integration via OpenID Connect.
 - **Supabase**:
+    - **Supabase Auth**: Authentication service with Google OAuth support. Handles user signup, login, password reset, and social authentication.
     - **Supabase PostgreSQL**: Production database solution.
     - **Supabase Storage**: For storing files (images, documents) in production.
 - **Vercel**: Hosting platform for production deployment.
+
+## Setting Up Google OAuth (Optional)
+
+To enable "Sign in with Google" functionality, configure the Google provider in your Supabase dashboard:
+
+1. **Get Google OAuth Credentials:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select existing one
+   - Navigate to "APIs & Services" > "Credentials"
+   - Click "Create Credentials" > "OAuth 2.0 Client ID"
+   - Select "Web application" as application type
+   - Add authorized redirect URI: `https://<your-supabase-project>.supabase.co/auth/v1/callback`
+   - Copy the Client ID and Client Secret
+
+2. **Configure Supabase:**
+   - Open your [Supabase Dashboard](https://app.supabase.com/)
+   - Go to "Authentication" > "Providers"
+   - Find "Google" and toggle it on
+   - Paste your Google Client ID and Client Secret
+   - Save the configuration
+
+3. **Test the Integration:**
+   - The "Sign in with Google" button will appear on the login/register pages
+   - Click it to test the OAuth flow
+   - After successful authentication, user profile is auto-created in your database
+
+**Note:** Google OAuth works out-of-the-box in production. For local development, ensure your Supabase project allows `localhost` redirects in the dashboard settings.
