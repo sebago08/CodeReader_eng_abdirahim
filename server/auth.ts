@@ -58,9 +58,6 @@ export function setupAuth(app: Express) {
         if (!user || !user.password || !(await comparePasswords(password, user.password))) {
           return done(null, false);
         }
-        if (!user.isApproved) {
-          return done(null, false, { message: "Account pending admin approval" });
-        }
         return done(null, user);
       } catch (error) {
         return done(error);
@@ -104,7 +101,7 @@ export function setupAuth(app: Express) {
         firstName,
         lastName,
         isAdmin: false,
-        isApproved: false,
+        isApproved: true,
       });
 
       req.login(user, (err) => {
@@ -183,13 +180,8 @@ export const supabaseAuthMiddleware: RequestHandler = async (req: any, res, next
         username: email.split('@')[0], // Generate username from email
         password: null, // OAuth users don't have passwords
         isAdmin: false,
-        isApproved: true, // Auto-approve OAuth users
+        isApproved: true, // Auto-approve all users
       });
-    }
-
-    // Check if user is approved
-    if (!user.isApproved) {
-      return res.status(403).json({ message: "Account pending admin approval" });
     }
 
     // Attach user to request
