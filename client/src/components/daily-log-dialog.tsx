@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -192,34 +193,52 @@ export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialog
 
           <div>
             <Label htmlFor="workSummary">Work Summary</Label>
-            <Textarea
-              id="workSummary"
-              placeholder="Describe the work completed today..."
-              rows={4}
-              {...form.register("workSummary")}
-              data-testid="textarea-log-work-summary"
+            <Controller
+              name="workSummary"
+              control={form.control}
+              render={({ field }) => (
+                <RichTextEditor
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Describe the work completed today..."
+                  minHeight="150px"
+                  data-testid="textarea-log-work-summary"
+                />
+              )}
             />
           </div>
 
           <div>
             <Label htmlFor="issues">Issues / Challenges</Label>
-            <Textarea
-              id="issues"
-              placeholder="Document any issues or challenges encountered..."
-              rows={3}
-              {...form.register("issues")}
-              data-testid="textarea-log-issues"
+            <Controller
+              name="issues"
+              control={form.control}
+              render={({ field }) => (
+                <RichTextEditor
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Document any issues or challenges encountered..."
+                  minHeight="120px"
+                  data-testid="textarea-log-issues"
+                />
+              )}
             />
           </div>
 
           <div>
             <Label htmlFor="notes">Additional Notes</Label>
-            <Textarea
-              id="notes"
-              placeholder="Any other observations or notes..."
-              rows={3}
-              {...form.register("notes")}
-              data-testid="textarea-log-notes"
+            <Controller
+              name="notes"
+              control={form.control}
+              render={({ field }) => (
+                <RichTextEditor
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Any other observations or notes..."
+                  minHeight="120px"
+                  data-testid="textarea-log-notes"
+                />
+              )}
             />
           </div>
 
