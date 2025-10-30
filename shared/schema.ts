@@ -30,13 +30,14 @@ export const sessions = pgTable(
 // User storage table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: varchar("username").notNull().unique(),
-  password: varchar("password").notNull(),
-  email: varchar("email").notNull(),
+  authId: varchar("auth_id").unique(), // Supabase Auth user ID
+  username: varchar("username").unique(), // Nullable for OAuth users
+  password: varchar("password"), // Nullable for OAuth users (Google, etc.)
+  email: varchar("email").notNull().unique(), // Primary identifier
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   isAdmin: boolean("is_admin").default(false).notNull(),
-  isApproved: boolean("is_approved").default(false).notNull(),
+  isApproved: boolean("is_approved").default(true).notNull(), // Auto-approve by default for OAuth
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

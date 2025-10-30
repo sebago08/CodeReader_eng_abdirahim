@@ -1,16 +1,20 @@
 // Based on blueprint:javascript_auth_all_persistance
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, RequestHandler } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import { verifySupabaseToken, supabase } from "./supabase";
 
 declare global {
   namespace Express {
     interface User extends SelectUser {}
+    interface Request {
+      user?: SelectUser;
+    }
   }
 }
 
@@ -143,3 +147,64 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
 }
+
+// Supabase Auth middleware - verifies JWT token and loads/creates user
+export const supabaseAuthMiddleware: RequestHandler = async (req: any, res, next) => {
+  try {
+    // Extract token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    
+    // Verify token with Supabase
+    const supabaseUser = await verifySupabaseToken(token);
+    if (!supabaseUser) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
+    // Get or create user from database
+    let user = await storage.getUserByAuthId(supabaseUser.id);
+    
+    if (!user) {
+      // Auto-create user profile for new Supabase Auth users
+      const email = supabaseUser.email;
+      if (!email) {
+        return res.status(401).json({ message: "Email not found in auth token" });
+      }
+
+      user = await storage.createUser({
+        authId: supabaseUser.id,
+        email,
+        firstName: supabaseUser.user_metadata?.first_name || null,
+        lastName: supabaseUser.user_metadata?.last_name || null,
+        username: email.split('@')[0], // Generate username from email
+        password: null, // OAuth users don't have passwords
+        isAdmin: false,
+        isApproved: true, // Auto-approve OAuth users
+      });
+    }
+
+    // Check if user is approved
+    if (!user.isApproved) {
+      return res.status(403).json({ message: "Account pending admin approval" });
+    }
+
+    // Attach user to request
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error("Auth middleware error:", error);
+    res.status(401).json({ message: "Authentication failed" });
+  }
+};
+
+// Admin middleware for Supabase Auth
+export const supabaseAdminMiddleware: RequestHandler = async (req: any, res, next) => {
+  if (!req.user?.isAdmin) {
+    return res.status(403).json({ message: "Forbidden - Admin access required" });
+  }
+  next();
+};
