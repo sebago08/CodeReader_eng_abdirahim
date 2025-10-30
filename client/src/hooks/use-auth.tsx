@@ -104,18 +104,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Helper to fetch user profile immediately after auth
-  const fetchUserProfile = async (): Promise<SelectUser> => {
-    const { data: { session } } = await supabase!.auth.getSession();
-    if (!session?.access_token) {
-      throw new Error('Session not established');
-    }
-    
-    const res = await fetch('/api/auth/me', {
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`
-      },
-    });
+  // Helper to fetch user profile using existing session token
+  const fetchUserProfile = async (accessToken: string): Promise<SelectUser> => {
+    const res = await withTimeout(
+      fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        },
+      }),
+      3000 // 3 second timeout for profile fetch
+    );
     
     if (!res.ok) {
       throw new Error('Failed to load user profile');
@@ -204,10 +202,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
 
       if (error) throw error;
-      if (!data.user) throw new Error('Login failed');
+      if (!data.session?.access_token) {
+        throw new Error('Login succeeded but no session was created. Please try again.');
+      }
 
-      // Fetch and sync user profile immediately
-      const profile = await fetchUserProfile();
+      // Fetch and sync user profile using the session token
+      const profile = await fetchUserProfile(data.session.access_token);
       return profile;
     },
     onError: (error: AuthError | Error) => {
@@ -241,8 +241,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       if (!data.user) throw new Error('Registration failed');
 
-      // Fetch and sync user profile immediately
-      const profile = await fetchUserProfile();
+      // Check if email confirmation is required
+      if (!data.session?.access_token) {
+        throw new Error('CONFIRMATION_REQUIRED');
+      }
+
+      // Fetch and sync user profile using the session token
+      const profile = await fetchUserProfile(data.session.access_token);
       return profile;
     },
     onSuccess: () => {
@@ -253,11 +258,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onError: (error: AuthError | Error) => {
       console.error('Registration error:', error);
-      toast({
-        title: "Registration failed",
-        description: error.message || 'Unable to create account. Please try again.',
-        variant: "destructive",
-      });
+      
+      if (error.message === 'CONFIRMATION_REQUIRED') {
+        toast({
+          title: "Check your email",
+          description: "We've sent you a confirmation link. Please check your email and click the link to complete registration.",
+        });
+      } else {
+        toast({
+          title: "Registration failed",
+          description: error.message || 'Unable to create account. Please try again.',
+          variant: "destructive",
+        });
+      }
     },
   });
 
