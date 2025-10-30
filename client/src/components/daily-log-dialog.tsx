@@ -198,7 +198,7 @@ export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialog
               control={form.control}
               render={({ field }) => (
                 <RichTextEditor
-                  value={field.value}
+                  value={field.value || ""}
                   onChange={field.onChange}
                   placeholder="Describe the work completed today..."
                   minHeight="150px"
@@ -215,7 +215,7 @@ export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialog
               control={form.control}
               render={({ field }) => (
                 <RichTextEditor
-                  value={field.value}
+                  value={field.value || ""}
                   onChange={field.onChange}
                   placeholder="Document any issues or challenges encountered..."
                   minHeight="120px"
@@ -232,7 +232,7 @@ export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialog
               control={form.control}
               render={({ field }) => (
                 <RichTextEditor
-                  value={field.value}
+                  value={field.value || ""}
                   onChange={field.onChange}
                   placeholder="Any other observations or notes..."
                   minHeight="120px"

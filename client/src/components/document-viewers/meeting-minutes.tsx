@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { useState } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -269,42 +270,38 @@ export function MeetingMinutes({ project, documentId, savedData, onBack, onSave 
           </div>
           <div className="mb-4">
             <Label htmlFor="attendees">Attendees</Label>
-            <Textarea
-              id="attendees"
+            <RichTextEditor
               value={attendees}
-              onChange={(e) => setAttendees(e.target.value)}
+              onChange={setAttendees}
               placeholder="List all attendees (one per line or comma-separated)"
-              className="min-h-[100px]"
+              minHeight="100px"
             />
           </div>
           <div className="mb-4">
             <Label htmlFor="agenda">Agenda</Label>
-            <Textarea
-              id="agenda"
+            <RichTextEditor
               value={agenda}
-              onChange={(e) => setAgenda(e.target.value)}
+              onChange={setAgenda}
               placeholder="List meeting agenda items"
-              className="min-h-[100px]"
+              minHeight="100px"
             />
           </div>
           <div className="mb-4">
             <Label htmlFor="discussions">Discussions & Decisions</Label>
-            <Textarea
-              id="discussions"
+            <RichTextEditor
               value={discussions}
-              onChange={(e) => setDiscussions(e.target.value)}
+              onChange={setDiscussions}
               placeholder="Describe the key discussions and decisions made"
-              className="min-h-[150px]"
+              minHeight="150px"
             />
           </div>
           <div className="mb-4">
             <Label htmlFor="action-items">Action Items</Label>
-            <Textarea
-              id="action-items"
+            <RichTextEditor
               value={actionItems}
-              onChange={(e) => setActionItems(e.target.value)}
+              onChange={setActionItems}
               placeholder="List action items with responsible parties and deadlines"
-              className="min-h-[120px]"
+              minHeight="120px"
             />
           </div>
           <div>
