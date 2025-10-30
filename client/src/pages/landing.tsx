@@ -9,14 +9,13 @@ import { z } from "zod";
 import { Loader2, ArrowLeft } from "lucide-react";
 
 const loginSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const registerSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
   email: z.string().min(1, "Email is required").email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
 });
@@ -27,12 +26,12 @@ type ViewMode = "welcome" | "signin" | "signup";
 
 export default function Landing() {
   const [viewMode, setViewMode] = useState<ViewMode>("welcome");
-  const { loginMutation, registerMutation } = useAuth();
+  const { loginMutation, registerMutation, loginWithGoogle } = useAuth();
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
@@ -40,9 +39,8 @@ export default function Landing() {
   const registerForm = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username: "",
-      password: "",
       email: "",
+      password: "",
       firstName: "",
       lastName: "",
     },
@@ -126,7 +124,13 @@ export default function Landing() {
               {/* Social Sign In Buttons */}
               <div className="space-y-4">
                 <button
-                  onClick={() => setViewMode("signin")}
+                  onClick={async () => {
+                    try {
+                      await loginWithGoogle();
+                    } catch (error) {
+                      console.error("Google login error:", error);
+                    }
+                  }}
                   className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-white border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   data-testid="button-google-signin"
                 >
@@ -137,21 +141,6 @@ export default function Landing() {
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
                   <span>Sign in with Google</span>
-                </button>
-
-                <button
-                  onClick={() => setViewMode("signin")}
-                  className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-white border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                  data-testid="button-microsoft-signin"
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 23 23">
-                    <path fill="#f3f3f3" d="M0 0h23v23H0z"/>
-                    <path fill="#f35325" d="M1 1h10v10H1z"/>
-                    <path fill="#81bc06" d="M12 1h10v10H12z"/>
-                    <path fill="#05a6f0" d="M1 12h10v10H1z"/>
-                    <path fill="#ffba08" d="M12 12h10v10H12z"/>
-                  </svg>
-                  <span>Sign in with Microsoft</span>
                 </button>
               </div>
 
@@ -190,15 +179,16 @@ export default function Landing() {
                 <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                   <FormField
                     control={loginForm.control}
-                    name="username"
+                    name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Username</FormLabel>
+                        <FormLabel>Email</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Enter your username"
+                            type="email"
+                            placeholder="your.email@example.com"
                             {...field}
-                            data-testid="input-login-username"
+                            data-testid="input-login-email"
                           />
                         </FormControl>
                         <FormMessage />
@@ -276,15 +266,16 @@ export default function Landing() {
                 <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
                   <FormField
                     control={registerForm.control}
-                    name="username"
+                    name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Username</FormLabel>
+                        <FormLabel>Email</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Choose a username"
+                            type="email"
+                            placeholder="your.email@example.com"
                             {...field}
-                            data-testid="input-register-username"
+                            data-testid="input-register-email"
                           />
                         </FormControl>
                         <FormMessage />
@@ -303,24 +294,6 @@ export default function Landing() {
                             placeholder="Choose a password"
                             {...field}
                             data-testid="input-register-password"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={registerForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="your.email@example.com"
-                            {...field}
-                            data-testid="input-register-email"
                           />
                         </FormControl>
                         <FormMessage />
