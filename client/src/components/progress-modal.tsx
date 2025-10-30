@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -174,13 +175,11 @@ export default function ProgressModal({
           
           <div>
             <Label className="block text-sm font-medium text-muted-foreground mb-2">Notes</Label>
-            <Textarea
-              name="notes"
+            <RichTextEditor
               value={formData.notes}
-              onChange={handleChange}
-              rows={3}
-              className="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+              onChange={(value) => setFormData({ ...formData, notes: value })}
               placeholder="Add any notes about this section"
+              minHeight="120px"
               data-testid="textarea-progress-notes"
             />
           </div>
