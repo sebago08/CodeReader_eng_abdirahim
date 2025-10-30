@@ -30,7 +30,7 @@ The frontend employs TanStack Query for server state management and React Hook F
 - **File Storage**: Abstracted file management with support for various document types.
 
 **Authentication & Authorization:**
-The system uses Supabase Authentication with JWT tokens for secure access. It supports email/password, Google OAuth, and includes automatic user profile creation from verified JWTs. Role-based access control is applied to protected API endpoints, ensuring users only access their own project data.
+The system uses Supabase Authentication with JWT tokens for secure access. It supports email/password and Google OAuth, with automatic user profile creation from verified JWTs. All users are auto-approved upon registration (no admin approval required). Role-based access control is applied to protected API endpoints, ensuring users only access their own project data. Admin users have additional privileges for system management.
 
 ## System Design Choices
 
