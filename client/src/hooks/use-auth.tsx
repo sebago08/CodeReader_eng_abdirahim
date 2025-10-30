@@ -15,6 +15,7 @@ type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
+  isDevMode: boolean;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
@@ -35,11 +36,39 @@ type RegisterData = {
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
+// Helper to check if we're in development mode
+const isDevelopmentMode = () => {
+  return import.meta.env.DEV || import.meta.env.MODE === 'development';
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [user, setUser] = useState<SelectUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [isDevMode, setIsDevMode] = useState(false);
+
+  // Dev mode: auto-login as dev user
+  const loginAsDevUser = async () => {
+    try {
+      const res = await fetch('/api/auth/dev-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        throw new Error('Dev login failed');
+      }
+
+      const profile = await res.json();
+      setUser(profile);
+      setIsDevMode(true);
+      console.log('🔧 Development mode: Auto-logged in as dev user');
+    } catch (err) {
+      console.error('Dev login error:', err);
+      setError(err as Error);
+    }
+  };
 
   // Sync Supabase user to backend and load profile
   const syncUser = async (supabaseUser: SupabaseUser | null) => {
@@ -68,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const profile = await res.json();
       setUser(profile);
+      setIsDevMode(false);
     } catch (err) {
       console.error('Error syncing user:', err);
       setError(err as Error);
@@ -76,18 +106,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Listen to auth state changes
   useEffect(() => {
+    // If Supabase is not configured, use dev mode
     if (!supabase || !isSupabaseConfigured()) {
-      setIsLoading(false);
+      if (isDevelopmentMode()) {
+        loginAsDevUser().finally(() => setIsLoading(false));
+      } else {
+        setIsLoading(false);
+      }
       return;
     }
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        syncUser(session.user);
+    // Try to get initial session with timeout
+    const timeout = setTimeout(() => {
+      console.warn('Supabase session timeout - falling back to dev mode');
+      if (isDevelopmentMode()) {
+        loginAsDevUser().finally(() => setIsLoading(false));
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    }, 5000); // 5 second timeout
+
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        clearTimeout(timeout);
+        
+        if (error) {
+          console.error('Supabase session error:', error);
+          if (isDevelopmentMode()) {
+            return loginAsDevUser();
+          }
+        }
+        
+        if (session?.user) {
+          syncUser(session.user);
+        } else if (isDevelopmentMode()) {
+          // No session and in dev mode - auto-login
+          return loginAsDevUser();
+        }
+      })
+      .catch((err) => {
+        clearTimeout(timeout);
+        console.error('Supabase auth error:', err);
+        if (isDevelopmentMode()) {
+          loginAsDevUser();
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -96,7 +162,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const loginMutation = useMutation({
@@ -203,6 +272,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         error,
+        isDevMode,
         loginMutation,
         logoutMutation,
         registerMutation,

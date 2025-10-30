@@ -80,6 +80,37 @@ export function registerRoutes(app: Express): Server {
     res.json(req.user);
   });
 
+  // Dev mode login (only works in development)
+  app.post('/api/auth/dev-login', async (req: any, res) => {
+    // Only allow in development mode
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({ message: 'Dev login only available in development mode' });
+    }
+
+    try {
+      // Return static dev user for development mode
+      // This bypasses database auth completely for easier local development
+      const devUser = {
+        id: 'dev-user-id',
+        authId: 'dev-user-local',
+        email: 'dev@constructtrack.local',
+        username: 'devuser',
+        firstName: 'Dev',
+        lastName: 'User',
+        password: null,
+        isAdmin: true,
+        isApproved: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      res.json(devUser);
+    } catch (error) {
+      console.error('Dev login error:', error);
+      res.status(500).json({ message: 'Dev login failed' });
+    }
+  });
+
   // Project routes
   app.get('/api/projects', isAuthenticated, async (req: any, res) => {
     try {
