@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Table,
   TableBody,
@@ -240,12 +241,12 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description (optional)</Label>
-                <Textarea
-                  id="description"
-                  data-testid="input-tracker-description"
-                  placeholder="Add description..."
+                <RichTextEditor
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, description: value })}
+                  placeholder="Add description..."
+                  minHeight="100px"
+                  data-testid="input-tracker-description"
                 />
               </div>
               <Button

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -309,10 +310,11 @@ export default function SafetyTab({ projectId }: SafetyTabProps) {
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Textarea
+                        <RichTextEditor
+                          value={field.value || ""}
+                          onChange={field.onChange}
                           placeholder="Describe the safety incident in detail..."
-                          rows={4}
-                          {...field}
+                          minHeight="150px"
                           data-testid="textarea-incident-description"
                         />
                       </FormControl>
