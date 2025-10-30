@@ -1,5 +1,5 @@
-// Based on blueprint:javascript_auth_all_persistance
-import { createContext, ReactNode, useContext } from "react";
+// Supabase Auth implementation
+import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import {
   useQuery,
   useMutation,
@@ -8,6 +8,8 @@ import {
 import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import type { User as SupabaseUser, AuthError } from "@supabase/supabase-js";
 
 type AuthContextType = {
   user: SelectUser | null;
@@ -15,33 +17,104 @@ type AuthContextType = {
   error: Error | null;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
+  loginWithGoogle: () => Promise<void>;
 };
 
-type LoginData = Pick<InsertUser, "username" | "password">;
+type LoginData = {
+  email: string;
+  password: string;
+};
+
+type RegisterData = {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+};
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  const {
-    data: user,
-    error,
-    isLoading,
-  } = useQuery<SelectUser | undefined, Error>({
-    queryKey: ["/api/user"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-  });
+  const [user, setUser] = useState<SelectUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  // Sync Supabase user to backend and load profile
+  const syncUser = async (supabaseUser: SupabaseUser | null) => {
+    if (!supabaseUser) {
+      setUser(null);
+      return;
+    }
+
+    try {
+      // Get session token
+      const { data: { session } } = await supabase!.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No access token');
+      }
+
+      // Get user profile (middleware auto-creates if doesn't exist)
+      const res = await fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to sync user profile');
+      }
+
+      const profile = await res.json();
+      setUser(profile);
+    } catch (err) {
+      console.error('Error syncing user:', err);
+      setError(err as Error);
+    }
+  };
+
+  // Listen to auth state changes
+  useEffect(() => {
+    if (!supabase || !isSupabaseConfigured()) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        syncUser(session.user);
+      }
+      setIsLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        await syncUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      if (!supabase) throw new Error('Supabase not configured');
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
+
+      if (error) throw error;
+      if (!data.user) throw new Error('Login failed');
+
+      // Sync will happen via onAuthStateChange
+      return user!; // Return current user temporarily
     },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-    },
-    onError: (error: Error) => {
+    onError: (error: AuthError | Error) => {
       toast({
         title: "Login failed",
         description: error.message,
@@ -51,14 +124,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (credentials: InsertUser) => {
-      const res = await apiRequest("POST", "/api/register", credentials);
-      return await res.json();
+    mutationFn: async (credentials: RegisterData) => {
+      if (!supabase) throw new Error('Supabase not configured');
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password,
+        options: {
+          data: {
+            first_name: credentials.firstName,
+            last_name: credentials.lastName,
+          }
+        }
+      });
+
+      if (error) throw error;
+      if (!data.user) throw new Error('Registration failed');
+
+      // Sync will happen via onAuthStateChange
+      return user!; // Return current user temporarily
     },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
+    onSuccess: () => {
+      toast({
+        title: "Registration successful",
+        description: "Please check your email to verify your account.",
+      });
     },
-    onError: (error: Error) => {
+    onError: (error: AuthError | Error) => {
       toast({
         title: "Registration failed",
         description: error.message,
@@ -69,12 +161,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
+      if (!supabase) throw new Error('Supabase not configured');
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
+      setUser(null);
     },
-    onError: (error: Error) => {
+    onError: (error: AuthError | Error) => {
       toast({
         title: "Logout failed",
         description: error.message,
@@ -83,15 +177,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const loginWithGoogle = async () => {
+    if (!supabase) throw new Error('Supabase not configured');
+    
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      }
+    });
+
+    if (error) {
+      toast({
+        title: "Google sign-in failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
-        user: user ?? null,
+        user,
         isLoading,
         error,
         loginMutation,
         logoutMutation,
         registerMutation,
+        loginWithGoogle,
       }}
     >
       {children}

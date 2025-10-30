@@ -17,7 +17,8 @@ import {
   insertActionPointSchema
 } from "@shared/schema";
 import { ZodError, z } from "zod";
-import { setupAuth } from "./auth";
+import { setupAuth, supabaseAuthMiddleware } from "./auth";
+import { supabase } from "./supabase";
 import multer from "multer";
 import { getStorageService, getMockStorage } from "./storage-service";
 import { db } from "./db";
@@ -26,22 +27,18 @@ import { eq } from "drizzle-orm";
 // Development mode auto-login user
 let devUser: any = null;
 
-// Middleware to check if user is authenticated
+// Hybrid middleware - works with both Supabase Auth and dev mode
 const isAuthenticated: RequestHandler = async (req: any, res, next) => {
-  // In development mode, bypass authentication and auto-login as a default user
-  if (process.env.NODE_ENV === 'development') {
-    // Create or fetch a development user
+  // In development mode with no Supabase, use dev user
+  if (process.env.NODE_ENV === 'development' && !supabase) {
     if (!devUser) {
       try {
-        // Try to get existing dev user
         devUser = await storage.getUserByUsername('devuser');
-        
-        // If no dev user exists, create one
         if (!devUser) {
           devUser = await storage.createUser({
             username: 'devuser',
             email: 'dev@example.com',
-            password: 'hashed_password_placeholder', // Won't be used in dev mode
+            password: 'hashed_password_placeholder',
             firstName: 'Dev',
             lastName: 'User',
             isAdmin: true,
@@ -52,27 +49,22 @@ const isAuthenticated: RequestHandler = async (req: any, res, next) => {
         console.error("Error setting up dev user:", error);
       }
     }
-    
-    // Automatically authenticate as dev user
     if (devUser) {
       req.user = devUser;
       return next();
     }
   }
   
-  // Production mode - require actual authentication
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  next();
+  // Use Supabase Auth middleware
+  return supabaseAuthMiddleware(req, res, next);
 };
 
-// Middleware to check if user is admin
+// Middleware to check if user is admin (works after isAuthenticated)
 const isAdmin: RequestHandler = (req: any, res, next) => {
-  if (!req.isAuthenticated()) {
+  if (!req.user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-  if (!req.user?.isAdmin) {
+  if (!req.user.isAdmin) {
     return res.status(403).json({ message: "Forbidden - Admin access required" });
   }
   next();
@@ -81,6 +73,12 @@ const isAdmin: RequestHandler = (req: any, res, next) => {
 export function registerRoutes(app: Express): Server {
   // Setup authentication (includes /api/register, /api/login, /api/logout, /api/user routes)
   setupAuth(app);
+
+  // Supabase Auth routes
+  // Get current user (protected route - auto-creates profile if needed)
+  app.get('/api/auth/me', supabaseAuthMiddleware, async (req: any, res) => {
+    res.json(req.user);
+  });
 
   // Project routes
   app.get('/api/projects', isAuthenticated, async (req: any, res) => {

@@ -8,7 +8,14 @@ export function createSupabaseClient() {
     return null;
   }
 
-  return createClient(supabaseUrl, supabaseKey);
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      storage: window.localStorage,
+    }
+  });
 }
 
 export const supabase = createSupabaseClient();
