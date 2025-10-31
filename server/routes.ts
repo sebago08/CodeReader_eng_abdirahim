@@ -24,39 +24,12 @@ import { getStorageService, getMockStorage } from "./storage-service";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
-// Development mode auto-login user
-let devUser: any = null;
-
-// Hybrid middleware - works with both Supabase Auth and dev mode
-const isAuthenticated: RequestHandler = async (req: any, res, next) => {
-  // In development mode with no Supabase, use dev user
-  if (process.env.NODE_ENV === 'development' && !supabase) {
-    if (!devUser) {
-      try {
-        devUser = await storage.getUserByUsername('devuser');
-        if (!devUser) {
-          devUser = await storage.createUser({
-            username: 'devuser',
-            email: 'dev@example.com',
-            password: 'hashed_password_placeholder',
-            firstName: 'Dev',
-            lastName: 'User',
-            isAdmin: true,
-            isApproved: true,
-          });
-        }
-      } catch (error) {
-        console.error("Error setting up dev user:", error);
-      }
-    }
-    if (devUser) {
-      req.user = devUser;
-      return next();
-    }
+// Passport authentication middleware - checks session cookie
+const isAuthenticated: RequestHandler = (req: any, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
-  
-  // Use Supabase Auth middleware
-  return supabaseAuthMiddleware(req, res, next);
+  next();
 };
 
 // Middleware to check if user is admin (works after isAuthenticated)
