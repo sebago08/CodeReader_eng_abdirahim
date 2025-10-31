@@ -564,6 +564,10 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   userId: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  contractAmount: z.coerce.string().optional(),
+  totalBudget: z.coerce.string().optional(),
+  spentAmount: z.coerce.string().optional(),
 });
 
 export const insertRoadSchema = createInsertSchema(roads).omit({
