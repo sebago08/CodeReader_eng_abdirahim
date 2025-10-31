@@ -67,9 +67,16 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
   // Pre-commencement edit state
   const [editingPreCommItem, setEditingPreCommItem] = useState<PreCommencementItem | null>(null);
-  const [editPreCommData, setEditPreCommData] = useState({
+  const [editPreCommData, setEditPreCommData] = useState<{
+    itemName: string;
+    status: "pending" | "submitted" | "approved" | "rejected" | "expired";
+    deadline: string;
+    dateSubmitted: string;
+    responsibleParty: string;
+    notes: string;
+  }>({
     itemName: "",
-    status: "pending" as const,
+    status: "pending",
     deadline: "",
     dateSubmitted: "",
     responsibleParty: "",
@@ -375,7 +382,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
     setEditingPreCommItem(item);
     setEditPreCommData({
       itemName: item.itemName,
-      status: item.status,
+      status: item.status as "pending" | "submitted" | "approved" | "rejected" | "expired",
       deadline: item.deadline || "",
       dateSubmitted: item.dateSubmitted || "",
       responsibleParty: item.responsibleParty || "",
