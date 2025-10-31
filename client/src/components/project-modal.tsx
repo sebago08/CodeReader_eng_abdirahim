@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { X, Trash2, Plus, Upload, Image as ImageIcon, FileText } from "lucide-react";
+import { addMonths, format } from "date-fns";
 import type { ProjectWithRoads, InsertProject, ClientPersonnel, ContractorPersonnel, ContractorEquipment, PreCommencementItem } from "@shared/schema";
 
 interface ProjectModalProps {
@@ -278,10 +279,34 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+    const { name, value } = e.target;
+    
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [name]: value
+      };
+      
+      // Auto-calculate endDate when startDate or duration changes
+      if (name === 'startDate' || name === 'duration') {
+        const startDate = name === 'startDate' ? value : prev.startDate;
+        const duration = name === 'duration' ? value : prev.duration;
+        
+        if (startDate && duration && !isNaN(parseInt(duration))) {
+          try {
+            const start = new Date(startDate);
+            const months = parseInt(duration);
+            const calculatedEndDate = addMonths(start, months);
+            updated.endDate = format(calculatedEndDate, 'yyyy-MM-dd');
+          } catch (error) {
+            // If date calculation fails, don't update endDate
+            console.error('Date calculation error:', error);
+          }
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const handleLogoUpload = async (file: File, type: 'client' | 'contractor') => {
