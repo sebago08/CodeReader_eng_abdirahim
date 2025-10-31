@@ -1,33 +1,28 @@
-// Supabase Auth implementation
+// Passport Local Auth implementation
 import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import {
-  useQuery,
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
-import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
+import { User as SelectUser } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { supabase, isSupabaseConfigured, withTimeout } from "../lib/supabase";
-import type { User as SupabaseUser, AuthError } from "@supabase/supabase-js";
 
 type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
-  isDevMode: boolean;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
-  loginWithGoogle: () => Promise<void>;
 };
 
 type LoginData = {
-  email: string;
+  username: string;
   password: string;
 };
 
 type RegisterData = {
+  username: string;
   email: string;
   password: string;
   firstName?: string;
@@ -36,181 +31,65 @@ type RegisterData = {
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
-// Helper to check if we're in development mode
-const isDevelopmentMode = () => {
-  return import.meta.env.DEV || import.meta.env.MODE === 'development';
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [user, setUser] = useState<SelectUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [isDevMode, setIsDevMode] = useState(false);
 
-  // Dev mode: auto-login as dev user
-  const loginAsDevUser = async () => {
-    try {
-      const res = await fetch('/api/auth/dev-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!res.ok) {
-        throw new Error('Dev login failed');
-      }
-
-      const profile = await res.json();
-      setUser(profile);
-      setIsDevMode(true);
-      console.log('🔧 Development mode: Auto-logged in as dev user');
-    } catch (err) {
-      console.error('Dev login error:', err);
-      setError(err as Error);
-    }
-  };
-
-  // Sync Supabase user to backend and load profile
-  const syncUser = async (supabaseUser: SupabaseUser | null) => {
-    if (!supabaseUser) {
-      setUser(null);
-      return;
-    }
-
-    try {
-      // Get session token
-      const { data: { session } } = await supabase!.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No access token');
-      }
-
-      // Get user profile (middleware auto-creates if doesn't exist)
-      const res = await fetch('/api/auth/me', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to sync user profile');
-      }
-
-      const profile = await res.json();
-      setUser(profile);
-      setIsDevMode(false);
-    } catch (err) {
-      console.error('Error syncing user:', err);
-      setError(err as Error);
-    }
-  };
-
-  // Helper to fetch user profile using existing session token
-  const fetchUserProfile = async (accessToken: string): Promise<SelectUser> => {
-    const res = await withTimeout(
-      fetch('/api/auth/me', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        },
-      }),
-      3000 // 3 second timeout for profile fetch
-    );
-    
-    if (!res.ok) {
-      throw new Error('Failed to load user profile');
-    }
-    
-    const profile = await res.json();
-    setUser(profile);
-    setIsDevMode(false);
-    return profile;
-  };
-
-  // Listen to auth state changes
+  // Check for existing session on mount
   useEffect(() => {
-    // If Supabase is not configured, use dev mode
-    if (!supabase || !isSupabaseConfigured()) {
-      if (isDevelopmentMode()) {
-        loginAsDevUser().finally(() => setIsLoading(false));
-      } else {
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/user', {
+          credentials: 'include', // Important: include session cookie
+        });
+
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+        } else if (res.status === 401) {
+          // Not authenticated - this is fine
+          setUser(null);
+        } else {
+          throw new Error('Failed to check authentication');
+        }
+      } catch (err) {
+        console.error('Session check error:', err);
+        setError(err as Error);
+      } finally {
         setIsLoading(false);
       }
-      return;
-    }
-
-    // Try to get initial session with timeout
-    const timeout = setTimeout(() => {
-      console.warn('Supabase session timeout - falling back to dev mode');
-      if (isDevelopmentMode()) {
-        loginAsDevUser().finally(() => setIsLoading(false));
-      } else {
-        setIsLoading(false);
-      }
-    }, 5000); // 5 second timeout
-
-    supabase.auth.getSession()
-      .then(({ data: { session }, error }) => {
-        clearTimeout(timeout);
-        
-        if (error) {
-          console.error('Supabase session error:', error);
-          if (isDevelopmentMode()) {
-            return loginAsDevUser();
-          }
-        }
-        
-        if (session?.user) {
-          syncUser(session.user);
-        } else if (isDevelopmentMode()) {
-          // No session and in dev mode - auto-login
-          return loginAsDevUser();
-        }
-      })
-      .catch((err) => {
-        clearTimeout(timeout);
-        console.error('Supabase auth error:', err);
-        if (isDevelopmentMode()) {
-          loginAsDevUser();
-        }
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        await syncUser(session?.user ?? null);
-      }
-    );
-
-    return () => {
-      clearTimeout(timeout);
-      subscription.unsubscribe();
     };
+
+    checkSession();
   }, []);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      if (!supabase) throw new Error('Supabase not configured');
-      
-      const { data, error } = await withTimeout(
-        supabase.auth.signInWithPassword({
-          email: credentials.email,
-          password: credentials.password,
-        }),
-        8000
-      );
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Important: include session cookie
+        body: JSON.stringify(credentials),
+      });
 
-      if (error) throw error;
-      if (!data.session?.access_token) {
-        throw new Error('Login succeeded but no session was created. Please try again.');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Invalid username or password' }));
+        throw new Error(errorData.message || 'Login failed');
       }
 
-      // Fetch and sync user profile using the session token
-      const profile = await fetchUserProfile(data.session.access_token);
-      return profile;
+      const userData = await res.json();
+      setUser(userData);
+      return userData;
     },
-    onError: (error: AuthError | Error) => {
+    onSuccess: () => {
+      toast({
+        title: "Login successful",
+        description: "Welcome back to ConstructTrack!",
+      });
+    },
+    onError: (error: Error) => {
       console.error('Login error:', error);
       toast({
         title: "Login failed",
@@ -222,33 +101,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
-      if (!supabase) throw new Error('Supabase not configured');
-      
-      const { data, error } = await withTimeout(
-        supabase.auth.signUp({
-          email: credentials.email,
-          password: credentials.password,
-          options: {
-            data: {
-              first_name: credentials.firstName,
-              last_name: credentials.lastName,
-            }
-          }
-        }),
-        8000
-      );
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Important: include session cookie
+        body: JSON.stringify(credentials),
+      });
 
-      if (error) throw error;
-      if (!data.user) throw new Error('Registration failed');
-
-      // Check if email confirmation is required
-      if (!data.session?.access_token) {
-        throw new Error('CONFIRMATION_REQUIRED');
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || 'Registration failed');
       }
 
-      // Fetch and sync user profile using the session token
-      const profile = await fetchUserProfile(data.session.access_token);
-      return profile;
+      const userData = await res.json();
+      setUser(userData);
+      return userData;
     },
     onSuccess: () => {
       toast({
@@ -256,34 +123,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "Welcome to ConstructTrack! You're now logged in.",
       });
     },
-    onError: (error: AuthError | Error) => {
+    onError: (error: Error) => {
       console.error('Registration error:', error);
-      
-      if (error.message === 'CONFIRMATION_REQUIRED') {
-        toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link. Please check your email and click the link to complete registration.",
-        });
-      } else {
-        toast({
-          title: "Registration failed",
-          description: error.message || 'Unable to create account. Please try again.',
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Registration failed",
+        description: error.message || 'Unable to create account. Please try again.',
+        variant: "destructive",
+      });
     },
   });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      if (!supabase) throw new Error('Supabase not configured');
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    },
-    onSuccess: () => {
+      const res = await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include', // Important: include session cookie
+      });
+
+      if (!res.ok) {
+        throw new Error('Logout failed');
+      }
+
       setUser(null);
     },
-    onError: (error: AuthError | Error) => {
+    onSuccess: () => {
+      toast({
+        title: "Logged out",
+        description: "You've been successfully logged out.",
+      });
+    },
+    onError: (error: Error) => {
+      console.error('Logout error:', error);
       toast({
         title: "Logout failed",
         description: error.message,
@@ -292,37 +162,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const loginWithGoogle = async () => {
-    if (!supabase) throw new Error('Supabase not configured');
-    
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      }
-    });
-
-    if (error) {
-      toast({
-        title: "Google sign-in failed",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoading,
         error,
-        isDevMode,
         loginMutation,
         logoutMutation,
         registerMutation,
-        loginWithGoogle,
       }}
     >
       {children}

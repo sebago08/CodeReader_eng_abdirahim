@@ -1,4 +1,4 @@
-// Supabase Auth implementation
+// Passport Local Auth implementation
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,15 +10,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Redirect } from "wouter";
 import { Loader2, Building2 } from "lucide-react";
-import { FcGoogle } from "react-icons/fc";
-import { Separator } from "@/components/ui/separator";
 
 const loginSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Invalid email address"),
+  username: z.string().min(1, "Username is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const registerSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().min(1, "Email is required").email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   firstName: z.string().optional(),
@@ -29,12 +28,12 @@ type LoginFormData = z.infer<typeof loginSchema>;
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
-  const { user, isLoading, loginMutation, registerMutation, loginWithGoogle } = useAuth();
+  const { user, isLoading, loginMutation, registerMutation } = useAuth();
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
@@ -42,6 +41,7 @@ export default function AuthPage() {
   const registerForm = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
+      username: "",
       email: "",
       password: "",
       firstName: "",
@@ -55,14 +55,6 @@ export default function AuthPage() {
 
   const handleRegister = (data: RegisterFormData) => {
     registerMutation.mutate(data);
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      await loginWithGoogle();
-    } catch (error) {
-      console.error("Google login error:", error);
-    }
   };
 
   // Redirect if already logged in
@@ -105,16 +97,16 @@ export default function AuthPage() {
                     <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                       <FormField
                         control={loginForm.control}
-                        name="email"
+                        name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel>Username</FormLabel>
                             <FormControl>
                               <Input
-                                type="email"
-                                placeholder="your.email@example.com"
+                                type="text"
+                                placeholder="Enter your username"
                                 {...field}
-                                data-testid="input-login-email"
+                                data-testid="input-login-username"
                               />
                             </FormControl>
                             <FormMessage />
@@ -154,24 +146,6 @@ export default function AuthPage() {
                           "Sign In"
                         )}
                       </Button>
-
-                      <div className="relative my-4">
-                        <Separator />
-                        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-                          OR
-                        </span>
-                      </div>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full"
-                        onClick={handleGoogleLogin}
-                        data-testid="button-google-login"
-                      >
-                        <FcGoogle className="mr-2 h-5 w-5" />
-                        Continue with Google
-                      </Button>
                     </form>
                   </Form>
                 </CardContent>
@@ -187,6 +161,24 @@ export default function AuthPage() {
                 <CardContent>
                   <Form {...registerForm}>
                     <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                      <FormField
+                        control={registerForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="text"
+                                placeholder="Choose a username"
+                                {...field}
+                                data-testid="input-register-username"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       <FormField
                         control={registerForm.control}
                         name="email"
@@ -273,24 +265,6 @@ export default function AuthPage() {
                         ) : (
                           "Create Account"
                         )}
-                      </Button>
-
-                      <div className="relative my-4">
-                        <Separator />
-                        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-                          OR
-                        </span>
-                      </div>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full"
-                        onClick={handleGoogleLogin}
-                        data-testid="button-google-register"
-                      >
-                        <FcGoogle className="mr-2 h-5 w-5" />
-                        Continue with Google
                       </Button>
                     </form>
                   </Form>
