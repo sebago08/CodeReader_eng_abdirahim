@@ -16,21 +16,6 @@ import Bootstrap from "@/pages/bootstrap";
 import Reports from "@/pages/reports";
 import Team from "@/pages/team";
 import NotFound from "@/pages/not-found";
-import { AlertCircle } from "lucide-react";
-
-function DevModeBanner() {
-  const { isDevMode } = useAuth();
-  
-  if (!isDevMode) return null;
-  
-  return (
-    <div className="bg-amber-500 dark:bg-amber-600 text-white px-4 py-2 text-sm font-medium flex items-center justify-center gap-2" data-testid="banner-dev-mode">
-      <AlertCircle className="h-4 w-4" />
-      Development Mode: Auto-logged in as dev user
-    </div>
-  );
-}
-
 function Router() {
   return (
     <Switch>
@@ -53,7 +38,6 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <DevModeBanner />
           <Toaster />
           <Router />
         </TooltipProvider>
