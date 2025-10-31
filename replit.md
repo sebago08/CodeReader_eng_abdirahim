@@ -30,7 +30,7 @@ The frontend employs TanStack Query for server state management and React Hook F
 - **File Storage**: Abstracted file management with support for various document types.
 
 **Authentication & Authorization:**
-The system uses Supabase Authentication with JWT tokens for secure access. It supports email/password and Google OAuth, with automatic user profile creation from verified JWTs. All users are auto-approved upon registration (no admin approval required). Role-based access control is applied to protected API endpoints, ensuring users only access their own project data. Admin users have additional privileges for system management.
+The system uses Passport Local Authentication with session-based cookies for secure access. It supports email/password authentication through Passport's local strategy. All users are auto-approved upon registration (no admin approval required). Role-based access control is applied to protected API endpoints, ensuring users only access their own project data. Admin users have additional privileges for system management.
 
 ## System Design Choices
 
@@ -38,9 +38,7 @@ The application uses a PostgreSQL database with a normalized schema covering use
 
 # External Dependencies
 
-- **PostgreSQL**: Primary database.
-- **Supabase**:
-    - **Supabase Auth**: Authentication service (email/password, Google OAuth).
-    - **Supabase PostgreSQL**: Production database.
-    - **Supabase Storage**: Production file storage.
-- **Vercel**: Production hosting platform.
+- **PostgreSQL**: Primary database (Replit's built-in PostgreSQL for development).
+- **Passport.js**: Authentication library for session-based email/password authentication.
+- **Express Session**: Session management for persistent user authentication.
+- **Vercel**: Production hosting platform (requires Supabase PostgreSQL for production database).
