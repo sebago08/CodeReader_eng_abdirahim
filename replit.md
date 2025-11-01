@@ -4,6 +4,8 @@ This full-stack application, "ConstructTrack," is a comprehensive road construct
 
 # Recent Changes
 
+**November 1, 2025 (Latest)** - Redesigned work plan interface from form-based to table-centric with inline editing. Removed the separate "Add Activity/Section" form card and made the table the primary interface. Implemented click-to-edit cells for Description, Duration, and Start Date fields. Added auto-calculation for End Date using date-fns addDays. Sequential numbering now applies only to activities (sections display no number). Section headers are styled with bold text and muted background for visual distinction. Added PATCH /api/work-plan-activities/:id endpoint to support updating duration, startDate, and endDate fields. Users can insert sections or activities above/below any row via kebab menu.
+
 **November 1, 2025** - Fixed document generation bug where automated documents (Instruction Letter, Commencement Order, Taking Over Certificate) displayed placeholder text instead of actual project data. Updated all three document viewers to correctly use the flat project field structure (client, clientContactPerson, contractorName, etc.) instead of the previously incorrect nested object references (client.name, contractor.name, etc.).
 
 # User Preferences
