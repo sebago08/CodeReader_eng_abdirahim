@@ -218,6 +218,9 @@ export interface IStorage {
   deleteActionPoint(id: string): Promise<void>;
   deletePreCommencementItem(id: string): Promise<void>;
   createDefaultChecklistItems(projectId: string): Promise<PreCommencementItem[]>;
+  
+  // Dashboard operations
+  getDashboardMetrics(userId: string): Promise<import("@shared/schema").DashboardMetrics>;
 }
 
 // In-memory storage implementation
@@ -663,6 +666,18 @@ export class MemStorage implements IStorage {
   async updateProgressTracker(): Promise<ProgressTracker> { throw new Error('Not supported in MemStorage'); }
   async deleteProgressTracker(): Promise<void> { throw new Error('Not supported in MemStorage'); }
   async updateProgressTrackerItem(): Promise<ProgressTrackerItem> { throw new Error('Not supported in MemStorage'); }
+  
+  // Dashboard operations stub
+  async getDashboardMetrics(): Promise<import("@shared/schema").DashboardMetrics> {
+    return {
+      actionPointsDueSoon: { total: 0, overdue: 0, thisWeek: 0, thisMonth: 0 },
+      projectsBehindSchedule: 0,
+      criticalSafetyIssues: { total: 0, high: 0, medium: 0, low: 0 },
+      overduePreCommencementDocs: 0,
+      pendingPaymentCertificates: 0,
+      upcomingMilestones: 0,
+    };
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1733,6 +1748,129 @@ export class DatabaseStorage implements IStorage {
   async deleteActionPoint(id: string): Promise<void> {
     await db.delete(actionPoints)
       .where(eq(actionPoints.id, id));
+  }
+  
+  // Dashboard operations
+  async getDashboardMetrics(userId: string): Promise<import("@shared/schema").DashboardMetrics> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const oneWeekFromNow = new Date(today);
+    oneWeekFromNow.setDate(today.getDate() + 7);
+    
+    const oneMonthFromNow = new Date(today);
+    oneMonthFromNow.setDate(today.getDate() + 30);
+    
+    // Get all user's project IDs
+    const userProjects = await db.select().from(projects).where(eq(projects.userId, userId));
+    const projectIds = userProjects.map(p => p.id);
+    
+    if (projectIds.length === 0) {
+      return {
+        actionPointsDueSoon: { total: 0, overdue: 0, thisWeek: 0, thisMonth: 0 },
+        projectsBehindSchedule: 0,
+        criticalSafetyIssues: { total: 0, high: 0, medium: 0, low: 0 },
+        overduePreCommencementDocs: 0,
+        pendingPaymentCertificates: 0,
+        upcomingMilestones: 0,
+      };
+    }
+    
+    // 1. Action Points Due Soon (open action points only)
+    const allActionPoints = await db.select()
+      .from(actionPoints)
+      .where(
+        and(
+          inArray(actionPoints.projectId, projectIds),
+          eq(actionPoints.status, 'open')
+        )
+      );
+    
+    const overdueActions = allActionPoints.filter(ap => ap.dueDate && new Date(ap.dueDate) < today).length;
+    const thisWeekActions = allActionPoints.filter(ap => 
+      ap.dueDate && new Date(ap.dueDate) >= today && new Date(ap.dueDate) <= oneWeekFromNow
+    ).length;
+    const thisMonthActions = allActionPoints.filter(ap => 
+      ap.dueDate && new Date(ap.dueDate) > oneWeekFromNow && new Date(ap.dueDate) <= oneMonthFromNow
+    ).length;
+    
+    // 2. Projects Behind Schedule (placeholder - could be enhanced with actual progress tracking)
+    // For now, we'll count projects where status is "Behind" or similar
+    const projectsBehind = userProjects.filter(p => p.status === 'Behind' || p.status === 'Delayed').length;
+    
+    // 3. Critical Safety Issues (open issues only)
+    const allSafetyIssues = await db.select()
+      .from(safetyIncidents)
+      .where(
+        and(
+          inArray(safetyIncidents.projectId, projectIds),
+          eq(safetyIncidents.status, 'Open')
+        )
+      );
+    
+    const highSafety = allSafetyIssues.filter(si => si.severity === 'High' || si.severity === 'Critical').length;
+    const mediumSafety = allSafetyIssues.filter(si => si.severity === 'Medium').length;
+    const lowSafety = allSafetyIssues.filter(si => si.severity === 'Low').length;
+    
+    // 4. Overdue Pre-Commencement Documents (pending status and past deadline)
+    const overduePreComm = await db.select()
+      .from(preCommencementItems)
+      .where(
+        and(
+          inArray(preCommencementItems.projectId, projectIds),
+          eq(preCommencementItems.status, 'pending')
+        )
+      );
+    
+    const overduePreCommCount = overduePreComm.filter(item => 
+      item.deadline && new Date(item.deadline) < today
+    ).length;
+    
+    // 5. Pending Payment Certificates
+    const pendingPayments = await db.select()
+      .from(paymentCertificates)
+      .where(
+        and(
+          inArray(paymentCertificates.projectId, projectIds),
+          or(
+            eq(paymentCertificates.paymentStatus, 'Pending'),
+            eq(paymentCertificates.paymentStatus, 'Submitted')
+          )
+        )
+      );
+    
+    // 6. Upcoming Milestones (next 30 days)
+    const upcomingMiles = await db.select()
+      .from(workPlanActivities)
+      .where(
+        and(
+          inArray(workPlanActivities.projectId, projectIds),
+          eq(workPlanActivities.isMilestone, true)
+        )
+      );
+    
+    const upcomingMilestonesCount = upcomingMiles.filter(m => 
+      m.endDate && new Date(m.endDate) >= today && new Date(m.endDate) <= oneMonthFromNow
+    ).length;
+    
+    return {
+      actionPointsDueSoon: {
+        total: overdueActions + thisWeekActions + thisMonthActions,
+        overdue: overdueActions,
+        thisWeek: thisWeekActions,
+        thisMonth: thisMonthActions,
+      },
+      projectsBehindSchedule: projectsBehind,
+      criticalSafetyIssues: {
+        total: allSafetyIssues.length,
+        high: highSafety,
+        medium: mediumSafety,
+        low: lowSafety,
+      },
+      overduePreCommencementDocs: overduePreCommCount,
+      pendingPaymentCertificates: pendingPayments.length,
+      upcomingMilestones: upcomingMilestonesCount,
+    };
   }
 }
 

@@ -808,3 +808,23 @@ export type DocumentType =
   | "commencement-order" 
   | "instruction-letter" 
   | "meeting-minutes";
+
+// Dashboard metrics type
+export type DashboardMetrics = {
+  actionPointsDueSoon: {
+    total: number;
+    overdue: number;
+    thisWeek: number;
+    thisMonth: number;
+  };
+  projectsBehindSchedule: number;
+  criticalSafetyIssues: {
+    total: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  overduePreCommencementDocs: number;
+  pendingPaymentCertificates: number;
+  upcomingMilestones: number;
+};

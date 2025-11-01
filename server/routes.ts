@@ -84,6 +84,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Dashboard routes
+  app.get('/api/dashboard/metrics', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const metrics = await storage.getDashboardMetrics(userId);
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching dashboard metrics:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard metrics" });
+    }
+  });
+
   // Project routes
   app.get('/api/projects', isAuthenticated, async (req: any, res) => {
     try {
