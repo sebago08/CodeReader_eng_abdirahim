@@ -32,9 +32,9 @@ interface OverviewTabProps {
 export default function OverviewTab({ project }: OverviewTabProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Fetch payment certificates for financial progress (filter by project ID)
+  // Fetch payment certificates for financial progress
   const { data: certificates = [] } = useQuery<PaymentCertificate[]>({
-    queryKey: [`/api/payment-certificates?projectId=${project.id}`],
+    queryKey: [`/api/projects/${project.id}/payment-certificates`],
     enabled: !!project.id,
   });
 
