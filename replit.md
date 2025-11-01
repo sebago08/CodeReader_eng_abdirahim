@@ -19,6 +19,7 @@ The frontend employs TanStack Query for server state management and React Hook F
 ## Feature Specifications
 
 **Core Functionality:**
+- **Actionable Dashboard**: Prioritizes critical metrics requiring immediate attention with 6 key cards (Action Points Due Soon, Projects Behind Schedule, Critical Safety Issues, Overdue Pre-Commencement Docs, Pending Payment Certificates, Upcoming Milestones) and Active Projects table with real-time progress calculations.
 - **Project Management**: CRUD operations for projects, including duplication and support for multiple project types.
 - **Road & Layer Management**: Detailed tracking of road segments and construction layers with weighted progress calculation.
 - **Work Plan Scheduling**: Define activities with start dates, durations, and milestones, supporting multiple work plans per project and section-based organization with inline editing.
