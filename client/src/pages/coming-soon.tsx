@@ -10,7 +10,7 @@ export default function ComingSoon({ title, description }: ComingSoonProps) {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1">
         <div className="flex flex-col items-center justify-center min-h-screen p-8">
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-6">

@@ -101,7 +101,7 @@ export default function ProjectDetail() {
     return (
       <div className="min-h-screen bg-background flex">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1">
           <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
             <div className="text-center py-12">
               <i className="fas fa-exclamation-circle text-4xl text-muted-foreground mb-4"></i>
@@ -127,8 +127,8 @@ export default function ProjectDetail() {
       {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Content with sidebar offset */}
-      <div className="flex-1 ml-64">
+      {/* Main Content */}
+      <div className="flex-1">
         {/* Header */}
         <header className="bg-black text-primary-foreground shadow-lg">
           <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">

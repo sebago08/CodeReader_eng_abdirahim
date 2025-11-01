@@ -95,7 +95,7 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Desktop Sidebar */}
-      <div className="hidden md:block md:w-64 md:fixed md:left-0 md:top-0 md:h-screen">
+      <div className="hidden md:block md:fixed md:left-0 md:top-0 md:h-screen">
         <Sidebar />
       </div>
       
@@ -103,7 +103,7 @@ export default function Dashboard() {
       <MobileNav />
       
       {/* Main Content */}
-      <div className="flex-1 md:ml-64">
+      <div className="flex-1 md:ml-64 md:pl-0">
         {/* Header */}
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 md:px-8 py-5">
           <div className="flex justify-between items-center gap-4">
