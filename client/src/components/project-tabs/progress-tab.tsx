@@ -7,20 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Plus, Edit, Trash2, Loader2, DollarSign } from "lucide-react";
+import { DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { insertActivitySchema } from "@shared/schema";
-import type { Activity, ProjectWithRoads, PaymentCertificate } from "@shared/schema";
-import { z } from "zod";
+import type { ProjectWithRoads, PaymentCertificate } from "@shared/schema";
 import ProjectCard from "@/components/project-card";
-import RoadModal from "@/components/road-modal";
-import ProgressModal from "@/components/progress-modal";
 import BOQProgressTracker from "@/components/project-tabs/boq-progress-tracker";
 
 interface ProgressTabProps {
@@ -31,121 +23,8 @@ interface ProgressTabProps {
   onResetProgress: (layerId: string) => void;
 }
 
-const activityFormSchema = insertActivitySchema.extend({
-  progress: z.number().min(0).max(100),
-});
-
-type ActivityFormValues = z.infer<typeof activityFormSchema>;
-
 export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgress, onResetProgress }: ProgressTabProps) {
   const { toast } = useToast();
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
-
-  const { data: activities = [], isLoading } = useQuery<Activity[]>({
-    queryKey: [`/api/projects/${project.id}/activities`],
-  });
-
-  const form = useForm<ActivityFormValues>({
-    resolver: zodResolver(activityFormSchema),
-    defaultValues: {
-      name: "",
-      progress: 0,
-    },
-  });
-
-  const createActivityMutation = useMutation({
-    mutationFn: async (data: ActivityFormValues) => {
-      await apiRequest("POST", `/api/projects/${project.id}/activities`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/activities`] });
-      toast({
-        title: "Success",
-        description: "Activity created successfully",
-      });
-      setIsAddModalOpen(false);
-      form.reset();
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create activity",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateActivityMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<ActivityFormValues> }) => {
-      await apiRequest("PATCH", `/api/activities/${id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/activities`] });
-      toast({
-        title: "Success",
-        description: "Activity updated successfully",
-      });
-      setEditingActivity(null);
-      form.reset();
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update activity",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteActivityMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/activities/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/activities`] });
-      toast({
-        title: "Success",
-        description: "Activity deleted successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to delete activity",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSubmit = (data: ActivityFormValues) => {
-    if (editingActivity) {
-      updateActivityMutation.mutate({ id: editingActivity.id, data });
-    } else {
-      createActivityMutation.mutate(data);
-    }
-  };
-
-  const handleEdit = (activity: Activity) => {
-    setEditingActivity(activity);
-    form.reset({
-      name: activity.name,
-      progress: activity.progress,
-    });
-    setIsAddModalOpen(true);
-  };
-
-  const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this activity?")) {
-      deleteActivityMutation.mutate(id);
-    }
-  };
-
-  const handleCloseModal = () => {
-    setIsAddModalOpen(false);
-    setEditingActivity(null);
-    form.reset();
-  };
 
   // Road delete and duplicate mutations
   const deleteRoadMutation = useMutation({
@@ -337,41 +216,6 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
   const totalPending = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.pendingAmount || "0"), 0);
   const totalInProcess = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.inProcessAmount || "0"), 0);
   const totalPaid = paymentCertificates.reduce((sum, cert) => sum + parseFloat(cert.amountPaid || "0"), 0);
-
-  // Calculate physical progress from road tracker (same calculation as project card)
-  const calculatePhysicalProgress = () => {
-    if (!project.roads || project.roads.length === 0) return 0;
-    
-    let totalProgress = 0;
-    let totalWeight = 0;
-    
-    project.roads.forEach(road => {
-      if (road.layers && road.layers.length > 0) {
-        road.layers.forEach(layer => {
-          const layerWeight = layer.weight || 1;
-          totalWeight += layerWeight;
-          
-          if (layer.progress && layer.progress.length > 0) {
-            const completedLength = layer.progress.reduce((sum, prog) => {
-              return sum + (Number(prog.endChainage) - Number(prog.startChainage));
-            }, 0);
-            
-            const layerProgress = (completedLength / Number(road.length)) * 100;
-            totalProgress += layerProgress * layerWeight;
-          }
-        });
-      }
-    });
-    
-    return totalWeight > 0 ? Math.min(100, Math.round(totalProgress / totalWeight)) : 0;
-  };
-
-  const physicalProgress = calculatePhysicalProgress();
-
-  // Calculate activity progress from BOQ items
-  const activityProgress = activities.length > 0
-    ? Math.round(activities.reduce((sum, activity) => sum + activity.progress, 0) / activities.length)
-    : 0;
 
   return (
     <div className="space-y-6">
@@ -717,92 +561,6 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
           </TabsContent>
         )}
       </Tabs>
-
-      {/* Activity Add/Edit Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={(e) => e.target === e.currentTarget && handleCloseModal()}>
-          <div className="bg-card rounded-xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-border">
-              <h3 className="text-xl font-semibold text-card-foreground">
-                {editingActivity ? "Edit Activity" : "Add New Activity"}
-              </h3>
-              <button
-                onClick={handleCloseModal}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                data-testid="button-close-activity-modal"
-              >
-                <i className="fas fa-times text-xl"></i>
-              </button>
-            </div>
-
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="p-6 space-y-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Activity Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter activity name"
-                          {...field}
-                          data-testid="input-activity-name"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="progress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Progress (%)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={0}
-                          max={100}
-                          placeholder="0-100"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                          data-testid="input-activity-progress"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex justify-end space-x-4 pt-4">
-                  <Button
-                    type="button"
-                    onClick={handleCloseModal}
-                    variant="outline"
-                    data-testid="button-cancel-activity"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={createActivityMutation.isPending || updateActivityMutation.isPending}
-                    data-testid="button-submit-activity"
-                  >
-                    {createActivityMutation.isPending || updateActivityMutation.isPending
-                      ? "Saving..."
-                      : editingActivity
-                      ? "Update Activity"
-                      : "Create Activity"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
