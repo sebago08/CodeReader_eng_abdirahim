@@ -4,7 +4,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Project, ProgressTracker, ProgressTrackerWithItems, WorkPlan } from "@shared/schema";
+import type { Project, ProgressTracker, ProgressTrackerWithItems, WorkPlan, Activity, ProjectWithRoads } from "@shared/schema";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -34,7 +35,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 
 interface BOQProgressTrackerProps {
-  project: Project;
+  project: ProjectWithRoads;
 }
 
 export default function BOQProgressTracker({ project }: BOQProgressTrackerProps) {
@@ -45,6 +46,11 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     name: "",
     description: "",
     workPlanId: "",
+  });
+
+  // Fetch activities for progress calculation
+  const { data: activities = [] } = useQuery<Activity[]>({
+    queryKey: [`/api/projects/${project.id}/activities`],
   });
 
   // Fetch work plans
@@ -187,12 +193,78 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     return totalWeight > 0 ? totalWeightedProgress / totalWeight : 0;
   };
 
+  // Calculate physical progress from road tracker (same calculation as project card)
+  const calculatePhysicalProgress = () => {
+    if (!project.roads || project.roads.length === 0) return 0;
+    
+    let totalProgress = 0;
+    let totalWeight = 0;
+    
+    project.roads.forEach(road => {
+      if (road.layers && road.layers.length > 0) {
+        road.layers.forEach(layer => {
+          const layerWeight = layer.weight || 1;
+          totalWeight += layerWeight;
+          
+          if (layer.progress && layer.progress.length > 0) {
+            const completedLength = layer.progress.reduce((sum, prog) => {
+              return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+            }, 0);
+            
+            const layerProgress = (completedLength / Number(road.length)) * 100;
+            totalProgress += layerProgress * layerWeight;
+          }
+        });
+      }
+    });
+    
+    return totalWeight > 0 ? Math.min(100, Math.round(totalProgress / totalWeight)) : 0;
+  };
+
+  const physicalProgress = calculatePhysicalProgress();
+
+  // Calculate activity progress from BOQ items
+  const activityProgress = activities.length > 0
+    ? Math.round(activities.reduce((sum, activity) => sum + activity.progress, 0) / activities.length)
+    : 0;
+
   if (isLoading) {
     return <div className="p-4 text-muted-foreground">Loading progress trackers...</div>;
   }
 
   return (
-    <div className="space-y-4" data-testid="boq-progress-tracker">
+    <div className="space-y-6" data-testid="boq-progress-tracker">
+      {/* Overall Progress Bars */}
+      <Card>
+        <CardHeader>
+          <CardTitle data-testid="heading-progress-tracking">Progress Tracking</CardTitle>
+          <CardDescription>Track overall project progress</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Physical Progress - Only for Road projects */}
+            {project.projectType === "Road" && (
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium">Physical Progress (Road Construction)</span>
+                  <span className="text-sm font-medium" data-testid="text-physical-progress">{physicalProgress}%</span>
+                </div>
+                <Progress value={physicalProgress} className="h-3" data-testid="progress-physical" />
+              </div>
+            )}
+            
+            {/* Activity Progress - For all projects */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium">Activity Progress (BOQ Items)</span>
+                <span className="text-sm font-medium" data-testid="text-activity-progress">{activityProgress}%</span>
+              </div>
+              <Progress value={activityProgress} className="h-3" data-testid="progress-activity" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
