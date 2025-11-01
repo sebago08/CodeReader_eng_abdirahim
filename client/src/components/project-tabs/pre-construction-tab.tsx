@@ -116,10 +116,18 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
   });
 
   const handleSubmit = (data: PreCommencementItemFormValues) => {
+    // Auto-set dateSubmitted when status is "submitted" and no date is provided
+    const updatedData = {
+      ...data,
+      dateSubmitted: data.status === "submitted" && !data.dateSubmitted 
+        ? new Date().toISOString().split("T")[0]
+        : data.dateSubmitted,
+    };
+
     if (editingItem) {
-      updateItemMutation.mutate({ id: editingItem.id, data });
+      updateItemMutation.mutate({ id: editingItem.id, data: updatedData });
     } else {
-      createItemMutation.mutate(data);
+      createItemMutation.mutate(updatedData);
     }
   };
 
