@@ -43,7 +43,6 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
   const { toast } = useToast();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PreCommencementItem | null>(null);
-  const [useCustomName, setUseCustomName] = useState(false);
 
   const { data: items = [], isLoading } = useQuery<PreCommencementItem[]>({
     queryKey: [`/api/projects/${project.id}/pre-commencement`],
@@ -137,8 +136,6 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
 
   const handleEdit = (item: PreCommencementItem) => {
     setEditingItem(item);
-    const isPredefined = PREDEFINED_ITEMS.includes(item.itemName);
-    setUseCustomName(!isPredefined);
     form.reset({
       itemName: item.itemName,
       status: item.status as any,
@@ -160,7 +157,6 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
   const handleCloseModal = () => {
     setIsAddModalOpen(false);
     setEditingItem(null);
-    setUseCustomName(false);
     form.reset();
   };
 
@@ -384,54 +380,21 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Item Name</FormLabel>
-                    {!useCustomName ? (
-                      <Select
-                        onValueChange={(value) => {
-                          if (value === "__custom__") {
-                            setUseCustomName(true);
-                            field.onChange("");
-                          } else {
-                            field.onChange(value);
-                          }
-                        }}
-                        value={PREDEFINED_ITEMS.includes(field.value) ? field.value : "__custom__"}
-                      >
-                        <FormControl>
-                          <SelectTrigger data-testid="select-item-name">
-                            <SelectValue placeholder="Select a document type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
+                    <FormControl>
+                      <div className="relative">
+                        <Input 
+                          placeholder="Select or type a document name" 
+                          {...field}
+                          list="predefined-items"
+                          data-testid="input-item-name"
+                        />
+                        <datalist id="predefined-items">
                           {PREDEFINED_ITEMS.map((item) => (
-                            <SelectItem key={item} value={item}>
-                              {item}
-                            </SelectItem>
+                            <option key={item} value={item} />
                           ))}
-                          <SelectItem value="__custom__">+ Custom Document</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className="flex gap-2">
-                        <FormControl>
-                          <Input 
-                            placeholder="Enter custom document name" 
-                            {...field} 
-                            data-testid="input-custom-item-name"
-                          />
-                        </FormControl>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setUseCustomName(false);
-                            field.onChange("");
-                          }}
-                          data-testid="button-back-to-select"
-                        >
-                          Back
-                        </Button>
+                        </datalist>
                       </div>
-                    )}
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
