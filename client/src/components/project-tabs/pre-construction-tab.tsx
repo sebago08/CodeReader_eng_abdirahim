@@ -8,8 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Plus, Edit, Trash2, FileText, Loader2, Upload, CheckCircle2 } from "lucide-react";
+import { Plus, Edit, Trash2, FileText, Loader2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,11 +24,26 @@ interface PreConstructionTabProps {
 
 type PreCommencementItemFormValues = z.infer<typeof insertPreCommencementItemSchema>;
 
+const PREDEFINED_ITEMS = [
+  "Insurance Certificate",
+  "Performance Bank Guarantee",
+  "List of Personnel",
+  "CLMP (Contractor's Labour Management Plan)",
+  "CSEMP (Contractor's Site Environmental Management Plan)",
+  "Health & Safety Plan",
+  "Traffic Management Plan",
+  "Quality Assurance Plan",
+  "Method Statements",
+  "Site Establishment Drawings",
+  "Plant & Equipment Schedule",
+  "Waste Management Plan",
+];
+
 export default function PreConstructionTab({ project }: PreConstructionTabProps) {
   const { toast } = useToast();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PreCommencementItem | null>(null);
-  const [uploadingFile, setUploadingFile] = useState(false);
+  const [useCustomName, setUseCustomName] = useState(false);
 
   const { data: items = [], isLoading } = useQuery<PreCommencementItem[]>({
     queryKey: [`/api/projects/${project.id}/pre-commencement`],
@@ -41,10 +55,8 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
       itemName: "",
       status: "pending",
       deadline: undefined,
-      dateSubmitted: undefined,
       responsibleParty: "",
       notes: "",
-      fileUrl: "",
       isDefault: false,
       orderIndex: 0,
     },
@@ -116,31 +128,23 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
   });
 
   const handleSubmit = (data: PreCommencementItemFormValues) => {
-    // Auto-set dateSubmitted when status is "submitted" and no date is provided
-    const updatedData = {
-      ...data,
-      dateSubmitted: data.status === "submitted" && !data.dateSubmitted 
-        ? new Date().toISOString().split("T")[0]
-        : data.dateSubmitted,
-    };
-
     if (editingItem) {
-      updateItemMutation.mutate({ id: editingItem.id, data: updatedData });
+      updateItemMutation.mutate({ id: editingItem.id, data });
     } else {
-      createItemMutation.mutate(updatedData);
+      createItemMutation.mutate(data);
     }
   };
 
   const handleEdit = (item: PreCommencementItem) => {
     setEditingItem(item);
+    const isPredefined = PREDEFINED_ITEMS.includes(item.itemName);
+    setUseCustomName(!isPredefined);
     form.reset({
       itemName: item.itemName,
       status: item.status as any,
       deadline: item.deadline || undefined,
-      dateSubmitted: item.dateSubmitted || undefined,
       responsibleParty: item.responsibleParty || "",
       notes: item.notes || "",
-      fileUrl: item.fileUrl || "",
       isDefault: item.isDefault,
       orderIndex: item.orderIndex,
     });
@@ -156,56 +160,15 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
   const handleCloseModal = () => {
     setIsAddModalOpen(false);
     setEditingItem(null);
+    setUseCustomName(false);
     form.reset();
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setUploadingFile(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch(`/api/storage/project-documents/${project.id}`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Upload failed");
-      }
-
-      const data = await response.json();
-      form.setValue("fileUrl", data.url);
-      
-      toast({
-        title: "Success",
-        description: "File uploaded successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to upload file",
-        variant: "destructive",
-      });
-    } finally {
-      setUploadingFile(false);
-    }
-  };
-
   const handleStatusChange = (itemId: string, newStatus: string) => {
-    const item = items.find(i => i.id === itemId);
-    if (!item) return;
-
     updateItemMutation.mutate({
       id: itemId,
       data: {
         status: newStatus as any,
-        dateSubmitted: newStatus === "submitted" && !item.dateSubmitted 
-          ? new Date().toISOString().split("T")[0] 
-          : item.dateSubmitted || undefined,
       },
     });
   };
@@ -327,13 +290,12 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table className="min-w-[900px]">
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Item Name</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Deadline</TableHead>
-                    <TableHead>Date Submitted</TableHead>
                     <TableHead>Responsible Party</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -343,17 +305,6 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
                     <TableRow key={item.id} data-testid={`item-row-${item.id}`}>
                       <TableCell className="font-medium" data-testid={`item-name-${item.id}`}>
                         {item.itemName}
-                        {item.fileUrl && (
-                          <a 
-                            href={item.fileUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="ml-2 text-blue-500 hover:text-blue-700"
-                            data-testid={`item-file-link-${item.id}`}
-                          >
-                            <FileText className="h-4 w-4 inline" />
-                          </a>
-                        )}
                       </TableCell>
                       <TableCell>
                         <Select
@@ -379,9 +330,6 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
                       </TableCell>
                       <TableCell data-testid={`item-deadline-${item.id}`}>
                         {formatDate(item.deadline)}
-                      </TableCell>
-                      <TableCell data-testid={`item-date-submitted-${item.id}`}>
-                        {formatDate(item.dateSubmitted)}
                       </TableCell>
                       <TableCell data-testid={`item-responsible-party-${item.id}`}>
                         {item.responsibleParty || "-"}
@@ -436,13 +384,54 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Item Name</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="e.g., Environmental Impact Assessment" 
-                        {...field} 
-                        data-testid="input-item-name"
-                      />
-                    </FormControl>
+                    {!useCustomName ? (
+                      <Select
+                        onValueChange={(value) => {
+                          if (value === "__custom__") {
+                            setUseCustomName(true);
+                            field.onChange("");
+                          } else {
+                            field.onChange(value);
+                          }
+                        }}
+                        value={PREDEFINED_ITEMS.includes(field.value) ? field.value : "__custom__"}
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="select-item-name">
+                            <SelectValue placeholder="Select a document type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PREDEFINED_ITEMS.map((item) => (
+                            <SelectItem key={item} value={item}>
+                              {item}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="__custom__">+ Custom Document</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter custom document name" 
+                            {...field} 
+                            data-testid="input-custom-item-name"
+                          />
+                        </FormControl>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setUseCustomName(false);
+                            field.onChange("");
+                          }}
+                          data-testid="button-back-to-select"
+                        >
+                          Back
+                        </Button>
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -494,45 +483,24 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="deadline"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Deadline</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="date" 
-                          {...field} 
-                          value={field.value || ""}
-                          data-testid="input-deadline"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="dateSubmitted"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date Submitted</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="date" 
-                          {...field} 
-                          value={field.value || ""}
-                          data-testid="input-date-submitted"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="deadline"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Deadline</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="date" 
+                        {...field} 
+                        value={field.value || ""}
+                        data-testid="input-deadline"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
@@ -548,39 +516,6 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
                         value={field.value || ""}
                         data-testid="textarea-notes"
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="fileUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>File Upload</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Input
-                          type="file"
-                          onChange={handleFileUpload}
-                          disabled={uploadingFile}
-                          data-testid="input-file-upload"
-                        />
-                        {uploadingFile && (
-                          <p className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Uploading...
-                          </p>
-                        )}
-                        {field.value && (
-                          <p className="text-sm text-green-600 flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4" />
-                            File uploaded successfully
-                          </p>
-                        )}
-                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
