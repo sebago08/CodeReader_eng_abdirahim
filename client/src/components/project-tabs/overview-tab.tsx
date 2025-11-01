@@ -140,15 +140,12 @@ export default function OverviewTab({ project }: OverviewTabProps) {
     const contractAmount = project.contractAmount ? parseFloat(project.contractAmount) : 0;
     if (contractAmount === 0) return 0;
 
-    // Sum all certified amounts (pending, in process, and paid)
-    const totalCertified = certificates.reduce((sum, cert) => {
-      const pending = parseFloat(cert.pendingAmount || "0");
-      const inProcess = parseFloat(cert.inProcessAmount || "0");
-      const paid = parseFloat(cert.amountPaid || "0");
-      return sum + pending + inProcess + paid;
+    // Only count amount paid for financial progress
+    const totalPaid = certificates.reduce((sum, cert) => {
+      return sum + parseFloat(cert.amountPaid || "0");
     }, 0);
 
-    return Math.round((totalCertified / contractAmount) * 100);
+    return Math.round((totalPaid / contractAmount) * 100);
   };
 
   // Calculate Time Lapse

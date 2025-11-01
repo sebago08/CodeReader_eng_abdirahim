@@ -561,7 +561,7 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
 
               <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <CardContent className="pt-6">
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Certified</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Amount Paid</div>
                   <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     ${totalCertified.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
