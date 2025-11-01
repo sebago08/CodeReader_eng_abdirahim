@@ -98,19 +98,19 @@ export default function ProjectsOverview() {
       {/* Header */}
       <header className="bg-black text-primary-foreground shadow-lg">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i className="fas fa-hard-hat text-lg"></i>
+          <div className="flex justify-between items-center py-4 gap-4">
+            <div className="flex items-center space-x-3 md:space-x-4">
+              <div className="h-8 w-8 md:h-10 md:w-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <i className="fas fa-hard-hat text-base md:text-lg"></i>
               </div>
               <div>
-                <h1 className="text-xl font-bold">ConstructTrack</h1>
-                <p className="text-primary-foreground/80 text-sm">Professional Construction Management</p>
+                <h1 className="text-lg md:text-xl font-bold">ConstructTrack</h1>
+                <p className="text-primary-foreground/80 text-xs md:text-sm hidden sm:block">Professional Construction Management</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               {user && (
-                <div className="text-white" data-testid="text-current-username">
+                <div className="text-white hidden md:block" data-testid="text-current-username">
                   <span className="text-sm text-white/60">Signed in as:</span>
                   <span className="ml-2 font-medium">{user.username}</span>
                 </div>
@@ -121,8 +121,8 @@ export default function ProjectsOverview() {
                 className="text-white hover:bg-white/10"
                 data-testid="button-logout"
               >
-                <LogOut className="h-5 w-5 mr-2" />
-                Logout
+                <LogOut className="h-5 w-5 md:mr-2" />
+                <span className="hidden md:inline">Logout</span>
               </Button>
             </div>
           </div>
@@ -132,14 +132,14 @@ export default function ProjectsOverview() {
       {/* Main Content */}
       <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">Projects Dashboard</h2>
-            <p className="text-muted-foreground">Monitor and manage all ongoing construction projects.</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Projects Dashboard</h2>
+            <p className="text-sm md:text-base text-muted-foreground">Monitor and manage all ongoing construction projects.</p>
           </div>
           <Button
             onClick={handleAddProject}
-            className="mt-4 md:mt-0 bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors shadow-lg"
+            className="w-full md:w-auto bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors shadow-lg"
             data-testid="button-add-project"
           >
             <i className="fas fa-plus mr-2"></i>

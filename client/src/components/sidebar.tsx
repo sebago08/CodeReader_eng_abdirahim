@@ -12,7 +12,7 @@ export function Sidebar() {
   ];
 
   return (
-    <div className="h-screen w-64 bg-white border-r border-gray-200 flex flex-col fixed left-0 top-0">
+    <div className="h-screen w-full bg-white border-r border-gray-200 flex flex-col">
       {/* Logo/Brand */}
       <div className="p-6 flex items-center gap-3 border-b border-gray-200">
         <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">

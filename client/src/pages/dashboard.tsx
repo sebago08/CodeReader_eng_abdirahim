@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Sidebar } from "@/components/sidebar";
+import { MobileNav } from "@/components/mobile-nav";
 import { useAuth } from "@/hooks/use-auth";
 import { Search, Bell, Plus, FileText, AlertTriangle, CheckCircle, MessageSquare, TrendingUp, TrendingDown, LogOut, User as UserIcon } from "lucide-react";
 import {
@@ -178,29 +179,35 @@ export default function Dashboard() {
 
   return (
     <div className="flex min-h-screen bg-[#F9FAFB]">
-      <Sidebar />
+      {/* Desktop Sidebar */}
+      <div className="hidden md:block md:w-64 md:fixed md:left-0 md:top-0 md:h-screen">
+        <Sidebar />
+      </div>
+      
+      {/* Mobile Navigation */}
+      <MobileNav />
       
       {/* Main Content */}
-      <div className="ml-64 flex-1">
+      <div className="flex-1 md:ml-64">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-8 py-5">
-          <div className="flex justify-between items-center">
-            <div className="flex-1 max-w-xl">
-              <div className="relative">
+        <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-5">
+          <div className="flex justify-between items-center gap-4">
+            <div className="hidden md:flex flex-1 max-w-xl">
+              <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   type="text"
                   placeholder="Search projects..."
-                  className="pl-10 bg-gray-50 border-gray-200"
+                  className="pl-10 bg-gray-50 border-gray-200 w-full"
                   data-testid="input-search-projects"
                 />
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4 ml-auto">
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="hidden sm:flex text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 data-testid="button-notifications"
               >
                 <Bell className="w-5 h-5" />
@@ -208,7 +215,7 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="hidden sm:flex text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 data-testid="button-help"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,12 +231,12 @@ export default function Dashboard() {
                     className="flex items-center gap-2 hover:bg-gray-100 px-3 py-2 h-auto"
                     data-testid="button-user-menu"
                   >
-                    <Avatar className="w-10 h-10">
+                    <Avatar className="w-8 h-8 md:w-10 md:h-10">
                       <AvatarFallback className="bg-gradient-to-br from-pink-400 to-pink-600 text-white font-semibold">
                         {user?.firstName?.[0] || 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm font-medium text-gray-700 max-w-[120px] truncate" data-testid="text-username">
+                    <span className="hidden sm:inline text-sm font-medium text-gray-700 max-w-[120px] truncate" data-testid="text-username">
                       {user?.username || user?.email || 'User'}
                     </span>
                   </Button>
@@ -261,7 +268,7 @@ export default function Dashboard() {
         </header>
 
         {/* Main Dashboard Content */}
-        <main className="p-8">
+        <main className="p-4 md:p-8">
           {isLoading ? (
             <div className="flex justify-center items-center h-64" data-testid="loading-state">
               <div className="text-gray-500">Loading dashboard...</div>
@@ -269,18 +276,18 @@ export default function Dashboard() {
           ) : (
             <>
               {/* Welcome Section */}
-              <div className="mb-8 flex justify-between items-start">
+              <div className="mb-8 flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="page-title">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2" data-testid="page-title">
                     Welcome back, {user?.firstName || user?.username || 'User'}!
                   </h1>
-                  <p className="text-gray-600" data-testid="page-subtitle">
+                  <p className="text-sm md:text-base text-gray-600" data-testid="page-subtitle">
                     Here is an overview of your active construction projects.
                   </p>
                 </div>
                 <Button
                   onClick={() => setShowProjectModal(true)}
-                  className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white shadow-md"
+                  className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white shadow-md w-full sm:w-auto"
                   data-testid="button-create-project"
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -341,14 +348,15 @@ export default function Dashboard() {
 
               {/* Active Projects Section */}
               <Card className="border-none shadow-sm bg-white mb-8">
-                <CardHeader className="border-b border-gray-100 px-6 py-4">
-                  <CardTitle className="text-xl font-bold text-gray-900">
+                <CardHeader className="border-b border-gray-100 px-4 md:px-6 py-4">
+                  <CardTitle className="text-lg md:text-xl font-bold text-gray-900">
                     Active Projects
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   {projects && projects.filter(p => p.status === "Active").length > 0 ? (
-                    <Table data-testid="projects-table">
+                    <div className="overflow-x-auto">
+                      <Table data-testid="projects-table" className="min-w-[640px]">
                       <TableHeader>
                         <TableRow className="border-b border-gray-100 hover:bg-transparent">
                           <TableHead className="text-xs font-semibold text-gray-600 uppercase tracking-wider px-6 py-4">PROJECT NAME</TableHead>
@@ -419,6 +427,7 @@ export default function Dashboard() {
                           })}
                       </TableBody>
                     </Table>
+                    </div>
                   ) : (
                     <div className="text-center py-16 px-6" data-testid="empty-state">
                       <div className="text-gray-400 mb-4">
@@ -439,7 +448,7 @@ export default function Dashboard() {
               </Card>
 
               {/* Bottom Section - Budget Allocation & Recent Activity */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
                 {/* Budget Allocation */}
                 <Card className="border-none shadow-sm bg-white" data-testid="card-budget-allocation">
                   <CardHeader className="border-b border-gray-100 px-6 py-4">

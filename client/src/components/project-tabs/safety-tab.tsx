@@ -209,8 +209,9 @@ export default function SafetyTab({ projectId }: SafetyTabProps) {
               <p className="text-sm mt-1">Maintaining a safe work environment</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
+            <div className="overflow-x-auto">
+              <Table className="min-w-[640px]">
+                <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead>Description</TableHead>
@@ -266,6 +267,7 @@ export default function SafetyTab({ projectId }: SafetyTabProps) {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
