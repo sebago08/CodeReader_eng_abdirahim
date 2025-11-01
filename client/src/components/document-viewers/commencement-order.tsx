@@ -8,10 +8,14 @@ import html2canvas from 'html2canvas';
 // Type definitions
 interface Project {
   id?: string;
-  number?: string;
+  projectNumber?: string;
   name?: string;
-  client?: { name?: string; logo?: string; address?: string; contact?: string };
-  contractor?: { name?: string; contact?: string };
+  client?: string;
+  clientLogo?: string;
+  clientAddress?: string;
+  clientContactPerson?: string;
+  contractorName?: string;
+  contractorContactPerson?: string;
 }
 
 interface SavedDocumentData {
@@ -32,7 +36,7 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
   // Use saved data if available, otherwise use live project data
   const displayProject = savedData?.projectSnapshot || project;
   const isSaved = !!savedData;
-  const [orderNumber, setOrderNumber] = useState(`CO-${project.number}-${new Date().getFullYear()}`);
+  const [orderNumber, setOrderNumber] = useState(`CO-${project.projectNumber || 'undefined'}-${new Date().getFullYear()}`);
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
   const [commencementDate, setCommencementDate] = useState(new Date().toISOString().split('T')[0]);
   const [completionDate, setCompletionDate] = useState('');
@@ -145,7 +149,7 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Commencement_Order_${project.number}_${orderDate}.pdf`);
+      pdf.save(`Commencement_Order_${project.projectNumber}_${orderDate}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF. Please try again.');
@@ -165,7 +169,7 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
   const handleSaveDocument = () => {
     const documentName = window.prompt(
       'Enter document name:',
-      `Commencement Order - ${project?.number || 'New'}`
+      `Commencement Order - ${project?.projectNumber || 'New'}`
     );
     if (documentName && documentName.trim()) {
       onSave(documentId, documentName.trim(), {
@@ -233,19 +237,19 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
           {/* Letterhead */}
           <div className="text-center border-b-4 border-[#1a5276] pb-4 mb-6">
             <div className="mb-3">
-              <p className="text-center mb-4 text-[28px] font-bold">{displayProject?.client?.name || 'Client Name'}</p>
-              {displayProject?.client?.logo && (
+              <p className="text-center mb-4 text-[28px] font-bold">{displayProject?.client || 'Client Name'}</p>
+              {displayProject?.clientLogo && (
                 <div className="flex justify-center">
                   <img 
-                    src={displayProject.client.logo} 
-                    alt={`${displayProject?.client?.name || 'Client'} logo`}
+                    src={displayProject.clientLogo} 
+                    alt={`${displayProject?.client || 'Client'} logo`}
                     className="h-16 w-auto object-contain"
                   />
                 </div>
               )}
             </div>
-            {displayProject?.client?.address && (
-              <p className="text-[12px] text-muted-foreground mt-2">{displayProject.client.address}</p>
+            {displayProject?.clientAddress && (
+              <p className="text-[12px] text-muted-foreground mt-2">{displayProject.clientAddress}</p>
             )}
           </div>
 
@@ -264,13 +268,13 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
 
             <div className="mb-4">
               <p className="text-muted-foreground text-[13px]">To:</p>
-              <p>{displayProject?.contractor?.name || 'Contractor Name'}</p>
-              <p className="text-[13px]">Attn: {displayProject?.contractor?.contact || 'Contractor Contact'}</p>
+              <p>{displayProject?.contractorName || 'Contractor Name'}</p>
+              <p className="text-[13px]">Attn: {displayProject?.contractorContactPerson || 'Contractor Contact'}</p>
             </div>
 
             <div className="mb-4">
               <p className="text-muted-foreground text-[13px]">From:</p>
-              <p>{displayProject?.client?.name || 'Client Name'}</p>
+              <p>{displayProject?.client || 'Client Name'}</p>
             </div>
           </div>
 
@@ -283,7 +287,7 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
           {/* Letter Body */}
           <div className="mb-6 flex-grow text-[14px] space-y-4">
             <p className="leading-relaxed">
-              Dear {displayProject?.contractor?.contact || 'Contractor Contact'},
+              Dear {displayProject?.contractorContactPerson || 'Contractor Contact'},
             </p>
 
             <p className="leading-relaxed">
@@ -314,8 +318,8 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
               <div>
                 <div className="mb-12 border-b-2 border-gray-400"></div>
                 <div className="text-[13px]">
-                  <p>{displayProject.client.contact}</p>
-                  <p className="text-muted-foreground text-[12px] mt-1">{displayProject.client.name}</p>
+                  <p>{displayProject.clientContactPerson}</p>
+                  <p className="text-muted-foreground text-[12px] mt-1">{displayProject.client}</p>
                   <p className="text-muted-foreground text-[11px] mt-1">Signature & Date</p>
                 </div>
               </div>
