@@ -2,6 +2,10 @@
 
 This full-stack application, "ConstructTrack," is a comprehensive road construction project management system. It enables construction professionals to manage various project types (Roads, Buildings, Infrastructure, Bridges) by tracking projects, managing specific roads and construction layers, monitoring financial progress, scheduling work plans, and recording daily activities. The platform aims to streamline project lifecycle management from planning to completion, offering real-time progress indicators and facilitating team collaboration.
 
+# Recent Changes
+
+**November 1, 2025** - Fixed document generation bug where automated documents (Instruction Letter, Commencement Order, Taking Over Certificate) displayed placeholder text instead of actual project data. Updated all three document viewers to correctly use the flat project field structure (client, clientContactPerson, contractorName, etc.) instead of the previously incorrect nested object references (client.name, contractor.name, etc.).
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
