@@ -1602,17 +1602,19 @@ export class DatabaseStorage implements IStorage {
   async createDefaultChecklistItems(projectId: string): Promise<PreCommencementItem[]> {
     const defaultItems = [
       { itemName: "Insurance Certificate", orderIndex: 0 },
-      { itemName: "Performance Security/Bond", orderIndex: 1 },
-      { itemName: "Environmental Impact Assessment", orderIndex: 2 },
-      { itemName: "Safety & Health Plan", orderIndex: 3 },
-      { itemName: "Labor Compliance Documents", orderIndex: 4 },
-      { itemName: "Tax Clearance Certificate", orderIndex: 5 },
-      { itemName: "Equipment Inspection Certificates", orderIndex: 6 },
-      { itemName: "Site Possession Handover", orderIndex: 7 },
-      { itemName: "Design Drawings Approval", orderIndex: 8 },
-      { itemName: "Method Statement Approval", orderIndex: 9 },
-      { itemName: "Material Testing Reports", orderIndex: 10 },
-      { itemName: "Contractor License/Registration", orderIndex: 11 },
+      { itemName: "Performance Bank Guarantee", orderIndex: 1 },
+      { itemName: "List of Personnel", orderIndex: 2 },
+      { itemName: "CLMP (Contract Labor Management Plan)", orderIndex: 3 },
+      { itemName: "CSEMP (Construction Site Environmental Management Plan)", orderIndex: 4 },
+      { itemName: "Health & Safety Plan", orderIndex: 5 },
+      { itemName: "Environmental Impact Assessment", orderIndex: 6 },
+      { itemName: "Tax Clearance Certificate", orderIndex: 7 },
+      { itemName: "Equipment Inspection Certificates", orderIndex: 8 },
+      { itemName: "Site Possession Handover", orderIndex: 9 },
+      { itemName: "Design Drawings Approval", orderIndex: 10 },
+      { itemName: "Method Statement Approval", orderIndex: 11 },
+      { itemName: "Material Testing Reports", orderIndex: 12 },
+      { itemName: "Contractor License/Registration", orderIndex: 13 },
     ];
     
     const createdItems = await db.insert(preCommencementItems)
