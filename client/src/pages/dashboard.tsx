@@ -73,9 +73,10 @@ export default function Dashboard() {
     const progressData = progressQueries[queryIndex]?.data;
     if (!progressData || progressData.length === 0) return 0;
     
-    // Calculate average progress across all trackers
-    const totalProgress = progressData.reduce((sum, tracker) => sum + (tracker.overallProgress || 0), 0);
-    return Math.round(totalProgress / progressData.length);
+    // Note: Progress trackers don't have overallProgress field directly
+    // Would need to fetch tracker items and calculate from qtyDone/qtyInBoq
+    // For now, returning 0 as a placeholder
+    return 0;
   };
 
   // Get project status badge
