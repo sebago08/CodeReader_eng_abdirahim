@@ -179,6 +179,7 @@ export interface IStorage {
   deleteWorkPlanActivity(id: string): Promise<void>;
   toggleWorkPlanMilestone(id: string, isMilestone: boolean): Promise<WorkPlanActivity>;
   updateWorkPlanActivityName(id: string, activityName: string): Promise<WorkPlanActivity>;
+  updateWorkPlanActivity(id: string, updates: Partial<Pick<InsertWorkPlanActivity, 'duration' | 'startDate' | 'endDate'>>): Promise<WorkPlanActivity>;
   insertSectionAtPosition(projectId: string, targetOrderIndex: number, position: "above" | "below", sectionName: string, workPlanId?: string): Promise<WorkPlanActivity>;
   insertActivityAtPosition(projectId: string, targetOrderIndex: number, position: "above" | "below", activity: InsertWorkPlanActivity): Promise<WorkPlanActivity>;
   
@@ -1342,6 +1343,14 @@ export class DatabaseStorage implements IStorage {
   async updateWorkPlanActivityName(id: string, activityName: string): Promise<WorkPlanActivity> {
     const [result] = await db.update(workPlanActivities)
       .set({ activityName, updatedAt: new Date() })
+      .where(eq(workPlanActivities.id, id))
+      .returning();
+    return result;
+  }
+
+  async updateWorkPlanActivity(id: string, updates: Partial<Pick<InsertWorkPlanActivity, 'duration' | 'startDate' | 'endDate'>>): Promise<WorkPlanActivity> {
+    const [result] = await db.update(workPlanActivities)
+      .set({ ...updates, updatedAt: new Date() })
       .where(eq(workPlanActivities.id, id))
       .returning();
     return result;

@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { WorkPlanActivity, WorkPlan } from "@shared/schema";
-import { Trash2, Flag, ListCheck, Heading2, MoreVertical, Plus } from "lucide-react";
+import { Trash2, MoreVertical, Plus, Heading2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -25,19 +25,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { addDays, format } from "date-fns";
 
 interface WorkPlanTabProps {
   projectId: string;
 }
 
+interface EditingField {
+  id: string;
+  field: 'description' | 'duration' | 'startDate';
+  value: string;
+}
+
 export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
   const { toast } = useToast();
-  const [itemType, setItemType] = useState<"activity" | "section">("activity");
-  const [activityName, setActivityName] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [duration, setDuration] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState("");
+  const [editingField, setEditingField] = useState<EditingField | null>(null);
   const [selectedWorkPlanId, setSelectedWorkPlanId] = useState<string>("all");
   const [isNewWorkPlanDialogOpen, setIsNewWorkPlanDialogOpen] = useState(false);
   const [newWorkPlanName, setNewWorkPlanName] = useState("");
@@ -71,9 +73,6 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
-      setActivityName("");
-      setStartDate("");
-      setDuration("");
       toast({
         title: variables.itemType === "section" ? "Section added" : "Activity added",
         description: variables.itemType === "section" 
@@ -98,26 +97,16 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
       toast({
-        title: "Activity deleted",
-        description: "Work plan activity has been deleted successfully.",
+        title: "Deleted",
+        description: "Item has been deleted successfully.",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to delete activity. Please try again.",
+        description: "Failed to delete item. Please try again.",
         variant: "destructive",
       });
-    },
-  });
-
-  // Toggle milestone mutation
-  const toggleMilestoneMutation = useMutation({
-    mutationFn: async ({ id, isMilestone }: { id: string; isMilestone: boolean }) => {
-      return await apiRequest("PATCH", `/api/work-plan-activities/${id}/milestone`, { isMilestone });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
     },
   });
 
@@ -131,18 +120,16 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
       return await response.json();
     },
     onSuccess: async (data: WorkPlanActivity) => {
-      // Invalidate and refetch the query
       await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
       
-      // Set editing state after a small delay to ensure the component has re-rendered with new data
+      // Auto-focus on description field for editing
       setTimeout(() => {
-        setEditingId(data.id);
-        setEditingName(data.activityName);
+        setEditingField({ id: data.id, field: 'description', value: data.activityName });
       }, 100);
       
       toast({
         title: "Section inserted",
-        description: "Double-click the section name to edit it.",
+        description: "Click to edit the section name.",
       });
     },
     onError: () => {
@@ -167,11 +154,17 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
       });
       return await response.json();
     },
-    onSuccess: async () => {
+    onSuccess: async (data: WorkPlanActivity) => {
       await queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
+      
+      // Auto-focus on description field for editing
+      setTimeout(() => {
+        setEditingField({ id: data.id, field: 'description', value: data.activityName });
+      }, 100);
+      
       toast({
         title: "Activity inserted",
-        description: "Activity has been inserted successfully.",
+        description: "Fill in the activity details.",
       });
     },
     onError: () => {
@@ -209,26 +202,51 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
     },
   });
 
-  // Update activity/section name mutation
-  const updateNameMutation = useMutation({
-    mutationFn: async ({ id, activityName }: { id: string; activityName: string }) => {
-      return await apiRequest("PATCH", `/api/work-plan-activities/${id}/name`, { activityName });
+  // Update activity mutation - for all fields
+  const updateActivityMutation = useMutation({
+    mutationFn: async ({ id, field, value }: { id: string; field: string; value: any }) => {
+      // Get the current activity to calculate endDate if needed
+      const activity = activities.find(a => a.id === id);
+      if (!activity) throw new Error("Activity not found");
+
+      let updates: any = {};
+
+      if (field === 'description') {
+        return await apiRequest("PATCH", `/api/work-plan-activities/${id}/name`, { 
+          activityName: value 
+        });
+      } else if (field === 'duration') {
+        const durationDays = parseInt(value);
+        if (isNaN(durationDays) || durationDays <= 0) {
+          throw new Error("Duration must be a positive number");
+        }
+        updates.duration = durationDays;
+        // Recalculate end date if start date exists
+        if (activity.startDate) {
+          updates.endDate = calculateEndDate(activity.startDate, durationDays);
+        }
+      } else if (field === 'startDate') {
+        updates.startDate = value;
+        // Recalculate end date if duration exists
+        if (activity.duration) {
+          updates.endDate = calculateEndDate(value, activity.duration);
+        }
+      }
+
+      // Use a general update endpoint (we'll need to add this to the backend)
+      return await apiRequest("PATCH", `/api/work-plan-activities/${id}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/work-plan-activities`] });
-      setEditingId(null);
-      setEditingName("");
-      toast({
-        title: "Name updated",
-        description: "Activity name has been updated successfully.",
-      });
+      setEditingField(null);
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to update name. Please try again.",
+        description: error.message || "Failed to update. Please try again.",
         variant: "destructive",
       });
+      setEditingField(null);
     },
   });
 
@@ -237,74 +255,15 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
   const calculateEndDate = (start: string, days: number): string => {
     if (!start || !days || isNaN(days)) return "";
     const startDate = new Date(start);
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + (days - 1));
-    return endDate.toISOString().split("T")[0];
-  };
-
-  const handleAddActivity = () => {
-    if (!activityName.trim()) {
-      toast({
-        title: "Missing name",
-        description: itemType === "section" ? "Please enter a section name." : "Please enter an activity name.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // For sections, we don't need dates
-    if (itemType === "section") {
-      const nextOrderIndex = activities.length;
-      createActivityMutation.mutate({
-        itemType: "section",
-        activityName: activityName.trim(),
-        orderIndex: nextOrderIndex,
-      });
-      return;
-    }
-
-    // For activities, validate dates and duration
-    if (!startDate || !duration) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in all fields to add an activity.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const durationDays = parseInt(duration);
-    if (isNaN(durationDays) || durationDays <= 0) {
-      toast({
-        title: "Invalid duration",
-        description: "Duration must be a positive number.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const endDate = calculateEndDate(startDate, durationDays);
-    const nextOrderIndex = activities.length;
-    createActivityMutation.mutate({
-      itemType: "activity",
-      activityName: activityName.trim(),
-      startDate,
-      duration: durationDays,
-      endDate,
-      orderIndex: nextOrderIndex,
-    });
+    const endDate = addDays(startDate, days - 1);
+    return format(endDate, 'yyyy-MM-dd');
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-    });
+    return format(new Date(dateString), 'MMM d, yyyy');
   };
 
   const handleInsertSection = (position: "above" | "below", targetActivity: WorkPlanActivity) => {
-    // Insert with default name and automatically enter edit mode
     insertSectionMutation.mutate({
       position,
       targetActivity,
@@ -313,67 +272,51 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
   };
 
   const handleInsertActivity = (position: "above" | "below", targetActivity: WorkPlanActivity) => {
-    // Prompt user for activity details
-    const activityName = window.prompt("Enter activity name:");
-    if (!activityName || !activityName.trim()) {
-      return; // User cancelled or provided empty name
-    }
-
-    const startDateInput = window.prompt("Enter start date (YYYY-MM-DD):");
-    if (!startDateInput) {
-      return; // User cancelled
-    }
-
-    const durationInput = window.prompt("Enter duration (days):");
-    if (!durationInput) {
-      return; // User cancelled
-    }
-
-    const durationDays = parseInt(durationInput);
-    if (isNaN(durationDays) || durationDays <= 0) {
-      toast({
-        title: "Invalid duration",
-        description: "Duration must be a positive number.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const endDate = calculateEndDate(startDateInput, durationDays);
-
     insertActivityMutation.mutate({
       position,
       targetActivity,
       activityData: {
-        activityName: activityName.trim(),
-        startDate: startDateInput,
-        duration: durationDays,
-        endDate,
+        activityName: "New Activity",
+        startDate: undefined,
+        duration: undefined,
+        endDate: undefined,
       },
     });
   };
 
-  const handleDoubleClick = (activity: WorkPlanActivity) => {
-    setEditingId(activity.id);
-    setEditingName(activity.activityName);
+  const handleCellClick = (activity: WorkPlanActivity, field: 'description' | 'duration' | 'startDate') => {
+    // Don't allow editing duration and startDate for sections
+    if (activity.itemType === 'section' && (field === 'duration' || field === 'startDate')) {
+      return;
+    }
+
+    let value = '';
+    if (field === 'description') {
+      value = activity.activityName;
+    } else if (field === 'duration') {
+      value = activity.duration?.toString() || '';
+    } else if (field === 'startDate') {
+      value = activity.startDate || '';
+    }
+
+    setEditingField({ id: activity.id, field, value });
   };
 
   const handleSaveEdit = () => {
-    if (!editingId || !editingName.trim()) {
-      setEditingId(null);
-      setEditingName("");
+    if (!editingField || !editingField.value.trim()) {
+      setEditingField(null);
       return;
     }
     
-    updateNameMutation.mutate({
-      id: editingId,
-      activityName: editingName.trim(),
+    updateActivityMutation.mutate({
+      id: editingField.id,
+      field: editingField.field,
+      value: editingField.value.trim(),
     });
   };
 
   const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditingName("");
+    setEditingField(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -384,7 +327,6 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
     }
   };
 
-  // Handler for creating new work plan
   const handleCreateWorkPlan = () => {
     if (!newWorkPlanName.trim()) {
       toast({
@@ -398,75 +340,58 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
     createWorkPlanMutation.mutate({
       name: newWorkPlanName.trim(),
       description: newWorkPlanDescription.trim() || undefined,
-      isDefault: workPlans.length === 0, // First work plan is default
+      isDefault: workPlans.length === 0,
     });
   };
 
+  // Add first activity or section
+  const handleAddFirst = (type: 'section' | 'activity') => {
+    const nextOrderIndex = 0;
+    if (type === 'section') {
+      createActivityMutation.mutate({
+        itemType: "section",
+        activityName: "New Section",
+        orderIndex: nextOrderIndex,
+      });
+    } else {
+      createActivityMutation.mutate({
+        itemType: "activity",
+        activityName: "New Activity",
+        orderIndex: nextOrderIndex,
+      });
+    }
+  };
+
   // Helper to check if an activity is indented (belongs to a section)
-  // An activity is indented if there's a section header before it and no other section after that
   const isIndented = (index: number): boolean => {
     if (index === 0) return false;
     
-    // Look backwards to find if we're under a section
     for (let i = index - 1; i >= 0; i--) {
       if (activities[i].itemType === "section") {
-        return true; // Found a section header before this activity
+        return true;
       }
     }
     
-    return false; // No section header found before this activity
+    return false;
   };
 
-  // Calculate date range for a section based on its child activities
-  const getSectionDateRange = (section: WorkPlanActivity): { startDate: string | null; endDate: string | null } => {
-    // Safety check - ensure we have a valid activities array
-    if (!activities || activities.length === 0) {
-      return { startDate: null, endDate: null };
-    }
+  // Calculate sequential number (only for activities, not sections)
+  const getItemNumber = (index: number): number | null => {
+    const activity = activities[index];
+    if (activity.itemType === 'section') return null;
     
-    // Find the index of this section in the activities array
-    const sectionIndex = activities.findIndex(a => a.id === section.id);
-    if (sectionIndex === -1) {
-      return { startDate: null, endDate: null };
-    }
-    
-    let earliestStart: string | null = null;
-    let latestEnd: string | null = null;
-    
-    // Iterate through activities after this section until we hit the next section or end
-    for (let i = sectionIndex + 1; i < activities.length; i++) {
-      const currentActivity = activities[i];
-      
-      // Stop when we encounter the next section
-      if (currentActivity.itemType === "section") {
-        break;
-      }
-      
-      // Process activities with valid dates
-      if (currentActivity.itemType === "activity" && currentActivity.startDate && currentActivity.endDate) {
-        // Update earliest start date
-        if (!earliestStart || currentActivity.startDate < earliestStart) {
-          earliestStart = currentActivity.startDate;
-        }
-        
-        // Update latest end date
-        if (!latestEnd || currentActivity.endDate > latestEnd) {
-          latestEnd = currentActivity.endDate;
-        }
+    // Count only activities before this one
+    let count = 0;
+    for (let i = 0; i < index; i++) {
+      if (activities[i].itemType === 'activity') {
+        count++;
       }
     }
-    
-    return { startDate: earliestStart, endDate: latestEnd };
+    return count + 1;
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <ListCheck className="h-5 w-5" />
-        <h3 className="text-lg font-medium">Planned Activities & Work Schedule</h3>
-      </div>
-
       {/* Work Plan Selector */}
       <Card>
         <CardContent className="pt-6">
@@ -504,121 +429,53 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
         </CardContent>
       </Card>
 
-      {/* Add Activity/Section Form */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="item-type" data-testid="label-item-type">
-                  Type <span className="text-red-500">*</span>
-                </Label>
-                <Select value={itemType} onValueChange={(value: "activity" | "section") => setItemType(value)}>
-                  <SelectTrigger id="item-type" data-testid="select-item-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="activity">Activity</SelectItem>
-                    <SelectItem value="section">Section Header</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="activity-name" data-testid="label-activity-name">
-                  {itemType === "section" ? "Section Name" : "Activity Name"} <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="activity-name"
-                  placeholder={itemType === "section" ? "e.g., Excavation Works" : "e.g., Site Clearing"}
-                  value={activityName}
-                  onChange={(e) => setActivityName(e.target.value)}
-                  data-testid="input-activity-name"
-                />
-              </div>
-            </div>
-            
-            {itemType === "activity" && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div className="space-y-2">
-                  <Label htmlFor="start-date" data-testid="label-start-date">
-                    Start Date <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="start-date"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    data-testid="input-start-date"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="duration" data-testid="label-duration">
-                    Duration (days) <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    placeholder="e.g., 14"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    min="1"
-                    data-testid="input-duration"
-                  />
-                </div>
-                <Button
-                  onClick={handleAddActivity}
-                  disabled={createActivityMutation.isPending}
-                  className="w-full md:w-auto"
-                  data-testid="button-add-activity"
-                >
-                  {createActivityMutation.isPending ? "Adding..." : "Add Activity"}
-                </Button>
-              </div>
-            )}
-            
-            {itemType === "section" && (
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleAddActivity}
-                  disabled={createActivityMutation.isPending}
-                  className="w-full md:w-auto"
-                  data-testid="button-add-section"
-                >
-                  <Heading2 className="h-4 w-4 mr-2" />
-                  {createActivityMutation.isPending ? "Adding..." : "Add Section Header"}
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Activities Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Activities</CardTitle>
+          <CardTitle>Work Schedule</CardTitle>
           <CardDescription>
-            {activities.length === 0 ? "No activities planned yet" : `${activities.length} planned activities`}
+            {activities.length === 0 ? "No activities planned yet" : `${activities.length} items`}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading activities...</div>
           ) : activities.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No activities added yet. Use the form above to add your first activity.
+            <div className="text-center py-12 space-y-4">
+              <p className="text-muted-foreground">
+                No activities added yet. Add your first section or activity to get started.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <Button
+                  onClick={() => handleAddFirst('section')}
+                  variant="outline"
+                  disabled={createActivityMutation.isPending}
+                  data-testid="button-add-first-section"
+                >
+                  <Heading2 className="h-4 w-4 mr-2" />
+                  Add Section
+                </Button>
+                <Button
+                  onClick={() => handleAddFirst('activity')}
+                  disabled={createActivityMutation.isPending}
+                  data-testid="button-add-first-activity"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Activity
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Activity Name</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead>Milestone</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-16">No</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="w-32">Duration</TableHead>
+                    <TableHead className="w-36">Start Date</TableHead>
+                    <TableHead className="w-36">End Date</TableHead>
+                    <TableHead className="w-24 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -629,47 +486,41 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                         className="bg-muted/50 hover:bg-muted/70"
                         data-testid={`row-section-${activity.id}`}
                       >
-                        <TableCell className="font-bold text-base py-3" data-testid={`text-section-name-${activity.id}`}>
+                        <TableCell className="font-bold" data-testid={`cell-number-${activity.id}`}>
+                          {/* No number for sections */}
+                        </TableCell>
+                        <TableCell 
+                          className="font-bold text-base py-3 cursor-pointer hover:bg-muted/80" 
+                          onClick={() => handleCellClick(activity, 'description')}
+                          data-testid={`cell-description-${activity.id}`}
+                        >
                           <div className="flex items-center gap-2">
-                            <Heading2 className="h-5 w-5 text-[#1a5276]" />
-                            {editingId === activity.id ? (
+                            <Heading2 className="h-5 w-5 text-primary flex-shrink-0" />
+                            {editingField?.id === activity.id && editingField.field === 'description' ? (
                               <Input
-                                value={editingName}
-                                onChange={(e) => setEditingName(e.target.value)}
+                                value={editingField.value}
+                                onChange={(e) => setEditingField({ ...editingField, value: e.target.value })}
                                 onBlur={handleSaveEdit}
                                 onKeyDown={handleKeyDown}
                                 autoFocus
-                                className="max-w-md"
-                                data-testid={`input-edit-name-${activity.id}`}
+                                className="max-w-md font-bold"
+                                data-testid={`input-edit-description-${activity.id}`}
                               />
                             ) : (
-                              <span 
-                                onDoubleClick={() => handleDoubleClick(activity)}
-                                className="cursor-pointer hover:text-blue-600"
-                                title="Double-click to edit"
-                              >
+                              <span className="hover:text-blue-600" title="Click to edit">
                                 {activity.activityName}
                               </span>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-semibold" data-testid={`text-section-start-${activity.id}`}>
-                          {(() => {
-                            const { startDate } = getSectionDateRange(activity);
-                            return startDate ? formatDate(startDate) : '-';
-                          })()}
-                        </TableCell>
-                        <TableCell className="font-semibold" data-testid={`text-section-duration-${activity.id}`}>
+                        <TableCell className="text-muted-foreground" data-testid={`cell-duration-${activity.id}`}>
                           -
                         </TableCell>
-                        <TableCell className="font-semibold" data-testid={`text-section-end-${activity.id}`}>
-                          {(() => {
-                            const { endDate } = getSectionDateRange(activity);
-                            return endDate ? formatDate(endDate) : '-';
-                          })()}
+                        <TableCell className="text-muted-foreground" data-testid={`cell-start-date-${activity.id}`}>
+                          -
                         </TableCell>
-                        <TableCell>
-                          {/* Empty milestone column for sections */}
+                        <TableCell className="text-muted-foreground" data-testid={`cell-end-date-${activity.id}`}>
+                          -
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
@@ -724,56 +575,84 @@ export default function WorkPlanTab({ projectId }: WorkPlanTabProps) {
                       </TableRow>
                     ) : (
                       <TableRow key={activity.id} data-testid={`row-activity-${activity.id}`}>
-                        <TableCell className="font-medium" data-testid={`text-activity-name-${activity.id}`}>
-                          <div className={isIndented(index) ? "pl-8" : ""}>
-                            {editingId === activity.id ? (
-                              <Input
-                                value={editingName}
-                                onChange={(e) => setEditingName(e.target.value)}
-                                onBlur={handleSaveEdit}
-                                onKeyDown={handleKeyDown}
-                                autoFocus
-                                className="max-w-md"
-                                data-testid={`input-edit-name-${activity.id}`}
-                              />
-                            ) : (
-                              <span 
-                                onDoubleClick={() => handleDoubleClick(activity)}
-                                className="cursor-pointer hover:text-blue-600"
-                                title="Double-click to edit"
-                              >
-                                {activity.activityName}
-                              </span>
-                            )}
-                          </div>
+                        <TableCell 
+                          className="font-medium text-center"
+                          data-testid={`cell-number-${activity.id}`}
+                        >
+                          {getItemNumber(index)}
                         </TableCell>
-                        <TableCell data-testid={`text-start-date-${activity.id}`}>
-                          {activity.startDate ? formatDate(activity.startDate) : '-'}
-                        </TableCell>
-                        <TableCell data-testid={`text-duration-${activity.id}`}>
-                          {activity.duration ? `${activity.duration} days` : '-'}
-                        </TableCell>
-                        <TableCell data-testid={`text-end-date-${activity.id}`}>
-                          {activity.endDate ? formatDate(activity.endDate) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              toggleMilestoneMutation.mutate({
-                                id: activity.id,
-                                isMilestone: !activity.isMilestone,
-                              })
-                            }
-                            data-testid={`button-milestone-${activity.id}`}
-                          >
-                            <Flag
-                              className={`h-4 w-4 ${
-                                activity.isMilestone ? "fill-yellow-500 text-yellow-500" : "text-gray-400"
-                              }`}
+                        <TableCell 
+                          className={`font-medium cursor-pointer hover:bg-muted/30 ${isIndented(index) ? "pl-8" : ""}`}
+                          onClick={() => handleCellClick(activity, 'description')}
+                          data-testid={`cell-description-${activity.id}`}
+                        >
+                          {editingField?.id === activity.id && editingField.field === 'description' ? (
+                            <Input
+                              value={editingField.value}
+                              onChange={(e) => setEditingField({ ...editingField, value: e.target.value })}
+                              onBlur={handleSaveEdit}
+                              onKeyDown={handleKeyDown}
+                              autoFocus
+                              className="max-w-md"
+                              data-testid={`input-edit-description-${activity.id}`}
                             />
-                          </Button>
+                          ) : (
+                            <span className="hover:text-blue-600" title="Click to edit">
+                              {activity.activityName}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell 
+                          className="cursor-pointer hover:bg-muted/30"
+                          onClick={() => handleCellClick(activity, 'duration')}
+                          data-testid={`cell-duration-${activity.id}`}
+                        >
+                          {editingField?.id === activity.id && editingField.field === 'duration' ? (
+                            <Input
+                              type="number"
+                              min="1"
+                              value={editingField.value}
+                              onChange={(e) => setEditingField({ ...editingField, value: e.target.value })}
+                              onBlur={handleSaveEdit}
+                              onKeyDown={handleKeyDown}
+                              autoFocus
+                              placeholder="days"
+                              className="w-24"
+                              data-testid={`input-edit-duration-${activity.id}`}
+                            />
+                          ) : (
+                            <span className={activity.duration ? "" : "text-muted-foreground"} title="Click to edit">
+                              {activity.duration ? `${activity.duration} days` : 'Click to add'}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell 
+                          className="cursor-pointer hover:bg-muted/30"
+                          onClick={() => handleCellClick(activity, 'startDate')}
+                          data-testid={`cell-start-date-${activity.id}`}
+                        >
+                          {editingField?.id === activity.id && editingField.field === 'startDate' ? (
+                            <Input
+                              type="date"
+                              value={editingField.value}
+                              onChange={(e) => setEditingField({ ...editingField, value: e.target.value })}
+                              onBlur={handleSaveEdit}
+                              onKeyDown={handleKeyDown}
+                              autoFocus
+                              className="w-36"
+                              data-testid={`input-edit-start-date-${activity.id}`}
+                            />
+                          ) : (
+                            <span className={activity.startDate ? "" : "text-muted-foreground"} title="Click to edit">
+                              {activity.startDate ? formatDate(activity.startDate) : 'Click to add'}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell 
+                          className="text-muted-foreground"
+                          data-testid={`cell-end-date-${activity.id}`}
+                        >
+                          {activity.endDate ? formatDate(activity.endDate) : '-'}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">

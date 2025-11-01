@@ -1204,6 +1204,42 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch('/api/work-plan-activities/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      // Validate request body
+      const updateSchema = z.object({
+        duration: z.number().min(1).optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      });
+      const updates = updateSchema.parse(req.body);
+      
+      // Get the activity to find its project
+      const activity = await storage.getWorkPlanActivityById(id);
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      
+      // Verify user has access to the activity's project
+      const project = await storage.getProject(activity.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const updatedActivity = await storage.updateWorkPlanActivity(id, updates);
+      res.json(updatedActivity);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error updating work plan activity:", error);
+      res.status(500).json({ message: "Failed to update work plan activity" });
+    }
+  });
+
   // Progress Tracker Routes
   app.get('/api/projects/:projectId/progress-trackers', isAuthenticated, async (req, res) => {
     try {
