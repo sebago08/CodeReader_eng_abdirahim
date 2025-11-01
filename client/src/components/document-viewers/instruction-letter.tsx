@@ -8,10 +8,14 @@ import html2canvas from 'html2canvas';
 // Type definitions
 interface Project {
   id?: string;
-  number?: string;
+  projectNumber?: string;
   name?: string;
-  client?: { name?: string; logo?: string; address?: string; contact?: string };
-  contractor?: { name?: string; contact?: string };
+  client?: string;
+  clientLogo?: string;
+  clientAddress?: string;
+  clientContactPerson?: string;
+  contractorName?: string;
+  contractorContactPerson?: string;
 }
 
 interface SavedDocumentData {
@@ -32,7 +36,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
   // Use saved data if available, otherwise use live project data
   const displayProject = savedData?.projectSnapshot || project;
   const isSaved = !!savedData;
-  const [letterNumber, setLetterNumber] = useState(`IL-${project.number}-${new Date().getFullYear()}`);
+  const [letterNumber, setLetterNumber] = useState(`IL-${project.projectNumber || 'undefined'}-${new Date().getFullYear()}`);
   const [letterDate, setLetterDate] = useState(new Date().toISOString().split('T')[0]);
   const [subject, setSubject] = useState('');
   const [letterContent, setLetterContent] = useState('');
@@ -144,7 +148,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Instruction_Letter_${project.number}_${letterDate}.pdf`);
+      pdf.save(`Instruction_Letter_${project.projectNumber}_${letterDate}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF. Please try again.');
@@ -164,7 +168,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
   const handleSaveDocument = () => {
     const documentName = window.prompt(
       'Enter document name:',
-      `Instruction Letter - ${project?.number || 'New'}`
+      `Instruction Letter - ${project?.projectNumber || 'New'}`
     );
     if (documentName && documentName.trim()) {
       onSave(documentId, documentName.trim(), {
@@ -225,19 +229,19 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
           {/* Letterhead */}
           <div className="text-center border-b-4 border-[#1a5276] pb-4 mb-6">
             <div className="mb-3">
-              <p className="text-center mb-4 text-[28px] font-bold">{displayProject?.client?.name || "Client Name"}</p>
-              {displayProject?.client?.logo && (
+              <p className="text-center mb-4 text-[28px] font-bold">{displayProject?.client || "Client Name"}</p>
+              {displayProject?.clientLogo && (
                 <div className="flex justify-center">
                   <img 
-                    src={displayProject?.client?.logo} 
-                    alt={`${displayProject?.client?.name || "Client Name"} logo`}
+                    src={displayProject?.clientLogo} 
+                    alt={`${displayProject?.client || "Client Name"} logo`}
                     className="h-16 w-auto object-contain"
                   />
                 </div>
               )}
             </div>
-            {displayProject?.client?.address && (
-              <p className="text-[12px] text-muted-foreground mt-2">{displayProject?.client?.address}</p>
+            {displayProject?.clientAddress && (
+              <p className="text-[12px] text-muted-foreground mt-2">{displayProject?.clientAddress}</p>
             )}
           </div>
 
@@ -256,14 +260,14 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
 
             <div className="mb-4">
               <p className="text-muted-foreground text-[13px]">To:</p>
-              <p>{displayProject?.contractor?.name || "Contractor Name"}</p>
-              <p className="text-[13px]">Attn: {displayProject?.contractor?.contact || "Contractor Contact"}</p>
+              <p>{displayProject?.contractorName || "Contractor Name"}</p>
+              <p className="text-[13px]">Attn: {displayProject?.contractorContactPerson || "Contractor Contact"}</p>
             </div>
 
             <div className="mb-4">
               <p className="text-muted-foreground text-[13px]">From:</p>
-              <p>{displayProject?.client?.name || "Client Name"}</p>
-              <p className="text-[13px]">Project Engineer: {displayProject?.client?.contact || "Client Contact"}</p>
+              <p>{displayProject?.client || "Client Name"}</p>
+              <p className="text-[13px]">Project Engineer: {displayProject?.clientContactPerson || "Client Contact"}</p>
             </div>
           </div>
 
@@ -278,7 +282,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
           {/* Letter Body */}
           <div className="mb-6 flex-grow text-[14px]">
             <div className="leading-relaxed whitespace-pre-wrap">
-              {letterContent || 'Dear ' + displayProject?.contractor?.contact || "Contractor Contact" + ',\n\n[Enter your letter content here]\n\nSincerely,'}
+              {letterContent || `Dear ${displayProject?.contractorContactPerson || "Contractor Contact"},\n\n[Enter your letter content here]\n\nSincerely,`}
             </div>
           </div>
 
@@ -289,8 +293,8 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
               <div>
                 <div className="mb-12 border-b-2 border-gray-400"></div>
                 <div className="text-[13px]">
-                  <p>{displayProject?.client?.contact || "Client Contact"}</p>
-                  <p className="text-muted-foreground text-[12px] mt-1">{displayProject?.client?.name || "Client Name"}</p>
+                  <p>{displayProject?.clientContactPerson || "Client Contact"}</p>
+                  <p className="text-muted-foreground text-[12px] mt-1">{displayProject?.client || "Client Name"}</p>
                   <p className="text-muted-foreground text-[11px] mt-1">Project Engineer - Signature & Date</p>
                 </div>
               </div>
@@ -336,7 +340,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
             <textarea
               value={letterContent}
               onChange={(e) => setLetterContent(e.target.value)}
-              placeholder={`Dear ${project?.contractor?.contact || 'Contractor Contact'},\n\n[Enter your letter content here]\n\nSincerely,`}
+              placeholder={`Dear ${project?.contractorContactPerson || 'Contractor Contact'},\n\n[Enter your letter content here]\n\nSincerely,`}
               rows={15}
               className="w-full px-3 py-2 border border-gray-300 rounded font-mono text-sm"
             />

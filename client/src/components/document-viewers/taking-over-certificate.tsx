@@ -8,12 +8,18 @@ import html2canvas from 'html2canvas';
 // Type definitions
 interface Project {
   id?: string;
-  number?: string;
+  projectNumber?: string;
   name?: string;
   location?: string;
   contractAmount?: string;
-  client?: { name?: string; logo?: string; address?: string; phone?: string; email?: string; contact?: string };
-  contractor?: { name?: string; contact?: string };
+  client?: string;
+  clientLogo?: string;
+  clientAddress?: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  clientContactPerson?: string;
+  contractorName?: string;
+  contractorContactPerson?: string;
 }
 
 interface SavedDocumentData {
@@ -34,7 +40,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
   // Use saved data if available, otherwise use live project data
   const displayProject = savedData?.projectSnapshot || project;
   const isSaved = !!savedData;
-  const [certificateNumber, setCertificateNumber] = useState(`TOC-${project.number}-${new Date().getFullYear()}`);
+  const [certificateNumber, setCertificateNumber] = useState(`TOC-${project.projectNumber || 'undefined'}-${new Date().getFullYear()}`);
   const [certificateDate, setCertificateDate] = useState(new Date().toISOString().split('T')[0]);
   const [takingOverDate, setTakingOverDate] = useState(new Date().toISOString().split('T')[0]);
   const [outstandingWork, setOutstandingWork] = useState('None at the time of Taking Over');
@@ -160,7 +166,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
       
       // Add image to fill entire page
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Taking_Over_Certificate_${project.number}_${certificateDate}.pdf`);
+      pdf.save(`Taking_Over_Certificate_${project.projectNumber}_${certificateDate}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF. Please try again.');
@@ -180,7 +186,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
   const handleSaveDocument = () => {
     const documentName = window.prompt(
       'Enter document name:',
-      `Taking Over Certificate - ${project?.number || 'New'}`
+      `Taking Over Certificate - ${project?.projectNumber || 'New'}`
     );
     if (documentName && documentName.trim()) {
       onSave(documentId, documentName.trim(), {
@@ -248,20 +254,20 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
           {/* Letterhead */}
           <div className="mb-6 pb-6 border-b-2 border-[#1a5276]">
             <div className="flex justify-between items-start gap-6">
-              {displayProject?.client?.logo && (
+              {displayProject?.clientLogo && (
                 <div className="flex-shrink-0">
                   <img 
-                    src={displayProject?.client?.logo} 
-                    alt={displayProject?.client?.name || "Client Name"}
+                    src={displayProject?.clientLogo} 
+                    alt={displayProject?.client || "Client Name"}
                     className="h-28 w-auto object-contain"
                   />
                 </div>
               )}
               <div className="text-right flex-1">
-                <h2 className="text-[#1a5276] mb-1 text-[18px]">{displayProject?.client?.name || "Client Name"}</h2>
-                <p className="text-[13px] text-muted-foreground">{displayProject?.client?.address}</p>
-                <p className="text-[13px] text-muted-foreground">{displayProject?.client?.phone}</p>
-                <p className="text-[13px] text-muted-foreground">{displayProject?.client?.email}</p>
+                <h2 className="text-[#1a5276] mb-1 text-[18px]">{displayProject?.client || "Client Name"}</h2>
+                <p className="text-[13px] text-muted-foreground">{displayProject?.clientAddress}</p>
+                <p className="text-[13px] text-muted-foreground">{displayProject?.clientPhone}</p>
+                <p className="text-[13px] text-muted-foreground">{displayProject?.clientEmail}</p>
               </div>
             </div>
           </div>
@@ -294,7 +300,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
               <div className="grid grid-cols-2 gap-3 text-[14px]">
                 <div>
                   <span className="text-muted-foreground text-[13px]">Project Number:</span>
-                  <p>{displayProject.number}</p>
+                  <p>{displayProject.projectNumber}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground text-[13px]">Location:</span>
@@ -305,11 +311,11 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
               <div className="grid grid-cols-2 gap-3 text-[14px]">
                 <div>
                   <span className="text-muted-foreground text-[13px]">Employer:</span>
-                  <p>{displayProject?.client?.name || "Client Name"}</p>
+                  <p>{displayProject?.client || "Client Name"}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground text-[13px]">Contractor:</span>
-                  <p>{displayProject?.contractor?.name || "Contractor Name"}</p>
+                  <p>{displayProject?.contractorName || "Contractor Name"}</p>
                 </div>
               </div>
 
@@ -363,7 +369,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
                 <div className="text-center text-[13px]">
                   <p>Contractor</p>
                   <p className="text-[11px] text-muted-foreground mt-1">Signature & Date</p>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">Name: {displayProject?.contractor?.contact || "Contractor Contact"}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Name: {displayProject?.contractorContactPerson || "Contractor Contact"}</p>
                 </div>
               </div>
 
@@ -373,7 +379,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
                 <div className="text-center text-[13px]">
                   <p>Employer/Employer's Representative</p>
                   <p className="text-[11px] text-muted-foreground mt-1">Signature & Date</p>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">Name: {displayProject?.client?.contact || "Client Contact"}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Name: {displayProject?.clientContactPerson || "Client Contact"}</p>
                 </div>
               </div>
             </div>
