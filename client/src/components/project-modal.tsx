@@ -7,12 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { X, Trash2, Plus, Upload, Image as ImageIcon, FileText } from "lucide-react";
+import { X, Trash2, Plus, Upload, Image as ImageIcon } from "lucide-react";
 import { addMonths, format } from "date-fns";
-import type { ProjectWithRoads, InsertProject, ClientPersonnel, ContractorPersonnel, ContractorEquipment, PreCommencementItem } from "@shared/schema";
+import type { ProjectWithRoads, InsertProject, ClientPersonnel, ContractorPersonnel, ContractorEquipment } from "@shared/schema";
 
 interface ProjectModalProps {
   project?: ProjectWithRoads | null;
@@ -65,28 +64,6 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
   // Contractor equipment state
   const [newContractorEquipment, setNewContractorEquipment] = useState({ equipmentName: "", type: "", quantity: "1", condition: "" });
 
-  // Pre-commencement edit state
-  const [editingPreCommItem, setEditingPreCommItem] = useState<PreCommencementItem | null>(null);
-  const [editPreCommData, setEditPreCommData] = useState<{
-    itemName: string;
-    status: "pending" | "submitted" | "approved" | "rejected" | "expired";
-    deadline: string;
-    dateSubmitted: string;
-    responsibleParty: string;
-    notes: string;
-  }>({
-    itemName: "",
-    status: "pending",
-    deadline: "",
-    dateSubmitted: "",
-    responsibleParty: "",
-    notes: "",
-  });
-
-  // Pre-commencement file upload state
-  const [selectedPreCommFile, setSelectedPreCommFile] = useState<File | null>(null);
-  const [isUploadingPreCommFile, setIsUploadingPreCommFile] = useState(false);
-
   // File refs for logo uploads
   const clientLogoInputRef = useRef<HTMLInputElement>(null);
   const contractorLogoInputRef = useRef<HTMLInputElement>(null);
@@ -106,11 +83,6 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
   const { data: contractorEquipment = [] } = useQuery<ContractorEquipment[]>({
     queryKey: [`/api/projects/${project?.id}/contractor-equipment`],
-    enabled: !!project?.id,
-  });
-
-  const { data: preCommencementItems = [], isLoading: isLoadingPreCommencement } = useQuery<PreCommencementItem[]>({
-    queryKey: [`/api/projects/${project?.id}/pre-commencement`],
     enabled: !!project?.id,
   });
 
@@ -253,23 +225,6 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
     },
   });
 
-  // Pre-commencement item mutation
-  const updatePreCommItemMutation = useMutation({
-    mutationFn: async (data: { id: string; updates: any }) => {
-      await apiRequest("PATCH", `/api/pre-commencement/${data.id}`, data.updates);
-    },
-    onSuccess: () => {
-      if (project?.id) {
-        queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/pre-commencement`] });
-      }
-      setEditingPreCommItem(null);
-      toast({ title: "Success", description: "Checklist item updated successfully" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to update checklist item", variant: "destructive" });
-    },
-  });
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -378,74 +333,6 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
     }
   };
 
-  const handleEditPreCommItem = (item: PreCommencementItem) => {
-    setEditingPreCommItem(item);
-    setEditPreCommData({
-      itemName: item.itemName,
-      status: item.status as "pending" | "submitted" | "approved" | "rejected" | "expired",
-      deadline: item.deadline || "",
-      dateSubmitted: item.dateSubmitted || "",
-      responsibleParty: item.responsibleParty || "",
-      notes: item.notes || "",
-    });
-    setSelectedPreCommFile(null);
-  };
-
-  const handlePreCommDataChange = (field: string, value: string) => {
-    setEditPreCommData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleSavePreCommItem = async () => {
-    if (!editingPreCommItem || !project?.id) return;
-    
-    setIsUploadingPreCommFile(true);
-    let fileUrl = editingPreCommItem.fileUrl;
-
-    try {
-      // Upload file if selected
-      if (selectedPreCommFile) {
-        const formData = new FormData();
-        formData.append('file', selectedPreCommFile);
-
-        const path = `${project.id}/pre-commencement/${editingPreCommItem.id}-${Date.now()}.${selectedPreCommFile.name.split('.').pop()}`;
-        
-        const response = await fetch(`/api/storage/pre-commencement/${path}`, {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) throw new Error('Upload failed');
-
-        const { url } = await response.json();
-        fileUrl = url;
-      }
-
-      // Update item with file URL if uploaded
-      updatePreCommItemMutation.mutate({
-        id: editingPreCommItem.id,
-        updates: {
-          ...editPreCommData,
-          deadline: editPreCommData.deadline || null,
-          dateSubmitted: editPreCommData.dateSubmitted || null,
-          responsibleParty: editPreCommData.responsibleParty || null,
-          notes: editPreCommData.notes || null,
-          fileUrl: fileUrl || null,
-        },
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to upload file",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploadingPreCommFile(false);
-    }
-  };
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
@@ -477,11 +364,6 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
               <TabsTrigger value="scope" className="data-[state=active]:border-b-2 data-[state=active]:border-[#0EA5E9] rounded-none">
                 Introduction
               </TabsTrigger>
-              {project?.id && (
-                <TabsTrigger value="pre-commencement" className="data-[state=active]:border-b-2 data-[state=active]:border-[#0EA5E9] rounded-none">
-                  Pre-Commencement
-                </TabsTrigger>
-              )}
             </TabsList>
 
             {/* Basic Information Tab */}
@@ -1250,108 +1132,6 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                 />
               </div>
             </TabsContent>
-
-            {/* Pre-Commencement Checklist Tab */}
-            {project?.id && (
-              <TabsContent value="pre-commencement" className="p-6 space-y-6 min-h-[500px]">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900">Pre-Commencement Document Checklist</h4>
-                      <p className="text-sm text-gray-600 mt-1">Track critical documents required before construction begins</p>
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {preCommencementItems.filter(item => item.status === 'approved').length} of {preCommencementItems.length} items approved
-                    </div>
-                  </div>
-
-                  {isLoadingPreCommencement ? (
-                    <div className="text-center py-8 text-gray-500">Loading checklist...</div>
-                  ) : preCommencementItems.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">No checklist items found</div>
-                  ) : (
-                    <div className="border rounded-lg overflow-hidden">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Submitted</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsible Party</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {preCommencementItems.map((item) => (
-                            <tr key={item.id} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 text-sm text-gray-900" data-testid={`text-item-name-${item.id}`}>
-                                {item.itemName}
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    item.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                    item.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
-                                    item.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                    'bg-gray-100 text-gray-800'
-                                  }`}
-                                  data-testid={`status-${item.id}`}
-                                >
-                                  {item.status}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-600" data-testid={`text-deadline-${item.id}`}>
-                                {item.deadline ? new Date(item.deadline).toLocaleDateString() : '-'}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-600" data-testid={`text-date-submitted-${item.id}`}>
-                                {item.dateSubmitted ? new Date(item.dateSubmitted).toLocaleDateString() : '-'}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-600" data-testid={`text-responsible-${item.id}`}>
-                                {item.responsibleParty || '-'}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-600" data-testid={`text-notes-${item.id}`}>
-                                <div className="max-w-xs truncate" title={item.notes || ''}>
-                                  {item.notes || '-'}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                {item.fileUrl ? (
-                                  <a
-                                    href={item.fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                                    data-testid={`link-document-${item.id}`}
-                                  >
-                                    <FileText className="w-4 h-4" />
-                                    View
-                                  </a>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <button
-                                  type="button"
-                                  onClick={() => handleEditPreCommItem(item)}
-                                  className="text-gray-400 hover:text-gray-600"
-                                  data-testid={`button-edit-item-${item.id}`}
-                                >
-                                  Edit
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-            )}
           </Tabs>
 
           <div className="flex justify-end space-x-4 px-6 py-4 border-t border-gray-200 bg-gray-50">
@@ -1374,145 +1154,6 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
             </Button>
           </div>
         </form>
-
-        {/* Edit Pre-Commencement Item Dialog */}
-        <Dialog open={!!editingPreCommItem} onOpenChange={(open) => !open && setEditingPreCommItem(null)}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Edit Checklist Item</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">Item Name</Label>
-                <Input
-                  type="text"
-                  value={editPreCommData.itemName}
-                  onChange={(e) => handlePreCommDataChange('itemName', e.target.value)}
-                  className="w-full"
-                  data-testid="input-edit-item-name"
-                />
-              </div>
-              
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">Status</Label>
-                <Select
-                  value={editPreCommData.status}
-                  onValueChange={(value) => handlePreCommDataChange('status', value)}
-                >
-                  <SelectTrigger className="w-full" data-testid="select-edit-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="submitted">Submitted</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Deadline</Label>
-                  <Input
-                    type="date"
-                    value={editPreCommData.deadline}
-                    onChange={(e) => handlePreCommDataChange('deadline', e.target.value)}
-                    className="w-full"
-                    data-testid="input-edit-deadline"
-                  />
-                </div>
-
-                <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Date Submitted</Label>
-                  <Input
-                    type="date"
-                    value={editPreCommData.dateSubmitted}
-                    onChange={(e) => handlePreCommDataChange('dateSubmitted', e.target.value)}
-                    className="w-full"
-                    data-testid="input-edit-date-submitted"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">Responsible Party</Label>
-                <Input
-                  type="text"
-                  value={editPreCommData.responsibleParty}
-                  onChange={(e) => handlePreCommDataChange('responsibleParty', e.target.value)}
-                  className="w-full"
-                  placeholder="Enter name or organization"
-                  data-testid="input-edit-responsible-party"
-                />
-              </div>
-
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">Notes</Label>
-                <Textarea
-                  value={editPreCommData.notes}
-                  onChange={(e) => handlePreCommDataChange('notes', e.target.value)}
-                  rows={4}
-                  className="w-full"
-                  placeholder="Add any additional notes or comments..."
-                  data-testid="textarea-edit-notes"
-                />
-              </div>
-
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">
-                  Attach Document
-                </Label>
-                {editingPreCommItem?.fileUrl && !selectedPreCommFile && (
-                  <div className="mb-2 flex items-center gap-2">
-                    <a
-                      href={editingPreCommItem.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
-                      data-testid="link-current-file"
-                    >
-                      <FileText className="w-4 h-4" />
-                      View current document
-                    </a>
-                  </div>
-                )}
-                <Input
-                  type="file"
-                  onChange={(e) => setSelectedPreCommFile(e.target.files?.[0] || null)}
-                  className="w-full"
-                  data-testid="input-file-upload"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls"
-                />
-                {selectedPreCommFile && (
-                  <p className="text-sm text-gray-600 mt-1" data-testid="text-selected-file">
-                    Selected: {selectedPreCommFile.name}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEditingPreCommItem(null)}
-                data-testid="button-cancel-edit"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleSavePreCommItem}
-                disabled={updatePreCommItemMutation.isPending || isUploadingPreCommFile}
-                className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white"
-                data-testid="button-save-edit"
-              >
-                {isUploadingPreCommFile ? "Uploading..." : updatePreCommItemMutation.isPending ? "Saving..." : "Save Changes"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );
