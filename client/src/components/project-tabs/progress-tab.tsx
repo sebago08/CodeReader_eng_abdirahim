@@ -378,14 +378,11 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
       {/* Nested Sub-Tabs */}
       <Tabs defaultValue="progress-tracking" className="w-full">
         <TabsList 
-          className={`grid w-full mb-6 ${project.projectType === "Road" ? "grid-cols-6" : "grid-cols-5"}`} 
+          className={`grid w-full mb-6 ${project.projectType === "Road" ? "grid-cols-5" : "grid-cols-4"}`} 
           data-testid="progress-subtabs"
         >
           <TabsTrigger value="progress-tracking" data-testid="tab-progress-tracking">
             Progress Tracking
-          </TabsTrigger>
-          <TabsTrigger value="boq-tracker" data-testid="tab-boq-tracker">
-            BOQ Tracker
           </TabsTrigger>
           <TabsTrigger value="milestones" data-testid="tab-milestones">
             Milestones
@@ -403,123 +400,8 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
           )}
         </TabsList>
 
-        {/* Progress Tracking Sub-Tab */}
+        {/* Progress Tracking Sub-Tab (consolidated with BOQ tracker) */}
         <TabsContent value="progress-tracking" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle data-testid="heading-progress-tracking">Progress Tracking</CardTitle>
-                  <CardDescription>Track overall project progress</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Physical Progress - Only for Road projects */}
-                {project.projectType === "Road" && (
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium">Physical Progress (Road Construction)</span>
-                      <span className="text-sm font-medium" data-testid="text-physical-progress">{physicalProgress}%</span>
-                    </div>
-                    <Progress value={physicalProgress} className="h-3" data-testid="progress-physical" />
-                  </div>
-                )}
-                
-                {/* Activity Progress - For all projects */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Activity Progress (BOQ Items)</span>
-                    <span className="text-sm font-medium" data-testid="text-activity-progress">{activityProgress}%</span>
-                  </div>
-                  <Progress value={activityProgress} className="h-3" data-testid="progress-activity" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Activities Table */}
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Project Activities</CardTitle>
-                  <CardDescription>Track progress of project activities and milestones</CardDescription>
-                </div>
-                <Button onClick={() => setIsAddModalOpen(true)} data-testid="button-add-activity">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Activity
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : activities.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No activities added yet. Click "Add Activity" to get started.</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Activity Name</TableHead>
-                      <TableHead>Progress %</TableHead>
-                      <TableHead>Progress Bar</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {activities.map((activity) => (
-                      <TableRow key={activity.id} data-testid={`activity-row-${activity.id}`}>
-                        <TableCell className="font-medium" data-testid={`activity-name-${activity.id}`}>
-                          {activity.name}
-                        </TableCell>
-                        <TableCell data-testid={`activity-progress-${activity.id}`}>
-                          {activity.progress}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Progress value={activity.progress} className="flex-1" />
-                            <span className="text-sm font-medium w-16 text-right">
-                              {activity.progress}%
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(activity)}
-                              data-testid={`button-edit-activity-${activity.id}`}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(activity.id)}
-                              data-testid={`button-delete-activity-${activity.id}`}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* BOQ Tracker Sub-Tab */}
-        <TabsContent value="boq-tracker" className="space-y-6">
           <BOQProgressTracker project={project} />
         </TabsContent>
 
