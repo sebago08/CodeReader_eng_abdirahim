@@ -49,20 +49,37 @@ export default function ProjectCard({
     return Math.min(100, Math.round((elapsed / totalDuration) * 100));
   };
 
-  // Calculate actual progress based on layer completion
+  // Calculate actual progress based on layer completion with road-length weighting
   const calculateActualProgress = () => {
     if (!project.roads || project.roads.length === 0) return 0;
     
-    let totalProgress = 0;
-    let totalWeight = 0;
+    // First, calculate total project length (only valid roads)
+    const totalProjectLength = project.roads.reduce((sum, road) => {
+      const roadLength = parseFloat(road.length);
+      return !roadLength || roadLength <= 0 || isNaN(roadLength) ? sum : sum + roadLength;
+    }, 0);
+    
+    if (totalProjectLength === 0) return 0;
+    
+    let weightedProgress = 0;
     
     project.roads.forEach(road => {
+      const roadLength = parseFloat(road.length);
+      // Skip roads with invalid lengths
+      if (!roadLength || roadLength <= 0 || isNaN(roadLength)) {
+        return;
+      }
+      
+      const roadWeight = roadLength / totalProjectLength; // Road's contribution to overall progress
       const isDualCarriageway = road.carriageway === 'dual';
       
       if (road.layers && road.layers.length > 0) {
+        let roadProgress = 0;
+        let totalLayerWeight = 0;
+        
         road.layers.forEach(layer => {
           const layerWeight = layer.weight || 1;
-          totalWeight += layerWeight;
+          totalLayerWeight += layerWeight;
           
           if (layer.progress && layer.progress.length > 0) {
             if (isDualCarriageway) {
@@ -70,34 +87,48 @@ export default function ProjectCard({
               const lhsProgress = layer.progress
                 .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'LHS' || prog.carriagewaySide?.toLowerCase() === 'both')
                 .reduce((sum: number, prog: any) => {
-                  return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+                  const start = parseFloat(prog.startChainage as any);
+                  const end = parseFloat(prog.endChainage as any);
+                  if (isNaN(start) || isNaN(end) || end <= start) return sum;
+                  return sum + (end - start);
                 }, 0);
               
               const rhsProgress = layer.progress
                 .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'RHS' || prog.carriagewaySide?.toLowerCase() === 'both')
                 .reduce((sum: number, prog: any) => {
-                  return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+                  const start = parseFloat(prog.startChainage as any);
+                  const end = parseFloat(prog.endChainage as any);
+                  if (isNaN(start) || isNaN(end) || end <= start) return sum;
+                  return sum + (end - start);
                 }, 0);
               
-              const lhsPercentage = Math.min(100, (lhsProgress / Number(road.length)) * 100);
-              const rhsPercentage = Math.min(100, (rhsProgress / Number(road.length)) * 100);
+              const lhsPercentage = Math.min(100, (lhsProgress / roadLength) * 100);
+              const rhsPercentage = Math.min(100, (rhsProgress / roadLength) * 100);
               const layerProgress = (lhsPercentage + rhsPercentage) / 2;
               
-              totalProgress += layerProgress * layerWeight;
+              roadProgress += layerProgress * layerWeight;
             } else {
               // For single carriageway, sum all progress
               const completedLength = layer.progress.reduce((sum, prog) => {
-                return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+                const start = parseFloat(prog.startChainage as any);
+                const end = parseFloat(prog.endChainage as any);
+                if (isNaN(start) || isNaN(end) || end <= start) return sum;
+                return sum + (end - start);
               }, 0);
-              const layerProgress = Math.min(100, (completedLength / Number(road.length)) * 100);
-              totalProgress += layerProgress * layerWeight;
+              
+              const layerProgress = Math.min(100, (completedLength / roadLength) * 100);
+              roadProgress += layerProgress * layerWeight;
             }
           }
         });
+        
+        // Calculate this road's weighted progress
+        const thisRoadProgress = totalLayerWeight > 0 ? roadProgress / totalLayerWeight : 0;
+        weightedProgress += thisRoadProgress * roadWeight;
       }
     });
     
-    return totalWeight > 0 ? Math.min(100, Math.round(totalProgress / totalWeight)) : 0;
+    return Math.min(100, Math.round(weightedProgress));
   };
 
   const plannedProgress = calculatePlannedProgress();
