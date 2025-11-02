@@ -27,32 +27,45 @@ export default function ProjectOverviewCard({
 }: ProjectOverviewCardProps) {
   const isOwner = currentUserId && project.userId === currentUserId;
   const isCollaborator = currentUserId && project.userId !== currentUserId;
-  // Calculate overall progress based on layer completion
+  // Calculate overall progress based on layer completion with road-length weighting
   const calculateOverallProgress = () => {
     if (!project.roads || project.roads.length === 0) return 0;
     
-    let totalProgress = 0;
-    let totalWeight = 0;
+    // First, calculate total project length
+    const totalProjectLength = project.roads.reduce((sum, road) => sum + Number(road.length), 0);
+    if (totalProjectLength === 0) return 0;
+    
+    let weightedProgress = 0;
     
     project.roads.forEach(road => {
+      const roadLength = Number(road.length);
+      const roadWeight = roadLength / totalProjectLength; // Road's contribution to overall progress
+      
       if (road.layers && road.layers.length > 0) {
+        let roadProgress = 0;
+        let totalLayerWeight = 0;
+        
         road.layers.forEach(layer => {
           const layerWeight = layer.weight || 1;
-          totalWeight += layerWeight;
+          totalLayerWeight += layerWeight;
           
           if (layer.progress && layer.progress.length > 0) {
             const completedLength = layer.progress.reduce((sum, prog) => {
               return sum + (Number(prog.endChainage) - Number(prog.startChainage));
             }, 0);
             
-            const layerProgress = (completedLength / Number(road.length)) * 100;
-            totalProgress += layerProgress * layerWeight;
+            const layerProgress = (completedLength / roadLength) * 100;
+            roadProgress += layerProgress * layerWeight;
           }
         });
+        
+        // Calculate this road's weighted progress
+        const thisRoadProgress = totalLayerWeight > 0 ? roadProgress / totalLayerWeight : 0;
+        weightedProgress += thisRoadProgress * roadWeight;
       }
     });
     
-    return totalWeight > 0 ? Math.min(100, Math.round(totalProgress / totalWeight)) : 0;
+    return Math.min(100, Math.round(weightedProgress));
   };
 
   // Calculate layer progress summary
