@@ -69,12 +69,18 @@ export default function OverviewTab({ project }: OverviewTabProps) {
     }).format(num);
   };
 
-  // Calculate Physical Progress
+  // Calculate Physical Progress with road-length weighting
   const calculatePhysicalProgress = (): number => {
     if (project.projectType === "Road" && project.roads && project.roads.length > 0) {
-      // For road projects, calculate based on layer progress
-      let totalProgress = 0;
-      let totalLayers = 0;
+      // First, calculate total project length
+      const totalProjectLength = project.roads.reduce((sum, road) => {
+        const roadLength = parseFloat(road.length);
+        return !roadLength || roadLength <= 0 || isNaN(roadLength) ? sum : sum + roadLength;
+      }, 0);
+      
+      if (totalProjectLength === 0) return 0;
+      
+      let weightedProgress = 0;
 
       project.roads.forEach((road) => {
         // Validate road length
@@ -83,10 +89,15 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           return; // Skip roads with invalid lengths
         }
 
+        const roadWeight = roadLength / totalProjectLength; // Road's contribution to overall progress
         const isDualCarriageway = road.carriageway === 'dual';
+        let roadProgress = 0;
+        let totalLayerWeight = 0;
 
         road.layers?.forEach((layer) => {
-          totalLayers++;
+          const layerWeight = layer.weight || 1;
+          totalLayerWeight += layerWeight;
+          
           if (layer.progress && layer.progress.length > 0) {
             if (isDualCarriageway) {
               // For dual carriageway, calculate LHS and RHS separately and average them
@@ -112,7 +123,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
               const rhsPercentage = Math.min(100, (rhsProgress / roadLength) * 100);
               const layerProgress = (lhsPercentage + rhsPercentage) / 2;
               
-              totalProgress += layerProgress;
+              roadProgress += layerProgress * layerWeight;
             } else {
               // For single carriageway, sum all progress
               const completedLength = layer.progress.reduce((sum, prog) => {
@@ -122,13 +133,17 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                 return sum + (end - start);
               }, 0);
               const layerProgress = Math.min(100, (completedLength / roadLength) * 100);
-              totalProgress += layerProgress;
+              roadProgress += layerProgress * layerWeight;
             }
           }
         });
+        
+        // Calculate this road's weighted progress and add to overall
+        const thisRoadProgress = totalLayerWeight > 0 ? roadProgress / totalLayerWeight : 0;
+        weightedProgress += thisRoadProgress * roadWeight;
       });
 
-      return totalLayers > 0 ? Math.round(totalProgress / totalLayers) : 0;
+      return Math.min(100, Math.round(weightedProgress));
     }
     
     // For non-road projects, would use activities (not implemented in this view)
