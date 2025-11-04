@@ -44,24 +44,44 @@ export default function WorkPlanEditor() {
 
   const saveChangesMutation = useMutation({
     mutationFn: async () => {
-      // Save all activities
-      const promises = localActivities.map((activity) =>
-        fetch(`/api/work-plan-activities/${activity.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            activityName: activity.activityName,
-            duration: activity.duration,
-            startDate: activity.startDate,
-            endDate: activity.endDate,
-          }),
-        }).then(res => {
-          if (!res.ok) throw new Error("Failed to save activity");
-          return res.json();
-        })
-      );
-      await Promise.all(promises);
+      // Save all activities (but not sections, as they don't have duration/dates)
+      const promises = localActivities
+        .filter((activity) => activity.itemType === "activity")
+        .map((activity) =>
+          fetch(`/api/work-plan-activities/${activity.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              activityName: activity.activityName,
+              duration: activity.duration,
+              startDate: activity.startDate,
+              endDate: activity.endDate,
+            }),
+          }).then(res => {
+            if (!res.ok) throw new Error("Failed to save activity");
+            return res.json();
+          })
+        );
+      
+      // Also save section names separately
+      const sectionPromises = localActivities
+        .filter((activity) => activity.itemType === "section")
+        .map((section) =>
+          fetch(`/api/work-plan-activities/${section.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              activityName: section.activityName,
+            }),
+          }).then(res => {
+            if (!res.ok) throw new Error("Failed to save section");
+            return res.json();
+          })
+        );
+      
+      await Promise.all([...promises, ...sectionPromises]);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-plans", workPlanId, "activities"] });
