@@ -11,6 +11,7 @@ import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import ProjectsOverview from "@/pages/projects-overview";
 import ProjectDetail from "@/pages/project-detail";
+import WorkPlanEditor from "@/pages/work-plan-editor";
 import AdminDashboard from "@/pages/admin-dashboard";
 import Bootstrap from "@/pages/bootstrap";
 import Reports from "@/pages/reports";
@@ -27,6 +28,7 @@ function Router() {
       <ProtectedRoute path="/reports" component={Reports} />
       <ProtectedRoute path="/team" component={Team} />
       <ProtectedRoute path="/projects" component={ProjectsOverview} />
+      <ProtectedRoute path="/work-plans/:workPlanId" component={WorkPlanEditor} />
       <ProtectedRoute path="/projects/:id" component={ProjectDetail} />
       <Route component={NotFound} />
     </Switch>

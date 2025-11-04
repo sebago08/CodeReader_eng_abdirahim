@@ -919,6 +919,30 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get('/api/work-plans/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      // Get the work plan
+      const workPlan = await storage.getWorkPlan(id);
+      if (!workPlan) {
+        return res.status(404).json({ message: "Work plan not found" });
+      }
+      
+      // Verify user has access to the work plan's project
+      const project = await storage.getProject(workPlan.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      res.json(workPlan);
+    } catch (error) {
+      console.error("Error fetching work plan:", error);
+      res.status(500).json({ message: "Failed to fetch work plan" });
+    }
+  });
+
   app.delete('/api/work-plans/:id', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
@@ -941,6 +965,67 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error deleting work plan:", error);
       res.status(500).json({ message: "Failed to delete work plan" });
+    }
+  });
+
+  // Get activities for a specific work plan
+  app.get('/api/work-plans/:workPlanId/activities', isAuthenticated, async (req, res) => {
+    try {
+      const { workPlanId } = req.params;
+      const userId = req.user!.id;
+      
+      // Get the work plan to verify access
+      const workPlan = await storage.getWorkPlan(workPlanId);
+      if (!workPlan) {
+        return res.status(404).json({ message: "Work plan not found" });
+      }
+      
+      // Verify user has access to the work plan's project
+      const project = await storage.getProject(workPlan.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const activities = await storage.getWorkPlanActivities(workPlan.projectId, workPlanId);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching work plan activities:", error);
+      res.status(500).json({ message: "Failed to fetch work plan activities" });
+    }
+  });
+
+  // Create activity for a specific work plan
+  app.post('/api/work-plans/:workPlanId/activities', isAuthenticated, async (req, res) => {
+    try {
+      const { workPlanId } = req.params;
+      const userId = req.user!.id;
+      
+      // Get the work plan to verify access
+      const workPlan = await storage.getWorkPlan(workPlanId);
+      if (!workPlan) {
+        return res.status(404).json({ message: "Work plan not found" });
+      }
+      
+      // Verify user has access to the work plan's project
+      const project = await storage.getProject(workPlan.projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      // Validate request body
+      const validated = insertWorkPlanActivitySchema.parse({
+        ...req.body,
+        workPlanId,
+      });
+      
+      const activity = await storage.createWorkPlanActivity(workPlan.projectId, validated);
+      res.status(201).json(activity);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error creating work plan activity:", error);
+      res.status(500).json({ message: "Failed to create work plan activity" });
     }
   });
 
