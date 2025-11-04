@@ -7,30 +7,18 @@ import * as schema from "@shared/schema";
 
 const { Pool: PgPool } = pg;
 
-// Prioritize Supabase connection if available, otherwise use Replit's Neon database
-const databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+// Always use Replit's Neon database (DATABASE_URL) where all the data exists
+// SUPABASE_DATABASE_URL is for production deployment only
+const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(
-    "DATABASE_URL or SUPABASE_DATABASE_URL must be set. Did you forget to provision a database?",
+    "DATABASE_URL must be set. Did you forget to provision a database?",
   );
 }
 
-// Check if we're using Supabase (use standard PostgreSQL) or Neon (use serverless driver)
-const isSupabase = databaseUrl.includes('supabase.com');
-
-let pool: any;
-let db: any;
-
-if (isSupabase) {
-  // Use standard PostgreSQL driver for Supabase
-  pool = new PgPool({ connectionString: databaseUrl });
-  db = drizzlePg(pool, { schema });
-} else {
-  // Use Neon serverless driver for Replit's database
-  neonConfig.webSocketConstructor = ws;
-  pool = new NeonPool({ connectionString: databaseUrl });
-  db = drizzleNeon(pool, { schema });
-}
+// Use standard PostgreSQL driver for reliability
+const pool = new PgPool({ connectionString: databaseUrl });
+const db = drizzlePg(pool, { schema });
 
 export { pool, db };
