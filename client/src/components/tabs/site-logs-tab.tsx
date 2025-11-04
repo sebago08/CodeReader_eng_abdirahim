@@ -15,6 +15,14 @@ interface SiteLogsTabProps {
   projectId: string;
 }
 
+// Helper function to strip HTML tags and get plain text
+const stripHtml = (html: string | null): string => {
+  if (!html) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+};
+
 export function SiteLogsTab({ projectId }: SiteLogsTabProps) {
   const [activeSubTab, setActiveSubTab] = useState<"daily-logs" | "action-points">("daily-logs");
   const [dailyLogDialogOpen, setDailyLogDialogOpen] = useState(false);
@@ -156,13 +164,13 @@ export function SiteLogsTab({ projectId }: SiteLogsTabProps) {
                         </div>
                         {log.workSummary && (
                           <p className="text-sm text-gray-700 mb-2 line-clamp-2">
-                            {log.workSummary}
+                            {stripHtml(log.workSummary)}
                           </p>
                         )}
                         {log.issues && (
                           <div className="flex items-start gap-2 mt-2">
                             <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                            <p className="text-sm text-amber-700 line-clamp-1">{log.issues}</p>
+                            <p className="text-sm text-amber-700 line-clamp-1">{stripHtml(log.issues)}</p>
                           </div>
                         )}
                       </div>
