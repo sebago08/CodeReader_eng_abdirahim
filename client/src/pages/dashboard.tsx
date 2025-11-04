@@ -65,18 +65,84 @@ export default function Dashboard() {
     })),
   }) as { data?: ProgressTracker[], isLoading: boolean }[];
 
-  // Calculate progress for a project based on progress trackers
+  // Calculate progress for a project based on road-length-weighted physical progress
   const calculateProjectProgress = (projectId: string) => {
-    const queryIndex = projectIds.indexOf(projectId);
-    if (queryIndex === -1) return 0;
+    const project = activeProjects.find(p => p.id === projectId);
+    if (!project || !project.roads || project.roads.length === 0) return 0;
     
-    const progressData = progressQueries[queryIndex]?.data;
-    if (!progressData || progressData.length === 0) return 0;
+    // Calculate total project length (only valid roads)
+    const totalProjectLength = project.roads.reduce((sum, road) => {
+      const roadLength = parseFloat(road.length);
+      return !roadLength || roadLength <= 0 || isNaN(roadLength) ? sum : sum + roadLength;
+    }, 0);
     
-    // Note: Progress trackers don't have overallProgress field directly
-    // Would need to fetch tracker items and calculate from qtyDone/qtyInBoq
-    // For now, returning 0 as a placeholder
-    return 0;
+    if (totalProjectLength === 0) return 0;
+    
+    let weightedProgress = 0;
+    
+    project.roads.forEach(road => {
+      const roadLength = parseFloat(road.length);
+      // Skip roads with invalid lengths
+      if (!roadLength || roadLength <= 0 || isNaN(roadLength)) {
+        return;
+      }
+      
+      const roadWeight = roadLength / totalProjectLength;
+      const isDualCarriageway = road.carriageway === 'dual';
+      
+      if (road.layers && road.layers.length > 0) {
+        let roadProgress = 0;
+        let totalLayerWeight = 0;
+        
+        road.layers.forEach(layer => {
+          const layerWeight = layer.weight || 1;
+          totalLayerWeight += layerWeight;
+          
+          if (layer.progress && layer.progress.length > 0) {
+            if (isDualCarriageway) {
+              const lhsProgress = layer.progress
+                .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'LHS' || prog.carriagewaySide?.toLowerCase() === 'both')
+                .reduce((sum: number, prog: any) => {
+                  const start = parseFloat(prog.startChainage as any);
+                  const end = parseFloat(prog.endChainage as any);
+                  if (isNaN(start) || isNaN(end) || end <= start) return sum;
+                  return sum + (end - start);
+                }, 0);
+              
+              const rhsProgress = layer.progress
+                .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'RHS' || prog.carriagewaySide?.toLowerCase() === 'both')
+                .reduce((sum: number, prog: any) => {
+                  const start = parseFloat(prog.startChainage as any);
+                  const end = parseFloat(prog.endChainage as any);
+                  if (isNaN(start) || isNaN(end) || end <= start) return sum;
+                  return sum + (end - start);
+                }, 0);
+              
+              const lhsPercentage = Math.min(100, (lhsProgress / roadLength) * 100);
+              const rhsPercentage = Math.min(100, (rhsProgress / roadLength) * 100);
+              const layerProgress = (lhsPercentage + rhsPercentage) / 2;
+              
+              roadProgress += layerProgress * layerWeight;
+            } else {
+              const completedLength = layer.progress.reduce((sum, prog) => {
+                const start = parseFloat(prog.startChainage as any);
+                const end = parseFloat(prog.endChainage as any);
+                if (isNaN(start) || isNaN(end) || end <= start) return sum;
+                return sum + (end - start);
+              }, 0);
+              
+              const layerProgress = Math.min(100, (completedLength / roadLength) * 100);
+              roadProgress += layerProgress * layerWeight;
+            }
+          }
+        });
+        
+        const thisRoadProgress = totalLayerWeight > 0 ? roadProgress / totalLayerWeight : 0;
+        weightedProgress += thisRoadProgress * roadWeight;
+      }
+    });
+    
+    return Math.min(100, Math.round(weightedProgress));
   };
 
   // Get project status badge
@@ -327,10 +393,8 @@ export default function Dashboard() {
                         <TableHeader>
                           <TableRow className="border-gray-200 dark:border-gray-700">
                             <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">PROJECT NAME</TableHead>
-                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">PROJECT ID</TableHead>
                             <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">STATUS</TableHead>
                             <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">PROGRESS</TableHead>
-                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">KEY CONTACT</TableHead>
                             <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">DUE DATE</TableHead>
                             <TableHead className="text-gray-700 dark:text-gray-300 font-semibold"></TableHead>
                           </TableRow>
@@ -342,9 +406,6 @@ export default function Dashboard() {
                               <TableRow key={project.id} className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50" data-testid={`row-project-${project.id}`}>
                                 <TableCell className="font-medium text-gray-900 dark:text-white">
                                   {project.name}
-                                </TableCell>
-                                <TableCell className="text-gray-600 dark:text-gray-400">
-                                  {project.projectNumber || '-'}
                                 </TableCell>
                                 <TableCell>
                                   <Badge 
@@ -359,9 +420,6 @@ export default function Dashboard() {
                                     <Progress value={progress} className="flex-1 h-2" />
                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{progress}%</span>
                                   </div>
-                                </TableCell>
-                                <TableCell className="text-gray-600 dark:text-gray-400">
-                                  {project.clientContactPerson || project.client || '-'}
                                 </TableCell>
                                 <TableCell className="text-gray-600 dark:text-gray-400">
                                   {project.endDate ? format(new Date(project.endDate), 'MMM dd, yyyy') : '-'}
