@@ -256,7 +256,7 @@ export default function WorkPlanEditor() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate(`/projects/${workPlan.projectId}`)}
+                onClick={() => navigate(`/projects/${workPlan.projectId}#workplan`)}
                 data-testid="button-back"
               >
                 <ArrowLeft className="h-5 w-5" />
