@@ -46,14 +46,19 @@ export default function WorkPlanEditor() {
     mutationFn: async () => {
       // Save all activities
       const promises = localActivities.map((activity) =>
-        apiRequest(`/api/work-plan-activities/${activity.id}`, {
+        fetch(`/api/work-plan-activities/${activity.id}`, {
           method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             activityName: activity.activityName,
             duration: activity.duration,
             startDate: activity.startDate,
             endDate: activity.endDate,
           }),
+        }).then(res => {
+          if (!res.ok) throw new Error("Failed to save activity");
+          return res.json();
         })
       );
       await Promise.all(promises);
@@ -77,9 +82,12 @@ export default function WorkPlanEditor() {
 
   const deleteActivityMutation = useMutation({
     mutationFn: async (activityId: string) => {
-      return apiRequest(`/api/work-plan-activities/${activityId}`, {
+      const response = await fetch(`/api/work-plan-activities/${activityId}`, {
         method: "DELETE",
+        credentials: "include",
       });
+      if (!response.ok) throw new Error("Failed to delete activity");
+      return response.status === 204 ? null : response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-plans", workPlanId, "activities"] });
@@ -99,14 +107,18 @@ export default function WorkPlanEditor() {
 
   const addSectionMutation = useMutation({
     mutationFn: async (data: { name: string; position?: number }) => {
-      return apiRequest(`/api/work-plans/${workPlanId}/activities`, {
+      const response = await fetch(`/api/work-plans/${workPlanId}/activities`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           activityName: data.name,
           itemType: "section",
           orderIndex: data.position || localActivities.length,
         }),
       });
+      if (!response.ok) throw new Error("Failed to add section");
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-plans", workPlanId, "activities"] });
@@ -119,8 +131,10 @@ export default function WorkPlanEditor() {
 
   const addActivityMutation = useMutation({
     mutationFn: async (data: { name: string; position?: number }) => {
-      return apiRequest(`/api/work-plans/${workPlanId}/activities`, {
+      const response = await fetch(`/api/work-plans/${workPlanId}/activities`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           activityName: data.name,
           itemType: "activity",
@@ -129,6 +143,8 @@ export default function WorkPlanEditor() {
           orderIndex: data.position || localActivities.length,
         }),
       });
+      if (!response.ok) throw new Error("Failed to add activity");
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-plans", workPlanId, "activities"] });

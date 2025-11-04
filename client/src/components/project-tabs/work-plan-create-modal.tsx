@@ -30,14 +30,18 @@ export function WorkPlanCreateModal({ open, onClose, projectId, onSuccess }: Wor
 
   const createWorkPlanMutation = useMutation({
     mutationFn: async (data: { name: string; startDate?: string; description?: string }) => {
-      return apiRequest(`/api/projects/${projectId}/work-plans`, {
+      const response = await fetch(`/api/projects/${projectId}/work-plans`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           ...data,
           ownerId: user?.id,
           status: "Not Started",
         }),
       });
+      if (!response.ok) throw new Error("Failed to create work plan");
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "work-plans"] });
