@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,29 @@ export default function ProjectDetail() {
   const [editingProject, setEditingProject] = useState<ProjectWithRoads | null>(null);
   const [editingRoad, setEditingRoad] = useState<any>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  
+  // Get initial tab from URL hash
+  const getInitialTab = () => {
+    const hash = window.location.hash.slice(1);
+    const validTabs = ["overview", "workplan", "progress", "budget", "safety", "pre-construction", "team", "documents", "site-logs"];
+    return validTabs.includes(hash) ? hash : "overview";
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab());
+  
+  // Update tab when hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      const validTabs = ["overview", "workplan", "progress", "budget", "safety", "pre-construction", "team", "documents", "site-logs"];
+      if (validTabs.includes(hash)) {
+        setActiveTab(hash);
+      }
+    };
+    
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   const { data: projects, isLoading } = useQuery<ProjectWithRoads[]>({
     queryKey: ["/api/projects"],
@@ -184,7 +207,7 @@ export default function ProjectDetail() {
           </nav>
 
           {/* Tabbed Interface */}
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="mb-6" data-testid="tabs-list">
               <TabsTrigger value="overview" data-testid="tab-overview">
                 Overview
