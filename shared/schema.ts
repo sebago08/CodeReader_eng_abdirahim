@@ -204,10 +204,14 @@ export const workPlans = pgTable("work_plans", {
   projectId: varchar("project_id").notNull(),
   name: varchar("name").notNull(),
   description: text("description"),
+  startDate: date("start_date"),
+  status: varchar("status").notNull().default("Not Started"), // "Not Started", "In Progress", "Completed", "Blocked"
+  ownerId: varchar("owner_id"), // User who owns/manages this work plan
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("work_plans_project_idx").on(table.projectId),
+  index("work_plans_owner_idx").on(table.ownerId),
 ]);
 
 // Work plan activities table (project schedule and planning)
@@ -453,6 +457,10 @@ export const workPlansRelations = relations(workPlans, ({ one, many }) => ({
   project: one(projects, {
     fields: [workPlans.projectId],
     references: [projects.id],
+  }),
+  owner: one(users, {
+    fields: [workPlans.ownerId],
+    references: [users.id],
   }),
   activities: many(workPlanActivities),
 }));
