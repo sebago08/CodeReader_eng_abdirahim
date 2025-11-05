@@ -1843,13 +1843,24 @@ export class DatabaseStorage implements IStorage {
         .from(roads)
         .where(inArray(roads.projectId, activeProjectIds));
       
-      const allLayers = await db.select()
-        .from(constructionLayers)
-        .where(inArray(constructionLayers.projectId, activeProjectIds));
+      const allRoadIds = allRoads.map(r => r.id);
       
-      const allLayerProgress = await db.select()
-        .from(layerProgress)
-        .where(inArray(layerProgress.projectId, activeProjectIds));
+      let allLayers: any[] = [];
+      let allLayerProgress: any[] = [];
+      
+      if (allRoadIds.length > 0) {
+        allLayers = await db.select()
+          .from(constructionLayers)
+          .where(inArray(constructionLayers.roadId, allRoadIds));
+        
+        const allLayerIds = allLayers.map(l => l.id);
+        
+        if (allLayerIds.length > 0) {
+          allLayerProgress = await db.select()
+            .from(layerProgress)
+            .where(inArray(layerProgress.layerId, allLayerIds));
+        }
+      }
       
       // Calculate progress for each project
       activeProjectsWithRoads = activeProjects.map(project => {
