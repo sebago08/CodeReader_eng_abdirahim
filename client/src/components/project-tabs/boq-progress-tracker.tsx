@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,9 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     description: "",
     workPlanId: "",
   });
+  
+  // Local state for instant input updates
+  const [localValues, setLocalValues] = useState<Record<string, { qtyInBoq?: number; qtyDone?: number; weightedRatio?: number }>>({});
 
   // Fetch activities for progress calculation
   const { data: activities = [] } = useQuery<Activity[]>({
@@ -68,6 +71,11 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     queryKey: [`/api/progress-trackers/${selectedTrackerId}`],
     enabled: !!selectedTrackerId,
   });
+  
+  // Clear local values when switching trackers
+  useEffect(() => {
+    setLocalValues({});
+  }, [selectedTrackerId]);
 
   // Create tracker mutation
   const createTrackerMutation = useMutation({
@@ -160,11 +168,28 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     createTrackerMutation.mutate(payload);
   };
 
+  // Instant local update for responsive typing
+  const handleLocalUpdate = (itemId: string, field: string, value: number) => {
+    setLocalValues(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        [field]: value,
+      }
+    }));
+  };
+
+  // Save to server when user finishes editing (onBlur)
   const handleItemUpdate = (itemId: string, field: string, value: number) => {
     updateItemMutation.mutate({
       id: itemId,
       data: { [field]: value },
     });
+  };
+  
+  // Get value from local state or fallback to server value
+  const getValue = (itemId: string, field: string, defaultValue: any) => {
+    return localValues[itemId]?.[field as keyof typeof localValues[string]] ?? defaultValue;
   };
 
   const calculateProgress = (qtyInBoq: string, qtyDone: string): number => {
@@ -456,7 +481,10 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
               <TableBody>
                 {selectedTracker.items.map((item) => {
                   const isSection = item.itemType === "section";
-                  const progress = calculateProgress(item.qtyInBoq || "0", item.qtyDone || "0");
+                  // Use local values for instant progress updates
+                  const qtyInBoq = getValue(item.id, "qtyInBoq", item.qtyInBoq || "0");
+                  const qtyDone = getValue(item.id, "qtyDone", item.qtyDone || "0");
+                  const progress = calculateProgress(String(qtyInBoq), String(qtyDone));
 
                   return (
                     <TableRow
@@ -473,8 +501,9 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                             type="number"
                             step="0.01"
                             min="0"
-                            value={item.qtyInBoq || "0"}
-                            onChange={(e) => handleItemUpdate(item.id, "qtyInBoq", parseFloat(e.target.value) || 0)}
+                            value={getValue(item.id, "qtyInBoq", item.qtyInBoq || "0")}
+                            onChange={(e) => handleLocalUpdate(item.id, "qtyInBoq", parseFloat(e.target.value) || 0)}
+                            onBlur={(e) => handleItemUpdate(item.id, "qtyInBoq", parseFloat(e.target.value) || 0)}
                             className="h-8"
                             data-testid={`input-qty-boq-${item.id}`}
                           />
@@ -486,8 +515,9 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                             type="number"
                             step="0.01"
                             min="0"
-                            value={item.qtyDone || "0"}
-                            onChange={(e) => handleItemUpdate(item.id, "qtyDone", parseFloat(e.target.value) || 0)}
+                            value={getValue(item.id, "qtyDone", item.qtyDone || "0")}
+                            onChange={(e) => handleLocalUpdate(item.id, "qtyDone", parseFloat(e.target.value) || 0)}
+                            onBlur={(e) => handleItemUpdate(item.id, "qtyDone", parseFloat(e.target.value) || 0)}
                             className="h-8"
                             data-testid={`input-qty-done-${item.id}`}
                           />
@@ -499,8 +529,9 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                             type="number"
                             step="0.01"
                             min="0"
-                            value={item.weightedRatio || "1"}
-                            onChange={(e) => handleItemUpdate(item.id, "weightedRatio", parseFloat(e.target.value) || 1)}
+                            value={getValue(item.id, "weightedRatio", item.weightedRatio || "1")}
+                            onChange={(e) => handleLocalUpdate(item.id, "weightedRatio", parseFloat(e.target.value) || 1)}
+                            onBlur={(e) => handleItemUpdate(item.id, "weightedRatio", parseFloat(e.target.value) || 1)}
                             className="h-8"
                             data-testid={`input-weight-${item.id}`}
                           />
