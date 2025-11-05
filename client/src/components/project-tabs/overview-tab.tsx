@@ -368,56 +368,135 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           </Card>
         </div>
 
-        {/* Progress Summary Card */}
+        {/* Financial Metrics Cards - 3 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Contract Amount */}
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground font-medium mb-2">Contract Amount</p>
+              <p className="text-3xl font-bold text-indigo-600" data-testid="text-contract-amount-card">
+                {formatCurrency(project.contractAmount)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Total contract value</p>
+            </CardContent>
+          </Card>
+
+          {/* Amount Spent */}
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground font-medium mb-2">Amount Spent</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-amount-spent-card">
+                {formatCurrency(project.spentAmount)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Total expenditure to date</p>
+            </CardContent>
+          </Card>
+
+          {/* Balance */}
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground font-medium mb-2">Balance</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-balance-card">
+                {formatCurrency(
+                  (parseFloat(project.contractAmount || "0") - parseFloat(project.spentAmount || "0"))
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Remaining budget available</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Progress Overview Card */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Project Status & Progress
+              Progress Overview
             </CardTitle>
-            <CardDescription>Overall project performance metrics</CardDescription>
+            <CardDescription>Track project completion and timeline</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Physical Progress */}
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm font-medium">Physical Progress</span>
-                <span className="text-sm font-bold text-blue-600" data-testid="text-physical-progress">
-                  {physicalProgress}%
-                </span>
-              </div>
-              <Progress value={physicalProgress} className="h-3 bg-gray-200" 
-                style={{"--progress-background": "hsl(217, 91%, 60%)"} as any}
-                data-testid="progress-physical"
-              />
-            </div>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Left: Progress Bars */}
+              <div className="md:col-span-2 space-y-6">
+                {/* Physical Progress */}
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-semibold">Physical Progress</span>
+                    <span className="text-sm font-bold text-indigo-600" data-testid="text-physical-progress">
+                      {physicalProgress}%
+                    </span>
+                  </div>
+                  <Progress 
+                    value={physicalProgress} 
+                    className="h-3 bg-gray-200" 
+                    style={{"--progress-background": "hsl(239, 84%, 67%)"} as any}
+                    data-testid="progress-physical"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {project.projectType === "Road" ? "Based on road construction layers" : "Based on completed activities"}
+                  </p>
+                </div>
 
-            {/* Financial Progress */}
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm font-medium">Financial Progress</span>
-                <span className="text-sm font-bold text-green-600" data-testid="text-financial-progress">
-                  {financialProgress}%
-                </span>
+                {/* Time Progress */}
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-semibold">Time Progress</span>
+                    <span className={`text-sm font-bold ${timeLapse > 100 ? 'text-red-600' : 'text-orange-600'}`} data-testid="text-time-lapse">
+                      {timeLapse}%
+                    </span>
+                  </div>
+                  <Progress 
+                    value={Math.min(timeLapse, 100)} 
+                    className="h-3 bg-gray-200" 
+                    style={{"--progress-background": timeLapse > 100 ? "hsl(0, 84%, 60%)" : "hsl(38, 92%, 50%)"} as any}
+                    data-testid="progress-time-lapse"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {timeLapse > 100 ? "Project is overdue" : `${Math.max(0, 100 - timeLapse)}% time remaining`}
+                  </p>
+                </div>
               </div>
-              <Progress value={financialProgress} className="h-3 bg-gray-200" 
-                style={{"--progress-background": "hsl(142, 71%, 45%)"} as any}
-                data-testid="progress-financial"
-              />
-            </div>
 
-            {/* Time Lapse */}
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm font-medium">Time Lapse</span>
-                <span className={`text-sm font-bold ${timeLapse > 100 ? 'text-red-600' : 'text-orange-600'}`} data-testid="text-time-lapse">
-                  {timeLapse}%
-                </span>
+              {/* Right: Financial Progress Circle */}
+              <div className="flex flex-col items-center justify-center">
+                <div className="text-center mb-3">
+                  <p className="text-sm font-semibold text-muted-foreground">Financial Progress</p>
+                </div>
+                <div className="relative w-32 h-32">
+                  <svg className="transform -rotate-90 w-32 h-32">
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="transparent"
+                      className="text-gray-200 dark:text-gray-700"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="transparent"
+                      strokeDasharray={`${2 * Math.PI * 56}`}
+                      strokeDashoffset={`${2 * Math.PI * 56 * (1 - financialProgress / 100)}`}
+                      className="text-indigo-600 dark:text-indigo-500"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-500" data-testid="text-financial-progress">
+                      {financialProgress}%
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3 text-center">
+                  Based on payment certificates
+                </p>
               </div>
-              <Progress value={Math.min(timeLapse, 100)} className="h-3 bg-gray-200" 
-                style={{"--progress-background": timeLapse > 100 ? "hsl(0, 84%, 60%)" : "hsl(25, 95%, 53%)"} as any}
-                data-testid="progress-time-lapse"
-              />
             </div>
           </CardContent>
         </Card>
