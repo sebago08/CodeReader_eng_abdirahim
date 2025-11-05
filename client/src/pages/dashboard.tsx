@@ -15,17 +15,23 @@ import {
 } from "@/components/ui/table";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
-import { DollarSign, Wallet, PiggyBank, AlertTriangle, TrendingUp, Calendar } from "lucide-react";
+import { DollarSign, Wallet, PiggyBank, AlertTriangle, TrendingUp, Calendar, LogOut } from "lucide-react";
 import type { DashboardMetrics } from "@shared/schema";
 import ProjectModal from "@/components/project-modal";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Dashboard() {
   const [showProjectModal, setShowProjectModal] = useState(false);
+  const { logoutMutation, user } = useAuth();
 
   const { data: metrics, isLoading } = useQuery<DashboardMetrics>({
     queryKey: ["/api/dashboard/metrics"],
   });
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -55,6 +61,41 @@ export default function Dashboard() {
       <MobileNav />
       
       <div className="flex-1 md:ml-64">
+        {/* Top Bar with User Info */}
+        <header className="bg-black text-white shadow-lg">
+          <div className="w-full px-4 md:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center space-x-4">
+                <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+                  <i className="fas fa-hard-hat text-lg"></i>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold">ConstructTrack</h1>
+                  <p className="text-white/80 text-sm">Professional Construction Management</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                {user && (
+                  <div className="text-white" data-testid="text-current-username">
+                    <span className="text-sm text-white/60">Signed in as:</span>
+                    <span className="ml-2 font-medium">{user.username}</span>
+                  </div>
+                )}
+                <Button
+                  onClick={handleLogout}
+                  variant="ghost"
+                  className="text-white hover:bg-white/10"
+                  data-testid="button-logout"
+                >
+                  <LogOut className="h-5 w-5 mr-2" />
+                  Logout
+                </Button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Dashboard Header */}
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 md:px-8 py-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-dashboard-title">
             Dashboard
