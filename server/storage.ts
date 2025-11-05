@@ -671,12 +671,13 @@ export class MemStorage implements IStorage {
   // Dashboard operations stub
   async getDashboardMetrics(): Promise<import("@shared/schema").DashboardMetrics> {
     return {
-      actionPointsDueSoon: { total: 0, overdue: 0, thisWeek: 0, thisMonth: 0 },
+      financialTotal: 0,
+      amountSpent: 0,
+      currentBalance: 0,
       projectsBehindSchedule: 0,
       criticalSafetyIssues: { total: 0, high: 0, medium: 0, low: 0 },
-      overduePreCommencementDocs: 0,
-      pendingPaymentCertificates: 0,
       upcomingMilestones: 0,
+      activeProjects: [],
     };
   }
 }
@@ -1766,47 +1767,43 @@ export class DatabaseStorage implements IStorage {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const oneWeekFromNow = new Date(today);
-    oneWeekFromNow.setDate(today.getDate() + 7);
-    
     const oneMonthFromNow = new Date(today);
     oneMonthFromNow.setDate(today.getDate() + 30);
     
-    // Get all user's project IDs
+    // Get all user's projects
     const userProjects = await db.select().from(projects).where(eq(projects.userId, userId));
     const projectIds = userProjects.map(p => p.id);
     
+    // Filter active projects (status is Active, On Track, At Risk, or Behind)
+    const activeProjectStatuses = ['Active', 'On Track', 'At Risk', 'Behind'];
+    const activeProjects = userProjects.filter(p => activeProjectStatuses.includes(p.status));
+    
     if (projectIds.length === 0) {
       return {
-        actionPointsDueSoon: { total: 0, overdue: 0, thisWeek: 0, thisMonth: 0 },
+        financialTotal: 0,
+        amountSpent: 0,
+        currentBalance: 0,
         projectsBehindSchedule: 0,
         criticalSafetyIssues: { total: 0, high: 0, medium: 0, low: 0 },
-        overduePreCommencementDocs: 0,
-        pendingPaymentCertificates: 0,
         upcomingMilestones: 0,
+        activeProjects: [],
       };
     }
     
-    // 1. Action Points Due Soon (open action points only)
-    const allActionPoints = await db.select()
-      .from(actionPoints)
-      .where(
-        and(
-          inArray(actionPoints.projectId, projectIds),
-          eq(actionPoints.status, 'open')
-        )
-      );
+    // 1. Calculate financial metrics (only for active projects)
+    const financialTotal = activeProjects.reduce((sum, p) => {
+      const budget = parseFloat(p.totalBudget || '0');
+      return sum + (isNaN(budget) ? 0 : budget);
+    }, 0);
     
-    const overdueActions = allActionPoints.filter(ap => ap.dueDate && new Date(ap.dueDate) < today).length;
-    const thisWeekActions = allActionPoints.filter(ap => 
-      ap.dueDate && new Date(ap.dueDate) >= today && new Date(ap.dueDate) <= oneWeekFromNow
-    ).length;
-    const thisMonthActions = allActionPoints.filter(ap => 
-      ap.dueDate && new Date(ap.dueDate) > oneWeekFromNow && new Date(ap.dueDate) <= oneMonthFromNow
-    ).length;
+    const amountSpent = activeProjects.reduce((sum, p) => {
+      const spent = parseFloat(p.spentAmount || '0');
+      return sum + (isNaN(spent) ? 0 : spent);
+    }, 0);
     
-    // 2. Projects Behind Schedule (placeholder - could be enhanced with actual progress tracking)
-    // For now, we'll count projects where status is "Behind" or similar
+    const currentBalance = financialTotal - amountSpent;
+    
+    // 2. Projects Behind Schedule
     const projectsBehind = userProjects.filter(p => p.status === 'Behind' || p.status === 'Delayed').length;
     
     // 3. Critical Safety Issues (open issues only)
@@ -1823,34 +1820,7 @@ export class DatabaseStorage implements IStorage {
     const mediumSafety = allSafetyIssues.filter(si => si.severity === 'Medium').length;
     const lowSafety = allSafetyIssues.filter(si => si.severity === 'Low').length;
     
-    // 4. Overdue Pre-Commencement Documents (pending status and past deadline)
-    const overduePreComm = await db.select()
-      .from(preCommencementItems)
-      .where(
-        and(
-          inArray(preCommencementItems.projectId, projectIds),
-          eq(preCommencementItems.status, 'pending')
-        )
-      );
-    
-    const overduePreCommCount = overduePreComm.filter(item => 
-      item.deadline && new Date(item.deadline) < today
-    ).length;
-    
-    // 5. Pending Payment Certificates
-    const pendingPayments = await db.select()
-      .from(paymentCertificates)
-      .where(
-        and(
-          inArray(paymentCertificates.projectId, projectIds),
-          or(
-            eq(paymentCertificates.paymentStatus, 'Pending'),
-            eq(paymentCertificates.paymentStatus, 'Submitted')
-          )
-        )
-      );
-    
-    // 6. Upcoming Milestones (next 30 days)
+    // 4. Upcoming Milestones (next 30 days)
     const upcomingMiles = await db.select()
       .from(workPlanActivities)
       .where(
@@ -1864,13 +1834,108 @@ export class DatabaseStorage implements IStorage {
       m.endDate && new Date(m.endDate) >= today && new Date(m.endDate) <= oneMonthFromNow
     ).length;
     
+    // 5. Get progress for active projects (fetch all roads in one query)
+    const activeProjectIds = activeProjects.map(p => p.id);
+    let activeProjectsWithRoads: any[] = [];
+    
+    if (activeProjectIds.length > 0) {
+      const allRoads = await db.select()
+        .from(roads)
+        .where(inArray(roads.projectId, activeProjectIds));
+      
+      const allLayers = await db.select()
+        .from(constructionLayers)
+        .where(inArray(constructionLayers.projectId, activeProjectIds));
+      
+      const allLayerProgress = await db.select()
+        .from(layerProgress)
+        .where(inArray(layerProgress.projectId, activeProjectIds));
+      
+      // Calculate progress for each project
+      activeProjectsWithRoads = activeProjects.map(project => {
+        const projectRoads = allRoads.filter(r => r.projectId === project.id);
+        let progress = 0;
+        
+        if (projectRoads.length > 0) {
+          const totalLength = projectRoads.reduce((sum, road) => {
+            const len = parseFloat(road.length);
+            return sum + (isNaN(len) || len <= 0 ? 0 : len);
+          }, 0);
+          
+          if (totalLength > 0) {
+            let weightedProgress = 0;
+            
+            projectRoads.forEach(road => {
+              const roadLength = parseFloat(road.length);
+              if (!roadLength || roadLength <= 0 || isNaN(roadLength)) return;
+              
+              const roadWeight = roadLength / totalLength;
+              const roadLayers = allLayers.filter(l => l.roadId === road.id);
+              
+              if (roadLayers.length > 0) {
+                let roadProgress = 0;
+                let totalLayerWeight = roadLayers.reduce((sum, l) => sum + (l.weight || 1), 0);
+                
+                roadLayers.forEach(layer => {
+                  const layerWeight = layer.weight || 1;
+                  const progress = allLayerProgress.filter(p => p.layerId === layer.id);
+                  
+                  if (progress.length > 0) {
+                    const isDual = road.carriageway === 'dual';
+                    if (isDual) {
+                      const lhsProgress = progress
+                        .filter(p => p.carriagewaySide?.toUpperCase() === 'LHS' || p.carriagewaySide?.toLowerCase() === 'both')
+                        .reduce((sum, p) => {
+                          const start = parseFloat(p.startChainage as any);
+                          const end = parseFloat(p.endChainage as any);
+                          return sum + (isNaN(start) || isNaN(end) || end <= start ? 0 : end - start);
+                        }, 0);
+                      const rhsProgress = progress
+                        .filter(p => p.carriagewaySide?.toUpperCase() === 'RHS' || p.carriagewaySide?.toLowerCase() === 'both')
+                        .reduce((sum, p) => {
+                          const start = parseFloat(p.startChainage as any);
+                          const end = parseFloat(p.endChainage as any);
+                          return sum + (isNaN(start) || isNaN(end) || end <= start ? 0 : end - start);
+                        }, 0);
+                      const lhsPct = Math.min(100, (lhsProgress / roadLength) * 100);
+                      const rhsPct = Math.min(100, (rhsProgress / roadLength) * 100);
+                      roadProgress += ((lhsPct + rhsPct) / 2) * layerWeight;
+                    } else {
+                      const completed = progress.reduce((sum, p) => {
+                        const start = parseFloat(p.startChainage as any);
+                        const end = parseFloat(p.endChainage as any);
+                        return sum + (isNaN(start) || isNaN(end) || end <= start ? 0 : end - start);
+                      }, 0);
+                      const layerPct = Math.min(100, (completed / roadLength) * 100);
+                      roadProgress += layerPct * layerWeight;
+                    }
+                  }
+                });
+                
+                if (totalLayerWeight > 0) {
+                  weightedProgress += (roadProgress / totalLayerWeight) * roadWeight;
+                }
+              }
+            });
+            
+            progress = Math.min(100, Math.max(0, weightedProgress));
+          }
+        }
+        
+        return {
+          id: project.id,
+          name: project.name,
+          status: project.status,
+          progress: Math.round(progress),
+          dueDate: project.targetCompletionDate || null,
+        };
+      });
+    }
+    
     return {
-      actionPointsDueSoon: {
-        total: overdueActions + thisWeekActions + thisMonthActions,
-        overdue: overdueActions,
-        thisWeek: thisWeekActions,
-        thisMonth: thisMonthActions,
-      },
+      financialTotal: Math.round(financialTotal * 100) / 100,
+      amountSpent: Math.round(amountSpent * 100) / 100,
+      currentBalance: Math.round(currentBalance * 100) / 100,
       projectsBehindSchedule: projectsBehind,
       criticalSafetyIssues: {
         total: allSafetyIssues.length,
@@ -1878,9 +1943,8 @@ export class DatabaseStorage implements IStorage {
         medium: mediumSafety,
         low: lowSafety,
       },
-      overduePreCommencementDocs: overduePreCommCount,
-      pendingPaymentCertificates: pendingPayments.length,
       upcomingMilestones: upcomingMilestonesCount,
+      activeProjects: activeProjectsWithRoads,
     };
   }
 }
