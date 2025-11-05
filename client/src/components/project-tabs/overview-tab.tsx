@@ -244,6 +244,15 @@ export default function OverviewTab({ project }: OverviewTabProps) {
   const financialProgress = calculateFinancialProgress();
   const timeLapse = calculateTimeLapse();
 
+  // Calculate actual amount paid from certificates
+  const totalPaid = certificates.reduce((sum, cert) => {
+    return sum + parseFloat(cert.amountPaid || "0");
+  }, 0);
+
+  // Calculate balance
+  const contractAmount = parseFloat(project.contractAmount || "0");
+  const balance = Math.max(0, contractAmount - totalPaid);
+
   return (
     <>
       <div className="space-y-6">
@@ -386,9 +395,11 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground font-medium mb-2">Amount Spent</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-amount-spent-card">
-                {formatCurrency(project.spentAmount)}
+                {formatCurrency(totalPaid)}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Total expenditure to date</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {certificates.length > 0 ? `${certificates.length} payment certificate${certificates.length !== 1 ? 's' : ''}` : "No payments recorded yet"}
+              </p>
             </CardContent>
           </Card>
 
@@ -397,11 +408,11 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground font-medium mb-2">Balance</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-balance-card">
-                {formatCurrency(
-                  (parseFloat(project.contractAmount || "0") - parseFloat(project.spentAmount || "0"))
-                )}
+                {formatCurrency(balance)}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Remaining budget available</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {balance === 0 && totalPaid > 0 ? "Budget fully utilized" : "Remaining budget available"}
+              </p>
             </CardContent>
           </Card>
         </div>
