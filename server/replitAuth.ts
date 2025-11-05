@@ -8,12 +8,14 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+// Check if Replit Auth is available (optional - only needed when using Replit OIDC)
+const isReplitAuthAvailable = !!(process.env.REPLIT_DOMAINS && process.env.REPL_ID);
 
 const getOidcConfig = memoize(
   async () => {
+    if (!isReplitAuthAvailable) {
+      throw new Error("Replit Auth not configured - REPLIT_DOMAINS and REPL_ID required");
+    }
     return await client.discovery(
       new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
       process.env.REPL_ID!
@@ -67,6 +69,12 @@ async function upsertUser(
 }
 
 export async function setupAuth(app: Express) {
+  // Only set up Replit OIDC Auth if environment variables are available
+  if (!isReplitAuthAvailable) {
+    console.warn("Replit Auth not configured - REPLIT_DOMAINS and REPL_ID not available. Skipping OIDC setup.");
+    return;
+  }
+
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
@@ -127,6 +135,11 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // If Replit Auth is not configured, this middleware cannot be used
+  if (!isReplitAuthAvailable) {
+    return res.status(500).json({ message: "Replit Auth not configured" });
+  }
+
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
