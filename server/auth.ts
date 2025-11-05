@@ -123,7 +123,11 @@ export function setupAuth(app: Express) {
         });
       }
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error("Login error:", err);
+          return next(err);
+        }
+        console.log("Login successful for user:", user.id, "Session ID:", req.sessionID);
         res.status(200).json(user);
       });
     })(req, res, next);

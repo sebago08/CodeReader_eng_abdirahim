@@ -26,6 +26,7 @@ import { eq } from "drizzle-orm";
 
 // Passport authentication middleware - checks session cookie
 const isAuthenticated: RequestHandler = (req: any, res, next) => {
+  console.log("Auth check - isAuthenticated:", req.isAuthenticated(), "sessionID:", req.sessionID, "user:", req.user?.id);
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
   }
