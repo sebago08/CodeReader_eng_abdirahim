@@ -819,12 +819,12 @@ export type DocumentType =
 
 // Dashboard metrics type
 export type DashboardMetrics = {
-  actionPointsDueSoon: {
-    total: number;
-    overdue: number;
-    thisWeek: number;
-    thisMonth: number;
-  };
+  // Financial metrics
+  financialTotal: number; // Total budget for all active projects
+  amountSpent: number; // Total expenditure across all projects
+  currentBalance: number; // Remaining funds available
+  
+  // Status metrics
   projectsBehindSchedule: number;
   criticalSafetyIssues: {
     total: number;
@@ -832,7 +832,14 @@ export type DashboardMetrics = {
     medium: number;
     low: number;
   };
-  overduePreCommencementDocs: number;
-  pendingPaymentCertificates: number;
-  upcomingMilestones: number;
+  upcomingMilestones: number; // Milestones due in next 30 days
+  
+  // Active projects summary
+  activeProjects: {
+    id: string;
+    name: string;
+    status: string;
+    progress: number;
+    dueDate: string | null;
+  }[];
 };
