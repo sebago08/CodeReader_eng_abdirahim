@@ -285,11 +285,11 @@ export default function WorkPlanEditor() {
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr className="text-left text-sm font-medium">
-                <th className="px-4 py-3 w-24">Item No</th>
-                <th className="px-4 py-3">Description</th>
-                <th className="px-4 py-3 w-32">Duration</th>
-                <th className="px-4 py-3 w-40">Start Date</th>
-                <th className="px-4 py-3 w-40">End Date</th>
+                <th className="px-4 py-3 w-24 border-r border-border">Item No</th>
+                <th className="px-4 py-3 border-r border-border">Description</th>
+                <th className="px-4 py-3 w-32 border-r border-border">Duration</th>
+                <th className="px-4 py-3 w-40 border-r border-border">Start Date</th>
+                <th className="px-4 py-3 w-40 border-r border-border">End Date</th>
                 <th className="px-4 py-3 w-16"></th>
               </tr>
             </thead>
@@ -300,10 +300,10 @@ export default function WorkPlanEditor() {
                   className={activity.itemType === "section" ? "bg-muted/30" : "hover:bg-muted/50"}
                   data-testid={`activity-row-${activity.id}`}
                 >
-                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                  <td className="px-4 py-3 text-sm text-muted-foreground border-r border-border">
                     {getItemNumber(index, activity.itemType)}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 border-r border-border">
                     {editingCell?.id === activity.id && editingCell?.field === "activityName" ? (
                       <Input
                         value={activity.activityName}
@@ -325,7 +325,7 @@ export default function WorkPlanEditor() {
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 border-r border-border">
                     {activity.itemType === "activity" ? (
                       editingCell?.id === activity.id && editingCell?.field === "duration" ? (
                         <Input
@@ -348,7 +348,7 @@ export default function WorkPlanEditor() {
                       )
                     ) : null}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 border-r border-border">
                     {activity.itemType === "activity" ? (
                       editingCell?.id === activity.id && editingCell?.field === "startDate" ? (
                         <Input
@@ -371,7 +371,7 @@ export default function WorkPlanEditor() {
                       )
                     ) : null}
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground" data-testid={`text-end-date-${activity.id}`}>
+                  <td className="px-4 py-3 text-sm text-muted-foreground border-r border-border" data-testid={`text-end-date-${activity.id}`}>
                     {activity.endDate || "-"}
                   </td>
                   <td className="px-4 py-3">
