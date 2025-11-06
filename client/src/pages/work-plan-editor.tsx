@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, Save, Plus, MoreVertical, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Plus, MoreVertical, Trash2, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -175,6 +175,35 @@ export default function WorkPlanEditor() {
     },
   });
 
+  const toggleMilestoneMutation = useMutation({
+    mutationFn: async (data: { activityId: string; isMilestone: boolean }) => {
+      const response = await fetch(`/api/work-plan-activities/${data.activityId}/milestone`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          isMilestone: data.isMilestone,
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to toggle milestone");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/work-plans", workPlanId, "activities"] });
+      toast({
+        title: "Success",
+        description: "Milestone status updated",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update milestone status",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateActivity = (id: string, field: string, value: string | number) => {
     setLocalActivities((prev) =>
       prev.map((activity) => {
@@ -316,12 +345,15 @@ export default function WorkPlanEditor() {
                     ) : (
                       <div
                         onClick={() => handleCellClick(activity.id, "activityName")}
-                        className={`cursor-pointer hover:bg-accent px-2 py-1 rounded ${
+                        className={`cursor-pointer hover:bg-accent px-2 py-1 rounded flex items-center gap-2 ${
                           activity.itemType === "section" ? "font-semibold" : ""
                         }`}
                         data-testid={`text-description-${activity.id}`}
                       >
-                        {activity.activityName}
+                        {activity.isMilestone && (
+                          <Flag className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" data-testid={`icon-milestone-${activity.id}`} />
+                        )}
+                        <span>{activity.activityName}</span>
                       </div>
                     )}
                   </td>
@@ -387,6 +419,16 @@ export default function WorkPlanEditor() {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => addActivityMutation.mutate({ name: "New Activity", position: index + 1 })}>
                           Insert Activity Above
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => toggleMilestoneMutation.mutate({ 
+                            activityId: activity.id, 
+                            isMilestone: !activity.isMilestone 
+                          })}
+                          data-testid={`button-toggle-milestone-${activity.id}`}
+                        >
+                          <Flag className="mr-2 h-4 w-4" />
+                          {activity.isMilestone ? "Remove Milestone" : "Mark as Milestone"}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => deleteActivityMutation.mutate(activity.id)}
