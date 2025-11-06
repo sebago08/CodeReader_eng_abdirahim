@@ -142,6 +142,19 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get project alerts (milestones, action points, critical issues)
+  app.get('/api/projects/:id/alerts', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      const alerts = await storage.getProjectAlerts(id, userId);
+      res.json(alerts);
+    } catch (error) {
+      console.error("Error fetching project alerts:", error);
+      res.status(500).json({ message: "Failed to fetch project alerts" });
+    }
+  });
+
   app.patch('/api/projects/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;

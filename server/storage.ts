@@ -222,6 +222,9 @@ export interface IStorage {
   
   // Dashboard operations
   getDashboardMetrics(userId: string): Promise<import("@shared/schema").DashboardMetrics>;
+  
+  // Project alerts operations
+  getProjectAlerts(projectId: string, userId: string): Promise<import("@shared/schema").ProjectAlerts>;
 }
 
 // In-memory storage implementation
@@ -678,6 +681,17 @@ export class MemStorage implements IStorage {
       criticalSafetyIssues: { total: 0, high: 0, medium: 0, low: 0 },
       upcomingMilestones: 0,
       activeProjects: [],
+    };
+  }
+
+  async getProjectAlerts(): Promise<import("@shared/schema").ProjectAlerts> {
+    return {
+      milestones: {
+        upcoming: [],
+        overdue: [],
+      },
+      actionPoints: [],
+      criticalIssues: [],
     };
   }
 }
@@ -1956,6 +1970,132 @@ export class DatabaseStorage implements IStorage {
       },
       upcomingMilestones: upcomingMilestonesCount,
       activeProjects: activeProjectsWithRoads,
+    };
+  }
+
+  async getProjectAlerts(projectId: string, userId: string): Promise<import("@shared/schema").ProjectAlerts> {
+    // Verify user has access to this project
+    const project = await this.getProject(projectId, userId);
+    if (!project) {
+      throw new Error('Project not found or access denied');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const sevenDaysFromNow = new Date(today);
+    sevenDaysFromNow.setDate(today.getDate() + 7);
+
+    // 1. Get milestones (upcoming and overdue)
+    const allMilestones = await db.select()
+      .from(workPlanActivities)
+      .where(
+        and(
+          eq(workPlanActivities.projectId, projectId),
+          eq(workPlanActivities.isMilestone, true)
+        )
+      )
+      .orderBy(workPlanActivities.endDate);
+
+    const upcomingMilestones = [];
+    const overdueMilestones = [];
+
+    for (const milestone of allMilestones) {
+      if (!milestone.endDate) continue;
+      
+      const endDate = new Date(milestone.endDate);
+      endDate.setHours(0, 0, 0, 0);
+      const diffTime = endDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        // Overdue
+        overdueMilestones.push({
+          id: milestone.id,
+          activityName: milestone.activityName,
+          dueDate: milestone.endDate,
+          daysOverdue: Math.abs(diffDays),
+        });
+      } else if (diffDays <= 7) {
+        // Upcoming (within 7 days)
+        upcomingMilestones.push({
+          id: milestone.id,
+          activityName: milestone.activityName,
+          dueDate: milestone.endDate,
+          daysUntil: diffDays,
+        });
+      }
+    }
+
+    // 2. Get missed action point deadlines (overdue open action points)
+    const allActionPoints = await db.select()
+      .from(actionPoints)
+      .where(
+        and(
+          eq(actionPoints.projectId, projectId),
+          eq(actionPoints.status, 'open')
+        )
+      )
+      .orderBy(actionPoints.dueDate);
+
+    const missedActionPoints = [];
+
+    for (const actionPoint of allActionPoints) {
+      if (!actionPoint.dueDate) continue;
+
+      const dueDate = new Date(actionPoint.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      const diffTime = dueDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        // Overdue
+        missedActionPoints.push({
+          id: actionPoint.id,
+          description: actionPoint.description,
+          assignedTo: actionPoint.assignedTo,
+          priority: actionPoint.priority,
+          dueDate: actionPoint.dueDate,
+          daysOverdue: Math.abs(diffDays),
+        });
+      }
+    }
+
+    // 3. Get critical outstanding safety issues (open high/critical severity)
+    const criticalIssues = await db.select()
+      .from(safetyIncidents)
+      .where(
+        and(
+          eq(safetyIncidents.projectId, projectId),
+          eq(safetyIncidents.status, 'Open')
+        )
+      )
+      .orderBy(safetyIncidents.dateOccurred);
+
+    const criticalOutstanding = criticalIssues
+      .filter(issue => issue.severity === 'High' || issue.severity === 'Critical')
+      .map(issue => {
+        const occurredDate = new Date(issue.dateOccurred);
+        occurredDate.setHours(0, 0, 0, 0);
+        const diffTime = today.getTime() - occurredDate.getTime();
+        const daysOpen = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        return {
+          id: issue.id,
+          description: issue.description,
+          severity: issue.severity,
+          dateOccurred: issue.dateOccurred,
+          daysOpen: Math.max(0, daysOpen),
+        };
+      });
+
+    return {
+      milestones: {
+        upcoming: upcomingMilestones,
+        overdue: overdueMilestones,
+      },
+      actionPoints: missedActionPoints,
+      criticalIssues: criticalOutstanding,
     };
   }
 }

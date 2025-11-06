@@ -843,3 +843,36 @@ export type DashboardMetrics = {
     dueDate: string | null;
   }[];
 };
+
+// Project alerts type (for individual project overview)
+export type ProjectAlerts = {
+  milestones: {
+    upcoming: {
+      id: string;
+      activityName: string;
+      dueDate: string;
+      daysUntil: number;
+    }[];
+    overdue: {
+      id: string;
+      activityName: string;
+      dueDate: string;
+      daysOverdue: number;
+    }[];
+  };
+  actionPoints: {
+    id: string;
+    description: string;
+    assignedTo: string | null;
+    priority: string;
+    dueDate: string;
+    daysOverdue: number;
+  }[];
+  criticalIssues: {
+    id: string;
+    description: string;
+    severity: string;
+    dateOccurred: string;
+    daysOpen: number;
+  }[];
+};
