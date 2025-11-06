@@ -9,7 +9,7 @@ import { z } from "zod";
 import { Loader2, ArrowLeft } from "lucide-react";
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -32,7 +32,7 @@ export default function Landing() {
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
@@ -148,16 +148,16 @@ export default function Landing() {
                 <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                   <FormField
                     control={loginForm.control}
-                    name="username"
+                    name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Username</FormLabel>
+                        <FormLabel>Email</FormLabel>
                         <FormControl>
                           <Input
-                            type="text"
-                            placeholder="Enter your username"
+                            type="email"
+                            placeholder="your.email@example.com"
                             {...field}
-                            data-testid="input-login-username"
+                            data-testid="input-login-email"
                           />
                         </FormControl>
                         <FormMessage />
