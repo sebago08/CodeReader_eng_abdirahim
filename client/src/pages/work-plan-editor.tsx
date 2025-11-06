@@ -419,7 +419,11 @@ export default function WorkPlanEditor() {
                           {activity.duration ? `${activity.duration} days` : "-"}
                         </div>
                       )
-                    ) : null}
+                    ) : (
+                      <div className="px-2 py-1 text-sm text-muted-foreground italic" data-testid={`text-duration-${activity.id}`}>
+                        {getSectionDates(index).duration ? `${getSectionDates(index).duration} days` : "-"}
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 border-r border-border">
                     {activity.itemType === "activity" ? (
@@ -442,10 +446,18 @@ export default function WorkPlanEditor() {
                           {activity.startDate || "-"}
                         </div>
                       )
-                    ) : null}
+                    ) : (
+                      <div className="px-2 py-1 text-sm text-muted-foreground italic" data-testid={`text-start-date-${activity.id}`}>
+                        {getSectionDates(index).startDate || "-"}
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground border-r border-border" data-testid={`text-end-date-${activity.id}`}>
-                    {activity.endDate || "-"}
+                    {activity.itemType === "activity" ? (
+                      activity.endDate || "-"
+                    ) : (
+                      <span className="italic">{getSectionDates(index).endDate || "-"}</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <DropdownMenu>
