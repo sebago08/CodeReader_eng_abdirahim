@@ -420,16 +420,18 @@ export default function WorkPlanEditor() {
                         <DropdownMenuItem onClick={() => addActivityMutation.mutate({ name: "New Activity", position: index + 1 })}>
                           Insert Activity Above
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => toggleMilestoneMutation.mutate({ 
-                            activityId: activity.id, 
-                            isMilestone: !activity.isMilestone 
-                          })}
-                          data-testid={`button-toggle-milestone-${activity.id}`}
-                        >
-                          <Flag className="mr-2 h-4 w-4" />
-                          {activity.isMilestone ? "Remove Milestone" : "Mark as Milestone"}
-                        </DropdownMenuItem>
+                        {activity.itemType === "activity" && (
+                          <DropdownMenuItem 
+                            onClick={() => toggleMilestoneMutation.mutate({ 
+                              activityId: activity.id, 
+                              isMilestone: !activity.isMilestone 
+                            })}
+                            data-testid={`button-toggle-milestone-${activity.id}`}
+                          >
+                            <Flag className="mr-2 h-4 w-4" />
+                            {activity.isMilestone ? "Remove Milestone" : "Mark as Milestone"}
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={() => deleteActivityMutation.mutate(activity.id)}
                           className="text-red-600"
