@@ -31,11 +31,18 @@ export const supabaseAuthMiddleware: RequestHandler = async (req: any, res, next
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     
+    console.log('[Auth Middleware] Verifying token:', token.substring(0, 20) + '...');
+    
     // Verify token with Supabase
     const supabaseUser = await verifySupabaseToken(token);
+    console.log('[Auth Middleware] Verification result:', supabaseUser ? 'Success' : 'Failed');
+    
     if (!supabaseUser) {
+      console.error('[Auth Middleware] Token verification failed');
       return res.status(401).json({ message: "Invalid token" });
     }
+
+    console.log('[Auth Middleware] User verified:', supabaseUser.email);
 
     // Get or create user from database
     let user = await storage.getUserByAuthId(supabaseUser.id);
