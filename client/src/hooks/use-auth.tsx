@@ -24,6 +24,7 @@ type LoginData = {
 
 type RegisterData = {
   email: string;
+  username: string;
   password: string;
   firstName?: string;
   lastName?: string;
@@ -40,18 +41,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Helper function to get user profile from backend
   const fetchUserProfile = async (accessToken: string): Promise<SelectUser | null> => {
     try {
+      console.log('[Auth] Fetching user profile with token:', accessToken ? `${accessToken.substring(0, 20)}...` : 'NO TOKEN');
+      
       const res = await fetch('/api/user', {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
         },
       });
 
+      console.log('[Auth] User profile response status:', res.status);
+
       if (res.ok) {
-        return await res.json();
+        const userData = await res.json();
+        console.log('[Auth] User profile fetched successfully:', userData?.username);
+        return userData;
       }
+      
+      const errorText = await res.text();
+      console.error('[Auth] Failed to fetch user profile:', res.status, errorText);
       return null;
     } catch (err) {
-      console.error('Error fetching user profile:', err);
+      console.error('[Auth] Error fetching user profile:', err);
       return null;
     }
   };
@@ -157,15 +167,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Supabase not configured');
       }
 
+      console.log('[Auth] Starting registration for:', credentials.email);
+
       const { data, error } = await supabase.auth.signUp({
         email: credentials.email,
         password: credentials.password,
         options: {
           data: {
+            username: credentials.username,
             first_name: credentials.firstName || '',
             last_name: credentials.lastName || '',
           },
         },
+      });
+
+      console.log('[Auth] Supabase signUp response:', {
+        hasSession: !!data.session,
+        hasAccessToken: !!data.session?.access_token,
+        error: error?.message
       });
 
       if (error) {
@@ -177,8 +196,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Please check your email to confirm your account');
       }
 
+      // Wait a bit for session to be persisted to localStorage
+      console.log('[Auth] Waiting for session persistence...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify session is available
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[Auth] Session check after delay:', {
+        hasSession: !!session,
+        hasAccessToken: !!session?.access_token
+      });
+
+      if (!session?.access_token) {
+        throw new Error('Session not properly established. Please try logging in.');
+      }
+
       // Fetch user profile from backend (will auto-create user)
-      const userProfile = await fetchUserProfile(data.session.access_token);
+      const userProfile = await fetchUserProfile(session.access_token);
       if (!userProfile) {
         throw new Error('Failed to create user profile');
       }

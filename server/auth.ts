@@ -47,17 +47,21 @@ export const supabaseAuthMiddleware: RequestHandler = async (req: any, res, next
         return res.status(401).json({ message: "Email not found in auth token" });
       }
 
-      // Generate unique username from email + short random suffix to avoid collisions
-      const baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-      const randomSuffix = Math.random().toString(36).substring(2, 8); // 6 char random string
-      const username = `${baseUsername}_${randomSuffix}`;
+      // Get username from user metadata (provided during registration)
+      // If not available (legacy users), generate from email with random suffix
+      let username = supabaseUser.user_metadata?.username;
+      if (!username) {
+        const baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        username = `${baseUsername}_${randomSuffix}`;
+      }
 
       user = await storage.createUser({
         authId: supabaseUser.id,
         email,
         firstName: supabaseUser.user_metadata?.first_name || null,
         lastName: supabaseUser.user_metadata?.last_name || null,
-        username, // Unique username with random suffix
+        username,
         password: null, // Supabase Auth users don't have passwords
         isAdmin: false,
         isApproved: true, // Auto-approve all users
