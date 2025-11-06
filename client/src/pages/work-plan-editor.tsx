@@ -258,6 +258,47 @@ export default function WorkPlanEditor() {
     return `${sectionIndex}.${activityCount}`;
   };
 
+  const getSectionDates = (sectionIndex: number) => {
+    const sectionActivities: WorkPlanActivity[] = [];
+    
+    // Find all activities that belong to this section
+    let foundSection = false;
+    for (let i = sectionIndex + 1; i < localActivities.length; i++) {
+      const activity = localActivities[i];
+      
+      // Stop when we hit the next section
+      if (activity.itemType === "section") {
+        break;
+      }
+      
+      // Only include activities (not sections) with valid dates
+      if (activity.itemType === "activity" && activity.startDate && activity.endDate) {
+        sectionActivities.push(activity);
+      }
+    }
+    
+    // If no activities in this section, return nulls
+    if (sectionActivities.length === 0) {
+      return { startDate: null, endDate: null, duration: null };
+    }
+    
+    // Find earliest start date and latest end date
+    const startDates = sectionActivities.map(a => new Date(a.startDate!));
+    const endDates = sectionActivities.map(a => new Date(a.endDate!));
+    
+    const earliestStart = new Date(Math.min(...startDates.map(d => d.getTime())));
+    const latestEnd = new Date(Math.max(...endDates.map(d => d.getTime())));
+    
+    // Calculate duration in days (inclusive)
+    const durationInDays = Math.ceil((latestEnd.getTime() - earliestStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    
+    return {
+      startDate: format(earliestStart, "yyyy-MM-dd"),
+      endDate: format(latestEnd, "yyyy-MM-dd"),
+      duration: durationInDays
+    };
+  };
+
   if (loadingPlan || loadingActivities) {
     return (
       <div className="flex items-center justify-center h-screen" data-testid="loading-editor">
