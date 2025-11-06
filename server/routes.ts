@@ -1310,9 +1310,10 @@ export function registerRoutes(app: Express): Server {
       
       // Validate request body
       const updateSchema = z.object({
-        duration: z.number().min(1).optional(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
+        activityName: z.string().optional(),
+        duration: z.number().min(1).nullable().optional(),
+        startDate: z.string().nullable().optional(),
+        endDate: z.string().nullable().optional(),
       });
       const updates = updateSchema.parse(req.body);
       
