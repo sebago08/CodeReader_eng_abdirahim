@@ -30,8 +30,9 @@ export const sessions = pgTable(
 // User storage table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  authId: varchar("auth_id").unique(), // Supabase Auth user ID
   username: varchar("username").notNull().unique(),
-  password: varchar("password"), // Nullable for future OAuth support
+  password: varchar("password"), // Nullable for OAuth/Supabase Auth support
   email: varchar("email").notNull().unique(), // Primary identifier
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),

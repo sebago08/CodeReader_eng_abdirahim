@@ -24,16 +24,7 @@ import { getStorageService, getMockStorage } from "./storage-service";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
-// Passport authentication middleware - checks session cookie
-const isAuthenticated: RequestHandler = (req: any, res, next) => {
-  console.log("Auth check - isAuthenticated:", req.isAuthenticated(), "sessionID:", req.sessionID, "user:", req.user?.id);
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  next();
-};
-
-// Middleware to check if user is admin (works after isAuthenticated)
+// Middleware to check if user is admin (works after supabaseAuthMiddleware)
 const isAdmin: RequestHandler = (req: any, res, next) => {
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -86,7 +77,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Dashboard routes
-  app.get('/api/dashboard/metrics', isAuthenticated, async (req: any, res) => {
+  app.get('/api/dashboard/metrics', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const metrics = await storage.getDashboardMetrics(userId);
@@ -98,7 +89,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Project routes
-  app.get('/api/projects', isAuthenticated, async (req: any, res) => {
+  app.get('/api/projects', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const projects = await storage.getProjects(userId);
@@ -109,7 +100,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/projects/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/projects/:id', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { id } = req.params;
@@ -126,7 +117,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects', isAuthenticated, async (req: any, res) => {
+  app.post('/api/projects', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const validatedData = insertProjectSchema.parse(req.body);
@@ -143,7 +134,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Get project alerts (milestones, action points, critical issues)
-  app.get('/api/projects/:id/alerts', isAuthenticated, async (req: any, res) => {
+  app.get('/api/projects/:id/alerts', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
       const userId = req.user.id;
@@ -155,7 +146,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/projects/:id', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/projects/:id', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { id } = req.params;
@@ -168,7 +159,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/projects/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/projects/:id', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { id } = req.params;
@@ -180,7 +171,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:id/duplicate', isAuthenticated, async (req: any, res) => {
+  app.post('/api/projects/:id/duplicate', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { id } = req.params;
@@ -224,7 +215,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Road routes
-  app.post('/api/projects/:projectId/roads', isAuthenticated, async (req: any, res) => {
+  app.post('/api/projects/:projectId/roads', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { projectId } = req.params;
       const { layers, ...roadData } = req.body;
@@ -245,7 +236,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/roads/:id', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/roads/:id', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { layers, ...roadData } = req.body;
@@ -281,7 +272,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/roads/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/roads/:id', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteRoad(id);
@@ -292,7 +283,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/roads/:id/duplicate', isAuthenticated, async (req: any, res) => {
+  app.post('/api/roads/:id/duplicate', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
       
@@ -341,7 +332,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Progress routes
-  app.post('/api/layers/:layerId/progress', isAuthenticated, async (req: any, res) => {
+  app.post('/api/layers/:layerId/progress', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { layerId } = req.params;
       const validatedData = insertLayerProgressSchema.parse(req.body);
@@ -353,7 +344,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/progress/:id', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/progress/:id', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertLayerProgressSchema.partial().parse(req.body);
@@ -365,7 +356,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/progress/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/progress/:id', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteLayerProgress(id);
@@ -376,7 +367,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/layers/:layerId/progress/reset', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/layers/:layerId/progress/reset', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { layerId } = req.params;
       await storage.resetLayerProgress(layerId);
@@ -388,7 +379,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Activity routes
-  app.get('/api/projects/:projectId/activities', isAuthenticated, async (req: any, res) => {
+  app.get('/api/projects/:projectId/activities', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { projectId } = req.params;
       const activities = await storage.getActivities(projectId);
@@ -399,7 +390,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/activities', isAuthenticated, async (req: any, res) => {
+  app.post('/api/projects/:projectId/activities', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { projectId } = req.params;
       const validatedData = insertActivitySchema.parse(req.body);
@@ -411,7 +402,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/activities/:id', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/activities/:id', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertActivitySchema.partial().parse(req.body);
@@ -423,7 +414,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/activities/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/activities/:id', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteActivity(id);
@@ -435,7 +426,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Safety incident routes
-  app.get('/api/projects/:projectId/safety-incidents', isAuthenticated, async (req: any, res) => {
+  app.get('/api/projects/:projectId/safety-incidents', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { projectId } = req.params;
       const incidents = await storage.getSafetyIncidents(projectId);
@@ -446,7 +437,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/safety-incidents', isAuthenticated, async (req: any, res) => {
+  app.post('/api/projects/:projectId/safety-incidents', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { projectId } = req.params;
       const validatedData = insertSafetyIncidentSchema.parse(req.body);
@@ -458,7 +449,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/safety-incidents/:id', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/safety-incidents/:id', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertSafetyIncidentSchema.partial().parse(req.body);
@@ -470,7 +461,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/safety-incidents/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/safety-incidents/:id', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteSafetyIncident(id);
@@ -505,8 +496,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Admin routes
-  app.get('/api/admin/users', isAdmin, async (req: any, res) => {
+  // Admin routes (require authentication + admin privileges)
+  app.get('/api/admin/users', supabaseAuthMiddleware, isAdmin, async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
@@ -516,7 +507,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/admin/users/:id/approve', isAdmin, async (req: any, res) => {
+  app.post('/api/admin/users/:id/approve', supabaseAuthMiddleware, isAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       const user = await storage.approveUser(id);
@@ -527,7 +518,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/admin/users/:id', isAdmin, async (req: any, res) => {
+  app.delete('/api/admin/users/:id', supabaseAuthMiddleware, isAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.rejectUser(id);
@@ -540,7 +531,7 @@ export function registerRoutes(app: Express): Server {
 
   // Team collaboration routes
   // Get project members
-  app.get('/api/projects/:projectId/members', isAuthenticated, async (req: any, res) => {
+  app.get('/api/projects/:projectId/members', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user.id;
@@ -565,7 +556,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Invite user to project (by username)
-  app.post('/api/projects/:projectId/members/invite', isAuthenticated, async (req: any, res) => {
+  app.post('/api/projects/:projectId/members/invite', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { projectId } = req.params;
       const { username } = req.body;
@@ -605,7 +596,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Remove member from project
-  app.delete('/api/projects/:projectId/members/:memberId', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/projects/:projectId/members/:memberId', supabaseAuthMiddleware, async (req: any, res) => {
     try {
       const { projectId, memberId } = req.params;
       const userId = req.user.id;
@@ -625,7 +616,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Client personnel routes
-  app.get('/api/projects/:projectId/client-personnel', isAuthenticated, async (req, res) => {
+  app.get('/api/projects/:projectId/client-personnel', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const personnel = await storage.getClientPersonnel(projectId);
@@ -636,7 +627,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/client-personnel', isAuthenticated, async (req, res) => {
+  app.post('/api/projects/:projectId/client-personnel', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const personnel = await storage.createClientPersonnel(projectId, req.body);
@@ -647,7 +638,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/client-personnel/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/client-personnel/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const personnel = await storage.updateClientPersonnel(id, req.body);
@@ -658,7 +649,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/client-personnel/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/client-personnel/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.deleteClientPersonnel(id);
@@ -670,7 +661,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Contractor personnel routes
-  app.get('/api/projects/:projectId/contractor-personnel', isAuthenticated, async (req, res) => {
+  app.get('/api/projects/:projectId/contractor-personnel', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const personnel = await storage.getContractorPersonnel(projectId);
@@ -681,7 +672,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/contractor-personnel', isAuthenticated, async (req, res) => {
+  app.post('/api/projects/:projectId/contractor-personnel', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const personnel = await storage.createContractorPersonnel(projectId, req.body);
@@ -692,7 +683,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/contractor-personnel/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/contractor-personnel/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const personnel = await storage.updateContractorPersonnel(id, req.body);
@@ -703,7 +694,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/contractor-personnel/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/contractor-personnel/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.deleteContractorPersonnel(id);
@@ -715,7 +706,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Contractor equipment routes
-  app.get('/api/projects/:projectId/contractor-equipment', isAuthenticated, async (req, res) => {
+  app.get('/api/projects/:projectId/contractor-equipment', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const equipment = await storage.getContractorEquipment(projectId);
@@ -726,7 +717,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/contractor-equipment', isAuthenticated, async (req, res) => {
+  app.post('/api/projects/:projectId/contractor-equipment', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const equipment = await storage.createContractorEquipment(projectId, req.body);
@@ -737,7 +728,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/contractor-equipment/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/contractor-equipment/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const equipment = await storage.updateContractorEquipment(id, req.body);
@@ -748,7 +739,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/contractor-equipment/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/contractor-equipment/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.deleteContractorEquipment(id);
@@ -760,7 +751,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Payment certificates routes
-  app.get('/api/projects/:projectId/payment-certificates', isAuthenticated, async (req, res) => {
+  app.get('/api/projects/:projectId/payment-certificates', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const certificates = await storage.getPaymentCertificates(projectId);
@@ -771,7 +762,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/payment-certificates', isAuthenticated, async (req, res) => {
+  app.post('/api/projects/:projectId/payment-certificates', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const certificate = await storage.createPaymentCertificate(projectId, req.body);
@@ -782,7 +773,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/payment-certificates/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/payment-certificates/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const certificate = await storage.updatePaymentCertificate(id, req.body);
@@ -793,7 +784,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/payment-certificates/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/payment-certificates/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.deletePaymentCertificate(id);
@@ -805,7 +796,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Update certificate status (moves amount to correct column)
-  app.patch('/api/payment-certificates/:id/status', isAuthenticated, async (req, res) => {
+  app.patch('/api/payment-certificates/:id/status', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const { status } = req.body;
@@ -844,7 +835,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Update advance payment
-  app.patch('/api/projects/:projectId/advance-payment', isAuthenticated, async (req, res) => {
+  app.patch('/api/projects/:projectId/advance-payment', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const { advancePayment } = req.body;
@@ -858,7 +849,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Work Plan Routes
-  app.get('/api/projects/:projectId/work-plans', isAuthenticated, async (req, res) => {
+  app.get('/api/projects/:projectId/work-plans', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -877,7 +868,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/work-plans', isAuthenticated, async (req, res) => {
+  app.post('/api/projects/:projectId/work-plans', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -902,7 +893,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/work-plans/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/work-plans/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -933,7 +924,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/work-plans/:id', isAuthenticated, async (req, res) => {
+  app.get('/api/work-plans/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -957,7 +948,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/work-plans/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/work-plans/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -983,7 +974,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Get activities for a specific work plan
-  app.get('/api/work-plans/:workPlanId/activities', isAuthenticated, async (req, res) => {
+  app.get('/api/work-plans/:workPlanId/activities', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { workPlanId } = req.params;
       const userId = req.user!.id;
@@ -1009,7 +1000,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Create activity for a specific work plan
-  app.post('/api/work-plans/:workPlanId/activities', isAuthenticated, async (req, res) => {
+  app.post('/api/work-plans/:workPlanId/activities', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { workPlanId } = req.params;
       const userId = req.user!.id;
@@ -1044,7 +1035,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Work Plan Activity Routes
-  app.get('/api/projects/:projectId/work-plan-activities', isAuthenticated, async (req, res) => {
+  app.get('/api/projects/:projectId/work-plan-activities', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const { workPlanId } = req.query;
@@ -1064,7 +1055,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/work-plan-activities', isAuthenticated, async (req, res) => {
+  app.post('/api/projects/:projectId/work-plan-activities', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -1116,7 +1107,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/work-plan-activities/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/work-plan-activities/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -1141,7 +1132,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/work-plan-activities/:id/milestone', isAuthenticated, async (req, res) => {
+  app.patch('/api/work-plan-activities/:id/milestone', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -1175,7 +1166,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/work-plan-activities/:targetId/insert-section', isAuthenticated, async (req, res) => {
+  app.post('/api/work-plan-activities/:targetId/insert-section', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { targetId } = req.params;
       const userId = req.user!.id;
@@ -1217,7 +1208,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/work-plan-activities/:targetId/insert-activity', isAuthenticated, async (req, res) => {
+  app.post('/api/work-plan-activities/:targetId/insert-activity', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { targetId } = req.params;
       const userId = req.user!.id;
@@ -1269,7 +1260,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/work-plan-activities/:id/name', isAuthenticated, async (req, res) => {
+  app.patch('/api/work-plan-activities/:id/name', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -1303,7 +1294,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/work-plan-activities/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/work-plan-activities/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -1341,7 +1332,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Progress Tracker Routes
-  app.get('/api/projects/:projectId/progress-trackers', isAuthenticated, async (req, res) => {
+  app.get('/api/projects/:projectId/progress-trackers', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -1360,7 +1351,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/progress-trackers/:id', isAuthenticated, async (req, res) => {
+  app.get('/api/progress-trackers/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -1383,7 +1374,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/progress-trackers', isAuthenticated, async (req, res) => {
+  app.post('/api/projects/:projectId/progress-trackers', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -1433,7 +1424,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/progress-trackers/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/progress-trackers/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -1467,7 +1458,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/progress-trackers/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/progress-trackers/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -1491,7 +1482,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/progress-tracker-items/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/progress-tracker-items/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -1535,7 +1526,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Pre-Commencement Checklist Routes
-  app.get('/api/projects/:projectId/pre-commencement', isAuthenticated, async (req, res) => {
+  app.get('/api/projects/:projectId/pre-commencement', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -1554,7 +1545,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/pre-commencement', isAuthenticated, async (req, res) => {
+  app.post('/api/projects/:projectId/pre-commencement', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -1590,7 +1581,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/pre-commencement/:itemId', isAuthenticated, async (req, res) => {
+  app.patch('/api/pre-commencement/:itemId', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { itemId } = req.params;
       const userId = req.user!.id;
@@ -1637,7 +1628,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/pre-commencement/:itemId', isAuthenticated, async (req, res) => {
+  app.delete('/api/pre-commencement/:itemId', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { itemId } = req.params;
       const userId = req.user!.id;
@@ -1669,7 +1660,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Project Document Routes
-  app.get('/api/projects/:projectId/documents', isAuthenticated, async (req, res) => {
+  app.get('/api/projects/:projectId/documents', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -1688,7 +1679,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/documents', isAuthenticated, async (req, res) => {
+  app.post('/api/projects/:projectId/documents', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -1713,7 +1704,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/documents/:id', isAuthenticated, async (req, res) => {
+  app.get('/api/documents/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -1736,7 +1727,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/documents/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/documents/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -1765,7 +1756,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/documents/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/documents/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user!.id;
@@ -1794,7 +1785,7 @@ export function registerRoutes(app: Express): Server {
   const storageService = getStorageService();
 
   // Upload file
-  app.post('/api/storage/:bucket/:path(*)', isAuthenticated, upload.single('file'), async (req, res) => {
+  app.post('/api/storage/:bucket/:path(*)', supabaseAuthMiddleware, upload.single('file'), async (req, res) => {
     try {
       const { bucket, path } = req.params;
       
@@ -1844,7 +1835,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Daily Logs Routes
-  app.get('/api/projects/:projectId/daily-logs', isAuthenticated, async (req, res) => {
+  app.get('/api/projects/:projectId/daily-logs', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -1876,7 +1867,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/daily-logs/:id', isAuthenticated, async (req, res) => {
+  app.get('/api/daily-logs/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const log = await storage.getDailyLog(id);
@@ -1892,7 +1883,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/projects/:projectId/daily-logs/date/:date', isAuthenticated, async (req, res) => {
+  app.get('/api/projects/:projectId/daily-logs/date/:date', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId, date } = req.params;
       const userId = req.user!.id;
@@ -1911,7 +1902,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/daily-logs', isAuthenticated, async (req, res) => {
+  app.post('/api/projects/:projectId/daily-logs', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -1936,7 +1927,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/daily-logs/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/daily-logs/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       
@@ -1954,7 +1945,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/daily-logs/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/daily-logs/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.deleteDailyLog(id);
@@ -1966,7 +1957,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Action Points Routes
-  app.get('/api/projects/:projectId/action-points', isAuthenticated, async (req, res) => {
+  app.get('/api/projects/:projectId/action-points', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -1986,7 +1977,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/daily-logs/:dailyLogId/action-points', isAuthenticated, async (req, res) => {
+  app.get('/api/daily-logs/:dailyLogId/action-points', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { dailyLogId } = req.params;
       const actionPoints = await storage.getActionPointsByLog(dailyLogId);
@@ -1997,7 +1988,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/projects/:projectId/action-points', isAuthenticated, async (req, res) => {
+  app.post('/api/projects/:projectId/action-points', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
@@ -2025,7 +2016,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/action-points/:id', isAuthenticated, async (req, res) => {
+  app.patch('/api/action-points/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       
@@ -2043,7 +2034,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/action-points/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/action-points/:id', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.deleteActionPoint(id);
@@ -2055,7 +2046,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Delete file
-  app.delete('/api/storage/:bucket/:path(*)', isAuthenticated, async (req, res) => {
+  app.delete('/api/storage/:bucket/:path(*)', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { bucket, path } = req.params;
       
@@ -2073,7 +2064,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // List files in bucket
-  app.get('/api/storage/:bucket', isAuthenticated, async (req, res) => {
+  app.get('/api/storage/:bucket', supabaseAuthMiddleware, async (req, res) => {
     try {
       const { bucket } = req.params;
       const prefix = req.query.prefix as string | undefined;
