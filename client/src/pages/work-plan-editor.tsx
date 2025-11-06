@@ -283,13 +283,13 @@ export default function WorkPlanEditor() {
       <div className="container mx-auto px-6 py-8">
         <div className="border rounded-lg overflow-hidden bg-card">
           <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr className="text-left text-sm font-medium">
-                <th className="px-4 py-3 w-24 border-r border-border">Item No</th>
-                <th className="px-4 py-3 border-r border-border">Description</th>
-                <th className="px-4 py-3 w-32 border-r border-border">Duration</th>
-                <th className="px-4 py-3 w-40 border-r border-border">Start Date</th>
-                <th className="px-4 py-3 w-40 border-r border-border">End Date</th>
+            <thead className="bg-blue-600 dark:bg-blue-700">
+              <tr className="text-left text-sm font-medium text-white">
+                <th className="px-4 py-3 w-24 border-r border-blue-500 dark:border-blue-600">Item No</th>
+                <th className="px-4 py-3 border-r border-blue-500 dark:border-blue-600">Description</th>
+                <th className="px-4 py-3 w-32 border-r border-blue-500 dark:border-blue-600">Duration</th>
+                <th className="px-4 py-3 w-40 border-r border-blue-500 dark:border-blue-600">Start Date</th>
+                <th className="px-4 py-3 w-40 border-r border-blue-500 dark:border-blue-600">End Date</th>
                 <th className="px-4 py-3 w-16"></th>
               </tr>
             </thead>
@@ -297,7 +297,7 @@ export default function WorkPlanEditor() {
               {localActivities.map((activity, index) => (
                 <tr
                   key={activity.id}
-                  className={activity.itemType === "section" ? "bg-muted/30" : "hover:bg-muted/50"}
+                  className={`border-b border-border ${activity.itemType === "section" ? "bg-gray-100 dark:bg-gray-800" : "hover:bg-muted/50"}`}
                   data-testid={`activity-row-${activity.id}`}
                 >
                   <td className="px-4 py-3 text-sm text-muted-foreground border-r border-border">
