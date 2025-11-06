@@ -120,12 +120,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       if (!supabase) {
-        throw new Error('Supabase not configured');
+        throw new Error('Supabase not configured. Please contact administrator.');
       }
+
+      console.log('[Auth] Starting login for:', credentials.email);
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
+      });
+
+      console.log('[Auth] Supabase signIn response:', {
+        hasSession: !!data.session,
+        hasAccessToken: !!data.session?.access_token,
+        error: error?.message
       });
 
       if (error) {
