@@ -17,10 +17,15 @@ import {
   MapPinned,
   Briefcase,
   ArrowRight,
+  AlertTriangle,
+  AlertCircle,
+  Clock,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import ProjectModal from "@/components/project-modal";
 import { queryClient } from "@/lib/queryClient";
-import type { ProjectWithRoads } from "@shared/schema";
+import type { ProjectWithRoads, ProjectAlerts } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import type { PaymentCertificate } from "@shared/schema";
 import { Link } from "wouter";
@@ -31,10 +36,17 @@ interface OverviewTabProps {
 
 export default function OverviewTab({ project }: OverviewTabProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showClientInfo, setShowClientInfo] = useState(false);
 
   // Fetch payment certificates for financial progress
   const { data: certificates = [] } = useQuery<PaymentCertificate[]>({
     queryKey: [`/api/projects/${project.id}/payment-certificates`],
+    enabled: !!project.id,
+  });
+
+  // Fetch project alerts
+  const { data: alerts } = useQuery<ProjectAlerts>({
+    queryKey: [`/api/projects/${project.id}/alerts`],
     enabled: !!project.id,
   });
 
@@ -512,95 +524,129 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           </CardContent>
         </Card>
 
-        {/* Client and Contractor Information - Side by Side */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Client Information */}
-          <Card>
+        {/* Project Alerts - Critical Items Requiring Attention */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Upcoming & Overdue Milestones */}
+          <Card className="border-orange-200 dark:border-orange-900/50">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Client Information
+                <Clock className="h-5 w-5 text-orange-600 dark:text-orange-500" />
+                Milestones
               </CardTitle>
+              <CardDescription>Upcoming and overdue</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium mb-1">Name</p>
-                <p className="text-sm font-semibold" data-testid="text-client-name">
-                  {project.client || "N/A"}
-                </p>
-              </div>
-              {project.clientContactPerson && (
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium mb-1">Contact</p>
-                  <p className="text-sm font-semibold" data-testid="text-client-contact">
-                    {project.clientContactPerson}
-                  </p>
-                </div>
-              )}
-              {project.clientEmail && (
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm" data-testid="text-client-email">
-                    {project.clientEmail}
-                  </p>
-                </div>
-              )}
-              {project.clientPhone && (
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm" data-testid="text-client-phone">
-                    {project.clientPhone}
-                  </p>
-                </div>
-              )}
-              {project.clientAddress && (
-                <div className="flex items-start gap-2">
-                  <MapPinned className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <p className="text-sm" data-testid="text-client-address">
-                    {project.clientAddress}
-                  </p>
+            <CardContent>
+              {!alerts || (alerts.milestones.upcoming.length === 0 && alerts.milestones.overdue.length === 0) ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No milestones due soon</p>
+              ) : (
+                <div className="space-y-3">
+                  {alerts.milestones.overdue.map((milestone) => (
+                    <div key={milestone.id} className="border-l-4 border-red-500 pl-3 py-2" data-testid={`milestone-overdue-${milestone.id}`}>
+                      <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+                        {milestone.activityName}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Overdue by {milestone.daysOverdue} day{milestone.daysOverdue !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  ))}
+                  {alerts.milestones.upcoming.map((milestone) => (
+                    <div key={milestone.id} className="border-l-4 border-orange-500 pl-3 py-2" data-testid={`milestone-upcoming-${milestone.id}`}>
+                      <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">
+                        {milestone.activityName}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Due in {milestone.daysUntil} day{milestone.daysUntil !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Contractor Information */}
-          <Card>
+          {/* Missed Action Point Deadlines */}
+          <Card className="border-red-200 dark:border-red-900/50">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Briefcase className="h-5 w-5" />
-                Contractor Information
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500" />
+                Overdue Action Points
               </CardTitle>
+              <CardDescription>Missed deadlines</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium mb-1">Name</p>
-                <p className="text-sm font-semibold" data-testid="text-contractor-name">
-                  {project.contractorName || "N/A"}
-                </p>
-              </div>
-              {project.contractorContactPerson && (
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium mb-1">Contact</p>
-                  <p className="text-sm font-semibold" data-testid="text-contractor-contact">
-                    {project.contractorContactPerson}
-                  </p>
+            <CardContent>
+              {!alerts || alerts.actionPoints.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No overdue action points</p>
+              ) : (
+                <div className="space-y-3">
+                  {alerts.actionPoints.slice(0, 5).map((actionPoint) => (
+                    <div key={actionPoint.id} className="border-l-4 border-red-500 pl-3 py-2" data-testid={`action-point-${actionPoint.id}`}>
+                      <p className="text-sm font-semibold text-red-700 dark:text-red-400 line-clamp-2">
+                        {actionPoint.description}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className={`text-xs ${
+                          actionPoint.priority === 'high' ? 'border-red-500 text-red-700 dark:text-red-400' :
+                          actionPoint.priority === 'medium' ? 'border-orange-500 text-orange-700 dark:text-orange-400' :
+                          'border-yellow-500 text-yellow-700 dark:text-yellow-400'
+                        }`}>
+                          {actionPoint.priority}
+                        </Badge>
+                        <p className="text-xs text-muted-foreground">
+                          {actionPoint.daysOverdue} day{actionPoint.daysOverdue !== 1 ? 's' : ''} overdue
+                        </p>
+                      </div>
+                      {actionPoint.assignedTo && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Assigned: {actionPoint.assignedTo}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                  {alerts.actionPoints.length > 5 && (
+                    <p className="text-xs text-muted-foreground text-center pt-2">
+                      + {alerts.actionPoints.length - 5} more overdue
+                    </p>
+                  )}
                 </div>
               )}
-              {project.contractorEmail && (
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm" data-testid="text-contractor-email">
-                    {project.contractorEmail}
-                  </p>
-                </div>
-              )}
-              {project.contractorPhone && (
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm" data-testid="text-contractor-phone">
-                    {project.contractorPhone}
-                  </p>
+            </CardContent>
+          </Card>
+
+          {/* Critical Outstanding Issues */}
+          <Card className="border-red-200 dark:border-red-900/50">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500" />
+                Critical Safety Issues
+              </CardTitle>
+              <CardDescription>Open high-priority</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!alerts || alerts.criticalIssues.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No critical issues</p>
+              ) : (
+                <div className="space-y-3">
+                  {alerts.criticalIssues.slice(0, 5).map((issue) => (
+                    <div key={issue.id} className="border-l-4 border-red-500 pl-3 py-2" data-testid={`critical-issue-${issue.id}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-semibold text-red-700 dark:text-red-400 line-clamp-2 flex-1">
+                          {issue.description}
+                        </p>
+                        <Badge variant="destructive" className="text-xs shrink-0">
+                          {issue.severity}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Open for {issue.daysOpen} day{issue.daysOpen !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  ))}
+                  {alerts.criticalIssues.length > 5 && (
+                    <p className="text-xs text-muted-foreground text-center pt-2">
+                      + {alerts.criticalIssues.length - 5} more critical issues
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -677,6 +723,108 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             </CardContent>
           </Card>
         )}
+
+        {/* Client and Contractor Information - Collapsible */}
+        <Card>
+          <CardHeader className="cursor-pointer" onClick={() => setShowClientInfo(!showClientInfo)} data-testid="button-toggle-client-info">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Client & Contractor Information
+              </CardTitle>
+              {showClientInfo ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            </div>
+          </CardHeader>
+          {showClientInfo && (
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Client Information */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Client Details
+                  </h3>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium mb-1">Name</p>
+                    <p className="text-sm font-semibold" data-testid="text-client-name">
+                      {project.client || "N/A"}
+                    </p>
+                  </div>
+                  {project.clientContactPerson && (
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium mb-1">Contact</p>
+                      <p className="text-sm font-semibold" data-testid="text-client-contact">
+                        {project.clientContactPerson}
+                      </p>
+                    </div>
+                  )}
+                  {project.clientEmail && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm" data-testid="text-client-email">
+                        {project.clientEmail}
+                      </p>
+                    </div>
+                  )}
+                  {project.clientPhone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm" data-testid="text-client-phone">
+                        {project.clientPhone}
+                      </p>
+                    </div>
+                  )}
+                  {project.clientAddress && (
+                    <div className="flex items-start gap-2">
+                      <MapPinned className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <p className="text-sm" data-testid="text-client-address">
+                        {project.clientAddress}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Contractor Information */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    Contractor Details
+                  </h3>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium mb-1">Name</p>
+                    <p className="text-sm font-semibold" data-testid="text-contractor-name">
+                      {project.contractorName || "N/A"}
+                    </p>
+                  </div>
+                  {project.contractorContactPerson && (
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium mb-1">Contact</p>
+                      <p className="text-sm font-semibold" data-testid="text-contractor-contact">
+                        {project.contractorContactPerson}
+                      </p>
+                    </div>
+                  )}
+                  {project.contractorEmail && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm" data-testid="text-contractor-email">
+                        {project.contractorEmail}
+                      </p>
+                    </div>
+                  )}
+                  {project.contractorPhone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm" data-testid="text-contractor-phone">
+                        {project.contractorPhone}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
       </div>
 
       {/* Edit Modal */}
