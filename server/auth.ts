@@ -1,8 +1,13 @@
-// Supabase Auth implementation
+// Based on blueprint:javascript_auth_all_persistance
+import passport from "passport";
+import { Strategy as LocalStrategy } from "passport-local";
 import { Express, RequestHandler } from "express";
+import session from "express-session";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
-import { verifySupabaseToken } from "./supabase";
+import { verifySupabaseToken, supabase } from "./supabase";
 
 declare global {
   namespace Express {
@@ -13,9 +18,134 @@ declare global {
   }
 }
 
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+async function comparePasswords(supplied: string, stored: string) {
+  const [hashed, salt] = stored.split(".");
+  const hashedBuf = Buffer.from(hashed, "hex");
+  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  return timingSafeEqual(hashedBuf, suppliedBuf);
+}
+
 export function setupAuth(app: Express) {
-  // GET /api/user - Get current user profile (requires JWT token)
-  app.get("/api/user", supabaseAuthMiddleware, async (req, res) => {
+  const sessionSettings: session.SessionOptions = {
+    secret: process.env.SESSION_SECRET!,
+    resave: false,
+    saveUninitialized: false,
+    store: storage.sessionStore,
+    cookie: {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+    },
+  };
+
+  app.use(session(sessionSettings));
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  passport.use(
+    new LocalStrategy(async (username, password, done) => {
+      try {
+        const user = await storage.getUserByUsername(username);
+        if (!user || !user.password || !(await comparePasswords(password, user.password))) {
+          return done(null, false);
+        }
+        return done(null, user);
+      } catch (error) {
+        return done(error);
+      }
+    }),
+  );
+
+  passport.serializeUser((user, done) => done(null, user.id));
+  passport.deserializeUser(async (id: string, done) => {
+    try {
+      const user = await storage.getUser(id);
+      if (!user) {
+        // User not found - clear the session instead of crashing
+        return done(null, false);
+      }
+      done(null, user);
+    } catch (error) {
+      console.error("Error deserializing user:", error);
+      // Don't crash the app - just clear the session
+      done(null, false);
+    }
+  });
+
+  app.post("/api/register", async (req, res, next) => {
+    try {
+      const { username, password, email, firstName, lastName } = req.body;
+
+      if (!username || !password || !email) {
+        return res.status(400).send("Username, password, and email are required");
+      }
+
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).send("Username already exists");
+      }
+
+      const user = await storage.createUser({
+        username,
+        password: await hashPassword(password),
+        email,
+        firstName,
+        lastName,
+        isAdmin: false,
+        isApproved: true,
+      });
+
+      req.login(user, (err) => {
+        if (err) return next(err);
+        res.status(201).json(user);
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) return next(err);
+      if (!user) {
+        return res.status(401).json({ 
+          message: info?.message || "Invalid username or password" 
+        });
+      }
+      req.login(user, (err) => {
+        if (err) {
+          console.error("Login error:", err);
+          return next(err);
+        }
+        console.log("Login successful for user:", user.id, "Session ID:", req.sessionID);
+        res.status(200).json(user);
+      });
+    })(req, res, next);
+  });
+
+  app.post("/api/logout", (req, res, next) => {
+    req.logout((err) => {
+      if (err) return next(err);
+      res.sendStatus(200);
+    });
+  });
+
+  app.get("/api/user", async (req, res) => {
+    // Check authentication first, even in development
+    if (!req.isAuthenticated()) {
+      return res.sendStatus(401);
+    }
+    
     res.json(req.user);
   });
 }
@@ -31,62 +161,32 @@ export const supabaseAuthMiddleware: RequestHandler = async (req: any, res, next
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     
-    console.log('[Auth Middleware] Verifying token:', token.substring(0, 20) + '...');
-    
     // Verify token with Supabase
     const supabaseUser = await verifySupabaseToken(token);
-    console.log('[Auth Middleware] Verification result:', supabaseUser ? 'Success' : 'Failed');
-    
     if (!supabaseUser) {
-      console.error('[Auth Middleware] Token verification failed');
       return res.status(401).json({ message: "Invalid token" });
     }
-
-    console.log('[Auth Middleware] User verified:', supabaseUser.email);
 
     // Get or create user from database
     let user = await storage.getUserByAuthId(supabaseUser.id);
     
     if (!user) {
-      // Check if user exists with this email (from old Passport system)
+      // Auto-create user profile for new Supabase Auth users
       const email = supabaseUser.email;
       if (!email) {
         return res.status(401).json({ message: "Email not found in auth token" });
       }
 
-      const existingUser = await storage.getUserByEmail(email);
-      
-      if (existingUser) {
-        // Update existing user with Supabase authId
-        console.log('[Auth Middleware] Migrating existing user to Supabase:', email);
-        user = await storage.updateUser(existingUser.id, {
-          authId: supabaseUser.id,
-          firstName: supabaseUser.user_metadata?.first_name || existingUser.firstName,
-          lastName: supabaseUser.user_metadata?.last_name || existingUser.lastName,
-        });
-      } else {
-        // Create new user profile for new Supabase Auth users
-        // Get username from user metadata (provided during registration)
-        // If not available (legacy users), generate from email with random suffix
-        let username = supabaseUser.user_metadata?.username;
-        if (!username) {
-          const baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-          const randomSuffix = Math.random().toString(36).substring(2, 8);
-          username = `${baseUsername}_${randomSuffix}`;
-        }
-
-        console.log('[Auth Middleware] Creating new user:', email);
-        user = await storage.createUser({
-          authId: supabaseUser.id,
-          email,
-          firstName: supabaseUser.user_metadata?.first_name || null,
-          lastName: supabaseUser.user_metadata?.last_name || null,
-          username,
-          password: null, // Supabase Auth users don't have passwords
-          isAdmin: false,
-          isApproved: true, // Auto-approve all users
-        });
-      }
+      user = await storage.createUser({
+        authId: supabaseUser.id,
+        email,
+        firstName: supabaseUser.user_metadata?.first_name || null,
+        lastName: supabaseUser.user_metadata?.last_name || null,
+        username: email.split('@')[0], // Generate username from email
+        password: null, // OAuth users don't have passwords
+        isAdmin: false,
+        isApproved: true, // Auto-approve all users
+      });
     }
 
     // Attach user to request
