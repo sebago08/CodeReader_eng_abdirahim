@@ -213,8 +213,19 @@ export default function WorkPlanEditor() {
 
         // Auto-calculate end date if start date or duration changes
         if ((field === "startDate" || field === "duration") && updated.startDate && updated.duration) {
-          const start = parseISO(updated.startDate);
-          updated.endDate = format(addDays(start, updated.duration - 1), "yyyy-MM-dd");
+          try {
+            // Validate that startDate is a valid date string before parsing
+            if (updated.startDate && typeof updated.startDate === 'string' && updated.startDate.trim() !== '') {
+              const start = parseISO(updated.startDate);
+              // Check if the parsed date is valid
+              if (!isNaN(start.getTime())) {
+                updated.endDate = format(addDays(start, updated.duration - 1), "yyyy-MM-dd");
+              }
+            }
+          } catch (error) {
+            // If parsing fails, don't update endDate
+            console.error("Error parsing date:", error);
+          }
         }
 
         return updated;
