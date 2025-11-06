@@ -12,12 +12,11 @@ import { Redirect } from "wouter";
 import { Loader2, Building2 } from "lucide-react";
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const registerSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().min(1, "Email is required").email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   firstName: z.string().optional(),
@@ -33,7 +32,7 @@ export default function AuthPage() {
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
@@ -41,7 +40,6 @@ export default function AuthPage() {
   const registerForm = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username: "",
       email: "",
       password: "",
       firstName: "",
@@ -97,16 +95,16 @@ export default function AuthPage() {
                     <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                       <FormField
                         control={loginForm.control}
-                        name="username"
+                        name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>Email</FormLabel>
                             <FormControl>
                               <Input
-                                type="text"
-                                placeholder="Enter your username"
+                                type="email"
+                                placeholder="your.email@example.com"
                                 {...field}
-                                data-testid="input-login-username"
+                                data-testid="input-login-email"
                               />
                             </FormControl>
                             <FormMessage />
@@ -161,24 +159,6 @@ export default function AuthPage() {
                 <CardContent>
                   <Form {...registerForm}>
                     <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-                      <FormField
-                        control={registerForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Username</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="text"
-                                placeholder="Choose a username"
-                                {...field}
-                                data-testid="input-register-username"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                       <FormField
                         control={registerForm.control}
                         name="email"

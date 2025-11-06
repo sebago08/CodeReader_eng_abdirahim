@@ -1,4 +1,4 @@
-// Passport Local Auth implementation
+// Supabase Auth implementation
 import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import {
   useMutation,
@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { User as SelectUser } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 type AuthContextType = {
   user: SelectUser | null;
@@ -17,12 +18,11 @@ type AuthContextType = {
 };
 
 type LoginData = {
-  username: string;
+  email: string;
   password: string;
 };
 
 type RegisterData = {
-  username: string;
   email: string;
   password: string;
   firstName?: string;
@@ -37,51 +37,103 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Check for existing session on mount
+  // Helper function to get user profile from backend
+  const fetchUserProfile = async (accessToken: string): Promise<SelectUser | null> => {
+    try {
+      const res = await fetch('/api/user', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (res.ok) {
+        return await res.json();
+      }
+      return null;
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+      return null;
+    }
+  };
+
+  // Check for existing session on mount and listen for auth changes
   useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Check for existing session
     const checkSession = async () => {
       try {
-        const res = await fetch('/api/user', {
-          credentials: 'include', // Important: include session cookie
-        });
-
-        if (res.ok) {
-          const userData = await res.json();
-          setUser(userData);
-        } else if (res.status === 401) {
-          // Not authenticated - this is fine
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session check error:', error);
           setUser(null);
+        } else if (session?.access_token) {
+          const userProfile = await fetchUserProfile(session.access_token);
+          setUser(userProfile);
         } else {
-          throw new Error('Failed to check authentication');
+          setUser(null);
         }
       } catch (err) {
         console.error('Session check error:', err);
         setError(err as Error);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
 
     checkSession();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      
+      if (session?.access_token) {
+        const userProfile = await fetchUserProfile(session.access_token);
+        setUser(userProfile);
+      } else {
+        setUser(null);
+      }
+      
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Important: include session cookie
-        body: JSON.stringify(credentials),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: 'Invalid username or password' }));
-        throw new Error(errorData.message || 'Login failed');
+      if (!supabase) {
+        throw new Error('Supabase not configured');
       }
 
-      const userData = await res.json();
-      setUser(userData);
-      return userData;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data.session?.access_token) {
+        throw new Error('No session token received');
+      }
+
+      // Fetch user profile from backend
+      const userProfile = await fetchUserProfile(data.session.access_token);
+      if (!userProfile) {
+        throw new Error('Failed to fetch user profile');
+      }
+
+      setUser(userProfile);
+      return userProfile;
     },
     onSuccess: () => {
       toast({
@@ -101,21 +153,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Important: include session cookie
-        body: JSON.stringify(credentials),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || 'Registration failed');
+      if (!supabase) {
+        throw new Error('Supabase not configured');
       }
 
-      const userData = await res.json();
-      setUser(userData);
-      return userData;
+      const { data, error } = await supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password,
+        options: {
+          data: {
+            first_name: credentials.firstName || '',
+            last_name: credentials.lastName || '',
+          },
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data.session?.access_token) {
+        // Email confirmation may be required
+        throw new Error('Please check your email to confirm your account');
+      }
+
+      // Fetch user profile from backend (will auto-create user)
+      const userProfile = await fetchUserProfile(data.session.access_token);
+      if (!userProfile) {
+        throw new Error('Failed to create user profile');
+      }
+
+      setUser(userProfile);
+      return userProfile;
     },
     onSuccess: () => {
       toast({
@@ -135,13 +204,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/logout', {
-        method: 'POST',
-        credentials: 'include', // Important: include session cookie
-      });
+      if (!supabase) {
+        throw new Error('Supabase not configured');
+      }
 
-      if (!res.ok) {
-        throw new Error('Logout failed');
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        throw new Error(error.message);
       }
 
       setUser(null);
