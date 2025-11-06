@@ -273,7 +273,6 @@ export default function WorkPlanEditor() {
     const sectionActivities: WorkPlanActivity[] = [];
     
     // Find all activities that belong to this section
-    let foundSection = false;
     for (let i = sectionIndex + 1; i < localActivities.length; i++) {
       const activity = localActivities[i];
       
@@ -293,21 +292,35 @@ export default function WorkPlanEditor() {
       return { startDate: null, endDate: null, duration: null };
     }
     
-    // Find earliest start date and latest end date
-    const startDates = sectionActivities.map(a => new Date(a.startDate!));
-    const endDates = sectionActivities.map(a => new Date(a.endDate!));
-    
-    const earliestStart = new Date(Math.min(...startDates.map(d => d.getTime())));
-    const latestEnd = new Date(Math.max(...endDates.map(d => d.getTime())));
-    
-    // Calculate duration in days (inclusive)
-    const durationInDays = Math.ceil((latestEnd.getTime() - earliestStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    
-    return {
-      startDate: format(earliestStart, "yyyy-MM-dd"),
-      endDate: format(latestEnd, "yyyy-MM-dd"),
-      duration: durationInDays
-    };
+    try {
+      // Use parseISO instead of Date constructor to avoid timezone issues
+      const startDates = sectionActivities
+        .map(a => parseISO(a.startDate!))
+        .filter(d => !isNaN(d.getTime()));
+      const endDates = sectionActivities
+        .map(a => parseISO(a.endDate!))
+        .filter(d => !isNaN(d.getTime()));
+      
+      // If no valid dates after filtering, return nulls
+      if (startDates.length === 0 || endDates.length === 0) {
+        return { startDate: null, endDate: null, duration: null };
+      }
+      
+      const earliestStart = new Date(Math.min(...startDates.map(d => d.getTime())));
+      const latestEnd = new Date(Math.max(...endDates.map(d => d.getTime())));
+      
+      // Calculate duration in days (inclusive)
+      const durationInDays = Math.ceil((latestEnd.getTime() - earliestStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      
+      return {
+        startDate: format(earliestStart, "yyyy-MM-dd"),
+        endDate: format(latestEnd, "yyyy-MM-dd"),
+        duration: durationInDays
+      };
+    } catch (error) {
+      console.error("Error calculating section dates:", error);
+      return { startDate: null, endDate: null, duration: null };
+    }
   };
 
   if (loadingPlan || loadingActivities) {
@@ -375,7 +388,11 @@ export default function WorkPlanEditor() {
               </tr>
             </thead>
             <tbody>
-              {localActivities.map((activity, index) => (
+              {localActivities.map((activity, index) => {
+                // For sections, compute dates once per row to avoid redundant calculations
+                const sectionDates = activity.itemType === "section" ? getSectionDates(index) : null;
+                
+                return (
                 <tr
                   key={activity.id}
                   className={`border-b border-border ${activity.itemType === "section" ? "bg-gray-100 dark:bg-gray-800" : "hover:bg-muted/50"}`}
@@ -432,7 +449,7 @@ export default function WorkPlanEditor() {
                       )
                     ) : (
                       <div className="px-2 py-1 text-sm text-muted-foreground italic" data-testid={`text-duration-${activity.id}`}>
-                        {getSectionDates(index).duration ? `${getSectionDates(index).duration} days` : "-"}
+                        {sectionDates?.duration ? `${sectionDates.duration} days` : "-"}
                       </div>
                     )}
                   </td>
@@ -459,7 +476,7 @@ export default function WorkPlanEditor() {
                       )
                     ) : (
                       <div className="px-2 py-1 text-sm text-muted-foreground italic" data-testid={`text-start-date-${activity.id}`}>
-                        {getSectionDates(index).startDate || "-"}
+                        {sectionDates?.startDate || "-"}
                       </div>
                     )}
                   </td>
@@ -467,7 +484,7 @@ export default function WorkPlanEditor() {
                     {activity.itemType === "activity" ? (
                       activity.endDate || "-"
                     ) : (
-                      <span className="italic">{getSectionDates(index).endDate || "-"}</span>
+                      <span className="italic">{sectionDates?.endDate || "-"}</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -507,7 +524,8 @@ export default function WorkPlanEditor() {
                     </DropdownMenu>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
 
