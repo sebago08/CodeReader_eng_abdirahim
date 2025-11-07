@@ -14,12 +14,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { LAYOUT_TEMPLATES, getLayoutTemplate, type LayoutType } from "@/config/dashboard-layouts";
 
+// New layout structure supporting flexible grids
 export type DashboardLayout = {
+  layoutType: LayoutType;
+  widgets: Record<string, string>; // slot1, slot2, etc.
+  widgetConfig?: Record<string, any>;
+};
+
+// Old layout format for backward compatibility
+type LegacyDashboardLayout = {
   topLeft: string;
   topRight: string;
   bottomLeft: string;
   bottomRight: string;
+  widgetConfig?: Record<string, any>;
 };
 
 export type WidgetOption = {
@@ -30,7 +40,7 @@ export type WidgetOption = {
 interface CustomizeDashboardModalProps {
   open: boolean;
   onClose: () => void;
-  currentLayout: DashboardLayout;
+  currentLayout: DashboardLayout | LegacyDashboardLayout;
   onSave: (layout: DashboardLayout) => void;
   isSaving?: boolean;
 }
@@ -47,6 +57,33 @@ export const WIDGET_OPTIONS: WidgetOption[] = [
   { value: "recent-updates", label: "Recent Updates" },
 ];
 
+// Helper to check if layout is legacy format
+function isLegacyLayout(layout: any): layout is LegacyDashboardLayout {
+  return layout && 'topLeft' in layout;
+}
+
+// Convert legacy quadrant format to new slot format
+function convertLegacyLayout(legacy: LegacyDashboardLayout): DashboardLayout {
+  return {
+    layoutType: "grid-4",
+    widgets: {
+      slot1: legacy.topLeft,
+      slot2: legacy.topRight,
+      slot3: legacy.bottomLeft,
+      slot4: legacy.bottomRight,
+    },
+    widgetConfig: legacy.widgetConfig,
+  };
+}
+
+// Ensure layout has proper structure
+function normalizeLayout(layout: DashboardLayout | LegacyDashboardLayout): DashboardLayout {
+  if (isLegacyLayout(layout)) {
+    return convertLegacyLayout(layout);
+  }
+  return layout;
+}
+
 export default function CustomizeDashboardModal({
   open,
   onClose,
@@ -54,150 +91,135 @@ export default function CustomizeDashboardModal({
   onSave,
   isSaving = false,
 }: CustomizeDashboardModalProps) {
-  const [layout, setLayout] = useState<DashboardLayout>(currentLayout);
+  const [layout, setLayout] = useState<DashboardLayout>(() => normalizeLayout(currentLayout));
 
   // Sync internal state when currentLayout prop changes (e.g., when switching between projects)
   useEffect(() => {
-    setLayout(currentLayout);
+    setLayout(normalizeLayout(currentLayout));
   }, [currentLayout]);
+
+  const handleLayoutTypeChange = (newLayoutType: LayoutType) => {
+    const template = getLayoutTemplate(newLayoutType);
+    const newWidgets: Record<string, string> = {};
+    
+    // Preserve existing widgets if they fit in the new layout
+    for (let i = 1; i <= template.slots; i++) {
+      const slotKey = `slot${i}`;
+      newWidgets[slotKey] = layout.widgets[slotKey] || WIDGET_OPTIONS[i - 1]?.value || "basic-info";
+    }
+
+    setLayout({
+      ...layout,
+      layoutType: newLayoutType,
+      widgets: newWidgets,
+    });
+  };
+
+  const handleWidgetChange = (slotKey: string, widgetValue: string) => {
+    setLayout({
+      ...layout,
+      widgets: {
+        ...layout.widgets,
+        [slotKey]: widgetValue,
+      },
+    });
+  };
 
   const handleSave = () => {
     onSave(layout);
   };
 
   const handleCancel = () => {
-    setLayout(currentLayout); // Reset to current layout
+    setLayout(normalizeLayout(currentLayout)); // Reset to current layout
     onClose();
   };
 
+  const currentTemplate = getLayoutTemplate(layout.layoutType);
+  const slotCount = currentTemplate.slots;
+  
+  // Determine grid columns based on slot count (using static Tailwind classes)
+  const gridClassName = slotCount === 6 ? "grid grid-cols-3 gap-4" : "grid grid-cols-2 gap-4";
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleCancel()}>
-      <DialogContent className="sm:max-w-[600px]" data-testid="modal-customize-dashboard">
+      <DialogContent className="sm:max-w-[700px]" data-testid="modal-customize-dashboard">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
-            Customize Dashboard Quadrants
+            Customize Dashboard Layout
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-6 py-4">
-          {/* Top-Left Quadrant */}
+        <div className="space-y-6 py-4">
+          {/* Layout Type Selector */}
           <div className="space-y-2">
-            <Label htmlFor="top-left" className="text-sm font-medium text-muted-foreground">
-              Top-Left Quadrant
+            <Label htmlFor="layout-type" className="text-sm font-medium">
+              Layout Type
             </Label>
             <Select
-              value={layout.topLeft}
-              onValueChange={(value) => setLayout({ ...layout, topLeft: value })}
+              value={layout.layoutType}
+              onValueChange={(value) => handleLayoutTypeChange(value as LayoutType)}
             >
               <SelectTrigger
-                id="top-left"
-                data-testid="select-top-left-quadrant"
+                id="layout-type"
+                data-testid="select-layout-type"
                 className="w-full"
               >
-                <SelectValue placeholder="Select widget" />
+                <SelectValue placeholder="Select layout type" />
               </SelectTrigger>
               <SelectContent>
-                {WIDGET_OPTIONS.map((option) => (
+                {LAYOUT_TEMPLATES.map((template) => (
                   <SelectItem
-                    key={option.value}
-                    value={option.value}
-                    data-testid={`option-${option.value}`}
+                    key={template.id}
+                    value={template.id}
+                    data-testid={`option-layout-${template.id}`}
                   >
-                    {option.label}
+                    {template.name} - {template.description}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Top-Right Quadrant */}
-          <div className="space-y-2">
-            <Label htmlFor="top-right" className="text-sm font-medium text-muted-foreground">
-              Top-Right Quadrant
-            </Label>
-            <Select
-              value={layout.topRight}
-              onValueChange={(value) => setLayout({ ...layout, topRight: value })}
-            >
-              <SelectTrigger
-                id="top-right"
-                data-testid="select-top-right-quadrant"
-                className="w-full"
-              >
-                <SelectValue placeholder="Select widget" />
-              </SelectTrigger>
-              <SelectContent>
-                {WIDGET_OPTIONS.map((option) => (
-                  <SelectItem
-                    key={option.value}
-                    value={option.value}
-                    data-testid={`option-${option.value}`}
+          {/* Dynamic Widget Slot Selectors */}
+          <div className={gridClassName}>
+            {Array.from({ length: slotCount }, (_, i) => {
+              const slotNumber = i + 1;
+              const slotKey = `slot${slotNumber}`;
+              
+              return (
+                <div key={slotKey} className="space-y-2">
+                  <Label
+                    htmlFor={slotKey}
+                    className="text-sm font-medium text-muted-foreground"
                   >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Bottom-Left Quadrant */}
-          <div className="space-y-2">
-            <Label htmlFor="bottom-left" className="text-sm font-medium text-muted-foreground">
-              Bottom-Left Quadrant
-            </Label>
-            <Select
-              value={layout.bottomLeft}
-              onValueChange={(value) => setLayout({ ...layout, bottomLeft: value })}
-            >
-              <SelectTrigger
-                id="bottom-left"
-                data-testid="select-bottom-left-quadrant"
-                className="w-full"
-              >
-                <SelectValue placeholder="Select widget" />
-              </SelectTrigger>
-              <SelectContent>
-                {WIDGET_OPTIONS.map((option) => (
-                  <SelectItem
-                    key={option.value}
-                    value={option.value}
-                    data-testid={`option-${option.value}`}
+                    Widget Slot {slotNumber}
+                  </Label>
+                  <Select
+                    value={layout.widgets[slotKey] || ""}
+                    onValueChange={(value) => handleWidgetChange(slotKey, value)}
                   >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Bottom-Right Quadrant */}
-          <div className="space-y-2">
-            <Label htmlFor="bottom-right" className="text-sm font-medium text-muted-foreground">
-              Bottom-Right Quadrant
-            </Label>
-            <Select
-              value={layout.bottomRight}
-              onValueChange={(value) => setLayout({ ...layout, bottomRight: value })}
-            >
-              <SelectTrigger
-                id="bottom-right"
-                data-testid="select-bottom-right-quadrant"
-                className="w-full"
-              >
-                <SelectValue placeholder="Select widget" />
-              </SelectTrigger>
-              <SelectContent>
-                {WIDGET_OPTIONS.map((option) => (
-                  <SelectItem
-                    key={option.value}
-                    value={option.value}
-                    data-testid={`option-${option.value}`}
-                  >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    <SelectTrigger
+                      id={slotKey}
+                      data-testid={`select-widget-slot-${slotNumber}`}
+                      className="w-full"
+                    >
+                      <SelectValue placeholder="Select widget" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WIDGET_OPTIONS.map((option) => (
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                          data-testid={`option-${option.value}`}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })}
           </div>
         </div>
 

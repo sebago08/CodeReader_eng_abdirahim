@@ -8,9 +8,29 @@ import type { ProjectWithRoads } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import CustomizeDashboardModal, { type DashboardLayout } from "@/components/dashboard/customize-dashboard-modal";
 import WidgetRenderer from "@/components/dashboard/widget-renderer";
+import { getLayoutTemplate } from "@/config/dashboard-layouts";
 
 interface OverviewTabProps {
   project: ProjectWithRoads;
+}
+
+// Helper to check if layout is legacy format
+function isLegacyLayout(layout: any): boolean {
+  return layout && 'topLeft' in layout;
+}
+
+// Convert legacy quadrant format to new slot format
+function convertLegacyToNewFormat(legacy: any): DashboardLayout {
+  return {
+    layoutType: "grid-4",
+    widgets: {
+      slot1: legacy.topLeft,
+      slot2: legacy.topRight,
+      slot3: legacy.bottomLeft,
+      slot4: legacy.bottomRight,
+    },
+    widgetConfig: legacy.widgetConfig || {},
+  };
 }
 
 export default function OverviewTab({ project }: OverviewTabProps) {
@@ -18,13 +38,24 @@ export default function OverviewTab({ project }: OverviewTabProps) {
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
 
   const DEFAULT_LAYOUT: DashboardLayout = {
-    topLeft: "basic-info",
-    topRight: "financial",
-    bottomLeft: "progress",
-    bottomRight: "action-points",
+    layoutType: "grid-4",
+    widgets: {
+      slot1: "basic-info",
+      slot2: "financial",
+      slot3: "progress",
+      slot4: "action-points",
+    },
+    widgetConfig: {},
   };
 
-  const currentLayout: DashboardLayout = (project.dashboardLayout as DashboardLayout) || DEFAULT_LAYOUT;
+  // Handle both old and new layout formats
+  let currentLayout: DashboardLayout = DEFAULT_LAYOUT;
+  if (project.dashboardLayout) {
+    const savedLayout = project.dashboardLayout as any;
+    currentLayout = isLegacyLayout(savedLayout) 
+      ? convertLegacyToNewFormat(savedLayout)
+      : (savedLayout as DashboardLayout);
+  }
 
   const saveDashboardLayoutMutation = useMutation({
     mutationFn: async (layout: DashboardLayout) => {
@@ -38,6 +69,17 @@ export default function OverviewTab({ project }: OverviewTabProps) {
 
   const handleSaveLayout = (layout: DashboardLayout) => {
     saveDashboardLayoutMutation.mutate(layout);
+  };
+
+  const handleWidgetConfigChange = (widgetId: string, config: any) => {
+    const updatedLayout = {
+      ...currentLayout,
+      widgetConfig: {
+        ...currentLayout.widgetConfig,
+        [widgetId]: config,
+      },
+    };
+    saveDashboardLayoutMutation.mutate(updatedLayout);
   };
 
   const getStatusColor = (status: string) => {
@@ -81,11 +123,16 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <WidgetRenderer widgetId={currentLayout.topLeft} project={project} />
-          <WidgetRenderer widgetId={currentLayout.topRight} project={project} />
-          <WidgetRenderer widgetId={currentLayout.bottomLeft} project={project} />
-          <WidgetRenderer widgetId={currentLayout.bottomRight} project={project} />
+        <div className={getLayoutTemplate(currentLayout.layoutType).gridClass}>
+          {Object.entries(currentLayout.widgets).map(([slotKey, widgetId]) => (
+            <WidgetRenderer 
+              key={slotKey}
+              widgetId={widgetId} 
+              project={project} 
+              widgetConfig={currentLayout.widgetConfig || {}}
+              onConfigChange={handleWidgetConfigChange}
+            />
+          ))}
         </div>
       </div>
 
