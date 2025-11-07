@@ -6,3 +6,4 @@ export { default as ActionPointsWidget } from "./ActionPointsWidget";
 export { default as MilestonesWidget } from "./MilestonesWidget";
 export { default as SafetyIssuesWidget } from "./SafetyIssuesWidget";
 export { default as RecentUpdatesWidget } from "./RecentUpdatesWidget";
+export { default as RoadTrackerWidget } from "./RoadTrackerWidget";

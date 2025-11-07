@@ -8,7 +8,7 @@ import type { ProjectWithRoads } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import CustomizeDashboardModal, { type DashboardLayout } from "@/components/dashboard/customize-dashboard-modal";
 import WidgetRenderer from "@/components/dashboard/widget-renderer";
-import { getLayoutTemplate } from "@/config/dashboard-layouts";
+import { getLayoutTemplate, getSlotConfig, isFullWidthSlot } from "@/config/dashboard-layouts";
 
 interface OverviewTabProps {
   project: ProjectWithRoads;
@@ -124,15 +124,23 @@ export default function OverviewTab({ project }: OverviewTabProps) {
         </div>
 
         <div className={getLayoutTemplate(currentLayout.layoutType).gridClass}>
-          {Object.entries(currentLayout.widgets).map(([slotKey, widgetId]) => (
-            <WidgetRenderer 
-              key={slotKey}
-              widgetId={widgetId} 
-              project={project} 
-              widgetConfig={currentLayout.widgetConfig || {}}
-              onConfigChange={handleWidgetConfigChange}
-            />
-          ))}
+          {Object.entries(currentLayout.widgets).map(([slotKey, widgetId]) => {
+            const slotNumber = parseInt(slotKey.replace('slot', ''));
+            const slotClass = getSlotConfig(currentLayout.layoutType, slotNumber);
+            const isFullWidth = isFullWidthSlot(currentLayout.layoutType, slotNumber);
+            
+            return (
+              <div key={slotKey} className={slotClass}>
+                <WidgetRenderer 
+                  widgetId={widgetId} 
+                  project={project} 
+                  widgetConfig={currentLayout.widgetConfig || {}}
+                  onConfigChange={handleWidgetConfigChange}
+                  isFullWidth={isFullWidth}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 

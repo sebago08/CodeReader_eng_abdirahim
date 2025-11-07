@@ -8,6 +8,7 @@ import {
   MilestonesWidget,
   SafetyIssuesWidget,
   RecentUpdatesWidget,
+  RoadTrackerWidget,
 } from "@/components/dashboard-widgets";
 
 interface WidgetRendererProps {
@@ -15,13 +16,15 @@ interface WidgetRendererProps {
   project: ProjectWithRoads;
   widgetConfig?: Record<string, any>;
   onConfigChange?: (widgetId: string, config: any) => void;
+  isFullWidth?: boolean;
 }
 
 export default function WidgetRenderer({ 
   widgetId, 
   project, 
   widgetConfig = {},
-  onConfigChange 
+  onConfigChange,
+  isFullWidth = false
 }: WidgetRendererProps) {
   const handleConfigChange = (config: any) => {
     onConfigChange?.(widgetId, config);
@@ -58,6 +61,8 @@ export default function WidgetRenderer({
       return <SafetyIssuesWidget project={project} />;
     case "recent-updates":
       return <RecentUpdatesWidget project={project} />;
+    case "road-tracker":
+      return <RoadTrackerWidget project={project} isFullWidth={isFullWidth} />;
     default:
       // Fallback to Basic Info if widget ID is unknown
       return <BasicInfoWidget project={project} />;
