@@ -14,7 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { LAYOUT_TEMPLATES, getLayoutTemplate, type LayoutType } from "@/config/dashboard-layouts";
+import { LAYOUT_TEMPLATES, getLayoutTemplate, isFullWidthSlot, type LayoutType } from "@/config/dashboard-layouts";
+import { Badge } from "@/components/ui/badge";
 
 // New layout structure supporting flexible grids
 export type DashboardLayout = {
@@ -55,6 +56,7 @@ export const WIDGET_OPTIONS: WidgetOption[] = [
   { value: "milestones", label: "Milestones" },
   { value: "safety", label: "Safety Issues" },
   { value: "recent-updates", label: "Recent Updates" },
+  { value: "road-tracker", label: "Road Progress Tracker" },
 ];
 
 // Helper to check if layout is legacy format
@@ -185,14 +187,20 @@ export default function CustomizeDashboardModal({
             {Array.from({ length: slotCount }, (_, i) => {
               const slotNumber = i + 1;
               const slotKey = `slot${slotNumber}`;
+              const isFullWidth = isFullWidthSlot(layout.layoutType, slotNumber);
               
               return (
                 <div key={slotKey} className="space-y-2">
                   <Label
                     htmlFor={slotKey}
-                    className="text-sm font-medium text-muted-foreground"
+                    className="text-sm font-medium text-muted-foreground flex items-center gap-2"
                   >
                     Widget Slot {slotNumber}
+                    {isFullWidth && (
+                      <Badge variant="secondary" className="text-xs px-2 py-0">
+                        Full Width
+                      </Badge>
+                    )}
                   </Label>
                   <Select
                     value={layout.widgets[slotKey] || ""}
