@@ -13,16 +13,41 @@ import {
 interface WidgetRendererProps {
   widgetId: string;
   project: ProjectWithRoads;
+  widgetConfig?: Record<string, any>;
+  onConfigChange?: (widgetId: string, config: any) => void;
 }
 
-export default function WidgetRenderer({ widgetId, project }: WidgetRendererProps) {
+export default function WidgetRenderer({ 
+  widgetId, 
+  project, 
+  widgetConfig = {},
+  onConfigChange 
+}: WidgetRendererProps) {
+  const handleConfigChange = (config: any) => {
+    onConfigChange?.(widgetId, config);
+  };
+
+  const currentWidgetConfig = widgetConfig[widgetId] || {};
+
   switch (widgetId) {
     case "basic-info":
       return <BasicInfoWidget project={project} />;
     case "financial":
-      return <FinancialWidget project={project} />;
+      return (
+        <FinancialWidget 
+          project={project} 
+          widgetConfig={currentWidgetConfig}
+          onConfigChange={handleConfigChange}
+        />
+      );
     case "progress":
-      return <ProgressWidget project={project} />;
+      return (
+        <ProgressWidget 
+          project={project}
+          widgetConfig={currentWidgetConfig}
+          onConfigChange={handleConfigChange}
+        />
+      );
     case "team-members":
       return <TeamMembersWidget project={project} />;
     case "action-points":
