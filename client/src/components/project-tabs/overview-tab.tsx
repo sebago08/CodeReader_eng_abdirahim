@@ -1,34 +1,13 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { 
-  Edit, 
-  MapPin, 
-  DollarSign, 
-  Calendar, 
-  FileText, 
-  TrendingUp,
-  User,
-  Building2,
-  Phone,
-  Mail,
-  MapPinned,
-  Briefcase,
-  ArrowRight,
-  AlertTriangle,
-  AlertCircle,
-  Clock,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { Edit, Settings } from "lucide-react";
 import ProjectModal from "@/components/project-modal";
-import { queryClient } from "@/lib/queryClient";
-import type { ProjectWithRoads, ProjectAlerts } from "@shared/schema";
-import { useQuery } from "@tanstack/react-query";
-import type { PaymentCertificate } from "@shared/schema";
-import { Link } from "wouter";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import type { ProjectWithRoads } from "@shared/schema";
+import { useMutation } from "@tanstack/react-query";
+import CustomizeDashboardModal, { type DashboardLayout } from "@/components/dashboard/customize-dashboard-modal";
+import WidgetRenderer from "@/components/dashboard/widget-renderer";
 
 interface OverviewTabProps {
   project: ProjectWithRoads;
@@ -36,19 +15,30 @@ interface OverviewTabProps {
 
 export default function OverviewTab({ project }: OverviewTabProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [showClientInfo, setShowClientInfo] = useState(false);
+  const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
 
-  // Fetch payment certificates for financial progress
-  const { data: certificates = [] } = useQuery<PaymentCertificate[]>({
-    queryKey: [`/api/projects/${project.id}/payment-certificates`],
-    enabled: !!project.id,
+  const DEFAULT_LAYOUT: DashboardLayout = {
+    topLeft: "basic-info",
+    topRight: "financial",
+    bottomLeft: "progress",
+    bottomRight: "action-points",
+  };
+
+  const currentLayout: DashboardLayout = (project.dashboardLayout as DashboardLayout) || DEFAULT_LAYOUT;
+
+  const saveDashboardLayoutMutation = useMutation({
+    mutationFn: async (layout: DashboardLayout) => {
+      return await apiRequest("PATCH", `/api/projects/${project.id}/dashboard-layout`, { dashboardLayout: layout });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}`] });
+      setIsCustomizeModalOpen(false);
+    },
   });
 
-  // Fetch project alerts
-  const { data: alerts } = useQuery<ProjectAlerts>({
-    queryKey: [`/api/projects/${project.id}/alerts`],
-    enabled: !!project.id,
-  });
+  const handleSaveLayout = (layout: DashboardLayout) => {
+    saveDashboardLayoutMutation.mutate(layout);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -63,212 +53,9 @@ export default function OverviewTab({ project }: OverviewTabProps) {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const formatCurrency = (value: string | number | null | undefined) => {
-    if (!value) return "$0.00";
-    const num = typeof value === "string" ? parseFloat(value) : value;
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-    }).format(num);
-  };
-
-  // Calculate Physical Progress with road-length weighting
-  const calculatePhysicalProgress = (): number => {
-    if (project.projectType === "Road" && project.roads && project.roads.length > 0) {
-      // First, calculate total project length
-      const totalProjectLength = project.roads.reduce((sum, road) => {
-        const roadLength = parseFloat(road.length);
-        return !roadLength || roadLength <= 0 || isNaN(roadLength) ? sum : sum + roadLength;
-      }, 0);
-      
-      if (totalProjectLength === 0) return 0;
-      
-      let weightedProgress = 0;
-
-      project.roads.forEach((road) => {
-        // Validate road length
-        const roadLength = parseFloat(road.length);
-        if (!roadLength || roadLength <= 0 || isNaN(roadLength)) {
-          return; // Skip roads with invalid lengths
-        }
-
-        const roadWeight = roadLength / totalProjectLength; // Road's contribution to overall progress
-        const isDualCarriageway = road.carriageway === 'dual';
-        let roadProgress = 0;
-        let totalLayerWeight = 0;
-
-        road.layers?.forEach((layer) => {
-          const layerWeight = layer.weight || 1;
-          totalLayerWeight += layerWeight;
-          
-          if (layer.progress && layer.progress.length > 0) {
-            if (isDualCarriageway) {
-              // For dual carriageway, calculate LHS and RHS separately and average them
-              const lhsProgress = layer.progress
-                .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'LHS' || prog.carriagewaySide?.toLowerCase() === 'both')
-                .reduce((sum: number, prog: any) => {
-                  const start = parseFloat(prog.startChainage as any);
-                  const end = parseFloat(prog.endChainage as any);
-                  if (isNaN(start) || isNaN(end) || end <= start) return sum;
-                  return sum + (end - start);
-                }, 0);
-              
-              const rhsProgress = layer.progress
-                .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'RHS' || prog.carriagewaySide?.toLowerCase() === 'both')
-                .reduce((sum: number, prog: any) => {
-                  const start = parseFloat(prog.startChainage as any);
-                  const end = parseFloat(prog.endChainage as any);
-                  if (isNaN(start) || isNaN(end) || end <= start) return sum;
-                  return sum + (end - start);
-                }, 0);
-              
-              const lhsPercentage = Math.min(100, (lhsProgress / roadLength) * 100);
-              const rhsPercentage = Math.min(100, (rhsProgress / roadLength) * 100);
-              const layerProgress = (lhsPercentage + rhsPercentage) / 2;
-              
-              roadProgress += layerProgress * layerWeight;
-            } else {
-              // For single carriageway, sum all progress
-              const completedLength = layer.progress.reduce((sum, prog) => {
-                const start = parseFloat(prog.startChainage as any);
-                const end = parseFloat(prog.endChainage as any);
-                if (isNaN(start) || isNaN(end) || end <= start) return sum;
-                return sum + (end - start);
-              }, 0);
-              const layerProgress = Math.min(100, (completedLength / roadLength) * 100);
-              roadProgress += layerProgress * layerWeight;
-            }
-          }
-        });
-        
-        // Calculate this road's weighted progress and add to overall
-        const thisRoadProgress = totalLayerWeight > 0 ? roadProgress / totalLayerWeight : 0;
-        weightedProgress += thisRoadProgress * roadWeight;
-      });
-
-      return Math.min(100, Math.round(weightedProgress));
-    }
-    
-    // For non-road projects, would use activities (not implemented in this view)
-    return 0;
-  };
-
-  // Calculate Financial Progress
-  const calculateFinancialProgress = (): number => {
-    const contractAmount = project.contractAmount ? parseFloat(project.contractAmount) : 0;
-    if (contractAmount === 0) return 0;
-
-    // Only count amount paid for financial progress
-    const totalPaid = certificates.reduce((sum, cert) => {
-      return sum + parseFloat(cert.amountPaid || "0");
-    }, 0);
-
-    return Math.round((totalPaid / contractAmount) * 100);
-  };
-
-  // Calculate Time Lapse
-  const calculateTimeLapse = (): number => {
-    const start = new Date(project.startDate);
-    const end = new Date(project.endDate);
-    const today = new Date();
-
-    const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    
-    // Handle invalid or zero duration
-    if (totalDays <= 0) {
-      return 0; // Return 0% for invalid project durations
-    }
-
-    const elapsedDays = Math.ceil((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-
-    // Allow percentage to exceed 100% for overdue projects
-    const percentage = Math.round((elapsedDays / totalDays) * 100);
-    return Math.max(0, percentage); // Allow values > 100% to show overdue status
-  };
-
-  // Calculate overall progress for each road (for condensed tracker)
-  const calculateRoadProgress = (road: any): number => {
-    if (!road.layers || road.layers.length === 0) return 0;
-
-    // Validate road length
-    const roadLength = parseFloat(road.length);
-    if (!roadLength || roadLength <= 0 || isNaN(roadLength)) {
-      return 0; // Return 0% for roads with invalid lengths
-    }
-
-    let totalProgress = 0;
-    const isDualCarriageway = road.carriageway === 'dual';
-
-    road.layers.forEach((layer: any) => {
-      if (layer.progress && layer.progress.length > 0) {
-        if (isDualCarriageway) {
-          // For dual carriageway, calculate LHS and RHS separately and average them
-          const lhsProgress = layer.progress
-            .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'LHS' || prog.carriagewaySide?.toLowerCase() === 'both')
-            .reduce((sum: number, prog: any) => {
-              const start = parseFloat(prog.startChainage);
-              const end = parseFloat(prog.endChainage);
-              if (isNaN(start) || isNaN(end) || end <= start) return sum;
-              return sum + (end - start);
-            }, 0);
-          
-          const rhsProgress = layer.progress
-            .filter((prog: any) => prog.carriagewaySide?.toUpperCase() === 'RHS' || prog.carriagewaySide?.toLowerCase() === 'both')
-            .reduce((sum: number, prog: any) => {
-              const start = parseFloat(prog.startChainage);
-              const end = parseFloat(prog.endChainage);
-              if (isNaN(start) || isNaN(end) || end <= start) return sum;
-              return sum + (end - start);
-            }, 0);
-          
-          const lhsPercentage = Math.min(100, (lhsProgress / roadLength) * 100);
-          const rhsPercentage = Math.min(100, (rhsProgress / roadLength) * 100);
-          const layerProgress = (lhsPercentage + rhsPercentage) / 2;
-          
-          totalProgress += layerProgress;
-        } else {
-          // For single carriageway, sum all progress
-          const completedLength = layer.progress.reduce((sum: number, prog: any) => {
-            const start = parseFloat(prog.startChainage);
-            const end = parseFloat(prog.endChainage);
-            if (isNaN(start) || isNaN(end) || end <= start) return sum;
-            return sum + (end - start);
-          }, 0);
-          const layerProgress = Math.min(100, (completedLength / roadLength) * 100);
-          totalProgress += layerProgress;
-        }
-      }
-    });
-
-    return road.layers.length > 0 ? Math.round(totalProgress / road.layers.length) : 0;
-  };
-
-  const physicalProgress = calculatePhysicalProgress();
-  const financialProgress = calculateFinancialProgress();
-  const timeLapse = calculateTimeLapse();
-
-  // Calculate actual amount paid from certificates
-  const totalPaid = certificates.reduce((sum, cert) => {
-    return sum + parseFloat(cert.amountPaid || "0");
-  }, 0);
-
-  // Calculate balance
-  const contractAmount = parseFloat(project.contractAmount || "0");
-  const balance = Math.max(0, contractAmount - totalPaid);
-
   return (
     <>
       <div className="space-y-6">
-        {/* Header with Status and Edit Button */}
         <div className="flex justify-between items-start">
           <div>
             <h2 className="text-3xl font-bold text-foreground mb-3" data-testid="text-project-name">
@@ -278,566 +65,48 @@ export default function OverviewTab({ project }: OverviewTabProps) {
               {project.status}
             </Badge>
           </div>
-          <Button onClick={() => setIsEditModalOpen(true)} data-testid="button-edit-project">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Project
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => setIsCustomizeModalOpen(true)} 
+              variant="outline"
+              data-testid="button-customize-dashboard"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Customize Dashboard
+            </Button>
+            <Button onClick={() => setIsEditModalOpen(true)} data-testid="button-edit-project">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Project
+            </Button>
+          </div>
         </div>
 
-        {/* Top Metric Cards - 6 column grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Project Number */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Project ID</p>
-                  <p className="text-lg font-bold" data-testid="text-project-number">
-                    {project.projectNumber || "N/A"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Location */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <MapPin className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Location</p>
-                  <p className="text-lg font-bold" data-testid="text-project-location">
-                    {project.location}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Contract Value */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Contract Value</p>
-                  <p className="text-lg font-bold" data-testid="text-contract-amount">
-                    {formatCurrency(project.contractAmount)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Start Date */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Calendar className="h-5 w-5 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Start Date</p>
-                  <p className="text-lg font-bold" data-testid="text-project-start-date">
-                    {formatDate(project.startDate)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* End Date */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <Calendar className="h-5 w-5 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">End Date</p>
-                  <p className="text-lg font-bold" data-testid="text-project-end-date">
-                    {formatDate(project.endDate)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Project Type */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Building2 className="h-5 w-5 text-indigo-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Project Type</p>
-                  <p className="text-lg font-bold" data-testid="text-project-type">
-                    {project.projectType || "Road"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <WidgetRenderer widgetId={currentLayout.topLeft} project={project} />
+          <WidgetRenderer widgetId={currentLayout.topRight} project={project} />
+          <WidgetRenderer widgetId={currentLayout.bottomLeft} project={project} />
+          <WidgetRenderer widgetId={currentLayout.bottomRight} project={project} />
         </div>
-
-        {/* Financial Metrics Cards - 3 columns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Contract Amount */}
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground font-medium mb-2">Contract Amount</p>
-              <p className="text-3xl font-bold text-indigo-600" data-testid="text-contract-amount-card">
-                {formatCurrency(project.contractAmount)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Total contract value</p>
-            </CardContent>
-          </Card>
-
-          {/* Amount Spent */}
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground font-medium mb-2">Amount Spent</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-amount-spent-card">
-                {formatCurrency(totalPaid)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {certificates.length > 0 ? `${certificates.length} payment certificate${certificates.length !== 1 ? 's' : ''}` : "No payments recorded yet"}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Balance */}
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground font-medium mb-2">Balance</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-balance-card">
-                {formatCurrency(balance)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {balance === 0 && totalPaid > 0 ? "Budget fully utilized" : "Remaining budget available"}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Progress Overview Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Progress Overview
-            </CardTitle>
-            <CardDescription>Track project completion and timeline</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Left: Progress Bars */}
-              <div className="md:col-span-2 space-y-6">
-                {/* Physical Progress */}
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-semibold">Physical Progress</span>
-                    <span className="text-sm font-bold text-indigo-600" data-testid="text-physical-progress">
-                      {physicalProgress}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={physicalProgress} 
-                    className="h-3 bg-gray-200" 
-                    style={{"--progress-background": "hsl(239, 84%, 67%)"} as any}
-                    data-testid="progress-physical"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {project.projectType === "Road" ? "Based on road construction layers" : "Based on completed activities"}
-                  </p>
-                </div>
-
-                {/* Time Progress */}
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-semibold">Time Progress</span>
-                    <span className={`text-sm font-bold ${timeLapse > 100 ? 'text-red-600' : 'text-orange-600'}`} data-testid="text-time-lapse">
-                      {timeLapse}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={Math.min(timeLapse, 100)} 
-                    className="h-3 bg-gray-200" 
-                    style={{"--progress-background": timeLapse > 100 ? "hsl(0, 84%, 60%)" : "hsl(38, 92%, 50%)"} as any}
-                    data-testid="progress-time-lapse"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {timeLapse > 100 ? "Project is overdue" : `${Math.max(0, 100 - timeLapse)}% time remaining`}
-                  </p>
-                </div>
-              </div>
-
-              {/* Right: Financial Progress Circle */}
-              <div className="flex flex-col items-center justify-center">
-                <div className="text-center mb-3">
-                  <p className="text-sm font-semibold text-muted-foreground">Financial Progress</p>
-                </div>
-                <div className="relative w-32 h-32">
-                  <svg className="transform -rotate-90 w-32 h-32">
-                    <circle
-                      cx="64"
-                      cy="64"
-                      r="56"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      fill="transparent"
-                      className="text-gray-200 dark:text-gray-700"
-                    />
-                    <circle
-                      cx="64"
-                      cy="64"
-                      r="56"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      fill="transparent"
-                      strokeDasharray={`${2 * Math.PI * 56}`}
-                      strokeDashoffset={`${2 * Math.PI * 56 * (1 - financialProgress / 100)}`}
-                      className="text-indigo-600 dark:text-indigo-500"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-500" data-testid="text-financial-progress">
-                      {financialProgress}%
-                    </span>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-3 text-center">
-                  Based on payment certificates
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Project Alerts - Critical Items Requiring Attention */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Upcoming & Overdue Milestones */}
-          <Card className="border-orange-200 dark:border-orange-900/50">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5 text-orange-600 dark:text-orange-500" />
-                Milestones
-              </CardTitle>
-              <CardDescription>Upcoming and overdue</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!alerts || (alerts.milestones.upcoming.length === 0 && alerts.milestones.overdue.length === 0) ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No milestones due soon</p>
-              ) : (
-                <div className="space-y-3">
-                  {alerts.milestones.overdue.map((milestone) => (
-                    <div key={milestone.id} className="border-l-4 border-red-500 pl-3 py-2" data-testid={`milestone-overdue-${milestone.id}`}>
-                      <p className="text-sm font-semibold text-red-700 dark:text-red-400">
-                        {milestone.activityName}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Overdue by {milestone.daysOverdue} day{milestone.daysOverdue !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  ))}
-                  {alerts.milestones.upcoming.map((milestone) => (
-                    <div key={milestone.id} className="border-l-4 border-orange-500 pl-3 py-2" data-testid={`milestone-upcoming-${milestone.id}`}>
-                      <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">
-                        {milestone.activityName}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Due in {milestone.daysUntil} day{milestone.daysUntil !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Missed Action Point Deadlines */}
-          <Card className="border-red-200 dark:border-red-900/50">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500" />
-                Overdue Action Points
-              </CardTitle>
-              <CardDescription>Missed deadlines</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!alerts || alerts.actionPoints.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No overdue action points</p>
-              ) : (
-                <div className="space-y-3">
-                  {alerts.actionPoints.slice(0, 5).map((actionPoint) => (
-                    <div key={actionPoint.id} className="border-l-4 border-red-500 pl-3 py-2" data-testid={`action-point-${actionPoint.id}`}>
-                      <p className="text-sm font-semibold text-red-700 dark:text-red-400 line-clamp-2">
-                        {actionPoint.description}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className={`text-xs ${
-                          actionPoint.priority === 'high' ? 'border-red-500 text-red-700 dark:text-red-400' :
-                          actionPoint.priority === 'medium' ? 'border-orange-500 text-orange-700 dark:text-orange-400' :
-                          'border-yellow-500 text-yellow-700 dark:text-yellow-400'
-                        }`}>
-                          {actionPoint.priority}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground">
-                          {actionPoint.daysOverdue} day{actionPoint.daysOverdue !== 1 ? 's' : ''} overdue
-                        </p>
-                      </div>
-                      {actionPoint.assignedTo && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Assigned: {actionPoint.assignedTo}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                  {alerts.actionPoints.length > 5 && (
-                    <p className="text-xs text-muted-foreground text-center pt-2">
-                      + {alerts.actionPoints.length - 5} more overdue
-                    </p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Critical Outstanding Issues */}
-          <Card className="border-red-200 dark:border-red-900/50">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500" />
-                Critical Safety Issues
-              </CardTitle>
-              <CardDescription>Open high-priority</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!alerts || alerts.criticalIssues.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No critical issues</p>
-              ) : (
-                <div className="space-y-3">
-                  {alerts.criticalIssues.slice(0, 5).map((issue) => (
-                    <div key={issue.id} className="border-l-4 border-red-500 pl-3 py-2" data-testid={`critical-issue-${issue.id}`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-red-700 dark:text-red-400 line-clamp-2 flex-1">
-                          {issue.description}
-                        </p>
-                        <Badge variant="destructive" className="text-xs shrink-0">
-                          {issue.severity}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Open for {issue.daysOpen} day{issue.daysOpen !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  ))}
-                  {alerts.criticalIssues.length > 5 && (
-                    <p className="text-xs text-muted-foreground text-center pt-2">
-                      + {alerts.criticalIssues.length - 5} more critical issues
-                    </p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Condensed Road Progress Tracker - Only for Road Projects */}
-        {project.projectType === "Road" && project.roads && project.roads.length > 0 && (
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-lg">Road Construction Progress</CardTitle>
-                  <CardDescription>Quick overview of all roads</CardDescription>
-                </div>
-                <Link href={`/projects/${project.id}`}>
-                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700" data-testid="button-view-full-progress">
-                    View Full Tracker
-                    <ArrowRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {project.roads.slice(0, 5).map((road) => {
-                  const roadProgress = calculateRoadProgress(road);
-                  return (
-                    <div key={road.id} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-sm font-semibold" data-testid={`text-road-name-${road.id}`}>
-                            {road.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {road.length} km • {road.roadType}
-                          </p>
-                        </div>
-                        <span className="text-sm font-bold" data-testid={`text-road-progress-${road.id}`}>
-                          {roadProgress}%
-                        </span>
-                      </div>
-                      <Progress 
-                        value={roadProgress} 
-                        className="h-2" 
-                        data-testid={`progress-road-${road.id}`}
-                      />
-                    </div>
-                  );
-                })}
-                {project.roads.length > 5 && (
-                  <p className="text-xs text-muted-foreground text-center pt-2">
-                    + {project.roads.length - 5} more roads
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Description */}
-        {project.description && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Description
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground whitespace-pre-wrap" data-testid="text-project-description">
-                {project.description}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Client and Contractor Information - Collapsible */}
-        <Card>
-          <CardHeader className="cursor-pointer" onClick={() => setShowClientInfo(!showClientInfo)} data-testid="button-toggle-client-info">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Client & Contractor Information
-              </CardTitle>
-              {showClientInfo ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-            </div>
-          </CardHeader>
-          {showClientInfo && (
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Client Information */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Client Details
-                  </h3>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium mb-1">Name</p>
-                    <p className="text-sm font-semibold" data-testid="text-client-name">
-                      {project.client || "N/A"}
-                    </p>
-                  </div>
-                  {project.clientContactPerson && (
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium mb-1">Contact</p>
-                      <p className="text-sm font-semibold" data-testid="text-client-contact">
-                        {project.clientContactPerson}
-                      </p>
-                    </div>
-                  )}
-                  {project.clientEmail && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm" data-testid="text-client-email">
-                        {project.clientEmail}
-                      </p>
-                    </div>
-                  )}
-                  {project.clientPhone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm" data-testid="text-client-phone">
-                        {project.clientPhone}
-                      </p>
-                    </div>
-                  )}
-                  {project.clientAddress && (
-                    <div className="flex items-start gap-2">
-                      <MapPinned className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <p className="text-sm" data-testid="text-client-address">
-                        {project.clientAddress}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Contractor Information */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm flex items-center gap-2">
-                    <Briefcase className="h-4 w-4" />
-                    Contractor Details
-                  </h3>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium mb-1">Name</p>
-                    <p className="text-sm font-semibold" data-testid="text-contractor-name">
-                      {project.contractorName || "N/A"}
-                    </p>
-                  </div>
-                  {project.contractorContactPerson && (
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium mb-1">Contact</p>
-                      <p className="text-sm font-semibold" data-testid="text-contractor-contact">
-                        {project.contractorContactPerson}
-                      </p>
-                    </div>
-                  )}
-                  {project.contractorEmail && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm" data-testid="text-contractor-email">
-                        {project.contractorEmail}
-                      </p>
-                    </div>
-                  )}
-                  {project.contractorPhone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm" data-testid="text-contractor-phone">
-                        {project.contractorPhone}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          )}
-        </Card>
       </div>
 
-      {/* Edit Modal */}
       {isEditModalOpen && (
         <ProjectModal
-          project={project}
           onClose={() => setIsEditModalOpen(false)}
           onSuccess={() => {
             setIsEditModalOpen(false);
-            queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+            queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}`] });
           }}
+          project={project}
         />
       )}
+
+      <CustomizeDashboardModal
+        open={isCustomizeModalOpen}
+        onClose={() => setIsCustomizeModalOpen(false)}
+        currentLayout={currentLayout}
+        onSave={handleSaveLayout}
+        isSaving={saveDashboardLayoutMutation.isPending}
+      />
     </>
   );
 }
