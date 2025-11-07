@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +55,11 @@ export default function CustomizeDashboardModal({
   isSaving = false,
 }: CustomizeDashboardModalProps) {
   const [layout, setLayout] = useState<DashboardLayout>(currentLayout);
+
+  // Sync internal state when currentLayout prop changes (e.g., when switching between projects)
+  useEffect(() => {
+    setLayout(currentLayout);
+  }, [currentLayout]);
 
   const handleSave = () => {
     onSave(layout);
