@@ -2070,12 +2070,12 @@ export class DatabaseStorage implements IStorage {
           eq(safetyIncidents.status, 'Open')
         )
       )
-      .orderBy(safetyIncidents.dateOccurred);
+      .orderBy(safetyIncidents.incidentDate);
 
     const criticalOutstanding = criticalIssues
       .filter(issue => issue.severity === 'High' || issue.severity === 'Critical')
       .map(issue => {
-        const occurredDate = new Date(issue.dateOccurred);
+        const occurredDate = new Date(issue.incidentDate);
         occurredDate.setHours(0, 0, 0, 0);
         const diffTime = today.getTime() - occurredDate.getTime();
         const daysOpen = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -2084,7 +2084,7 @@ export class DatabaseStorage implements IStorage {
           id: issue.id,
           description: issue.description,
           severity: issue.severity,
-          dateOccurred: issue.dateOccurred,
+          dateOccurred: issue.incidentDate,
           daysOpen: Math.max(0, daysOpen),
         };
       });
