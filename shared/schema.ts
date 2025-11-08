@@ -85,9 +85,6 @@ export const projects = pgTable("projects", {
   // Financial tracking
   advancePayment: decimal("advance_payment", { precision: 15, scale: 2 }).default("0"),
   
-  // Dashboard customization - stores layout type, widget positions, and per-widget view preferences
-  dashboardLayout: jsonb("dashboard_layout").default(sql`'{"layoutType":"grid-4","widgets":{"slot1":"basic-info","slot2":"financial","slot3":"progress","slot4":"action-points"},"widgetConfig":{}}'::jsonb`),
-  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
