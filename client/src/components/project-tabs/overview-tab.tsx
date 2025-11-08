@@ -302,16 +302,6 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           layout={project.dashboardLayout as DashboardLayout | null} 
         />
 
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground whitespace-pre-wrap" data-testid="text-project-description">
-                {project.description}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Client and Contractor Information - Collapsible */}
         <Card>
           <CardHeader className="cursor-pointer" onClick={() => setShowClientInfo(!showClientInfo)} data-testid="button-toggle-client-info">

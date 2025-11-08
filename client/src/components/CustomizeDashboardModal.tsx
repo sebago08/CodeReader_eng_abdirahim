@@ -45,13 +45,10 @@ export default function CustomizeDashboardModal({
 
   const saveMutation = useMutation({
     mutationFn: async (dashboardLayout: DashboardLayout) => {
-      return await apiRequest(`/api/projects/${projectId}/dashboard-layout`, {
-        method: "PATCH",
-        body: JSON.stringify({ dashboardLayout }),
-      });
+      return await apiRequest("PATCH", `/api/projects/${projectId}/dashboard-layout`, { dashboardLayout });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
         title: "Dashboard updated",
         description: "Your dashboard layout has been saved successfully.",
