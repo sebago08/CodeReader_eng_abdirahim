@@ -22,6 +22,7 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  Settings,
 } from "lucide-react";
 import ProjectModal from "@/components/project-modal";
 import { queryClient } from "@/lib/queryClient";
@@ -29,6 +30,9 @@ import type { ProjectWithRoads, ProjectAlerts } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import type { PaymentCertificate } from "@shared/schema";
 import { Link } from "wouter";
+import DashboardGrid from "@/components/DashboardGrid";
+import CustomizeDashboardModal from "@/components/CustomizeDashboardModal";
+import type { DashboardLayout } from "@/lib/widgetRegistry";
 
 interface OverviewTabProps {
   project: ProjectWithRoads;
@@ -37,6 +41,7 @@ interface OverviewTabProps {
 export default function OverviewTab({ project }: OverviewTabProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [showClientInfo, setShowClientInfo] = useState(false);
+  const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
 
   // Fetch payment certificates for financial progress
   const { data: certificates = [] } = useQuery<PaymentCertificate[]>({
@@ -278,442 +283,25 @@ export default function OverviewTab({ project }: OverviewTabProps) {
               {project.status}
             </Badge>
           </div>
-          <Button onClick={() => setIsEditModalOpen(true)} data-testid="button-edit-project">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Project
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsCustomizeModalOpen(true)} data-testid="button-customize-dashboard">
+              <Settings className="h-4 w-4 mr-2" />
+              Customize Dashboard
+            </Button>
+            <Button onClick={() => setIsEditModalOpen(true)} data-testid="button-edit-project">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Project
+            </Button>
+          </div>
         </div>
 
-        {/* Top Metric Cards - 6 column grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Project Number */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Project ID</p>
-                  <p className="text-lg font-bold" data-testid="text-project-number">
-                    {project.projectNumber || "N/A"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Location */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <MapPin className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Location</p>
-                  <p className="text-lg font-bold" data-testid="text-project-location">
-                    {project.location}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Customizable Dashboard Grid */}
+        <DashboardGrid 
+          project={project} 
+          layout={project.dashboardLayout as DashboardLayout | null} 
+        />
 
-          {/* Contract Value */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Contract Value</p>
-                  <p className="text-lg font-bold" data-testid="text-contract-amount">
-                    {formatCurrency(project.contractAmount)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Start Date */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Calendar className="h-5 w-5 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Start Date</p>
-                  <p className="text-lg font-bold" data-testid="text-project-start-date">
-                    {formatDate(project.startDate)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* End Date */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <Calendar className="h-5 w-5 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">End Date</p>
-                  <p className="text-lg font-bold" data-testid="text-project-end-date">
-                    {formatDate(project.endDate)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Project Type */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Building2 className="h-5 w-5 text-indigo-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Project Type</p>
-                  <p className="text-lg font-bold" data-testid="text-project-type">
-                    {project.projectType || "Road"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Financial Metrics Cards - 3 columns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Contract Amount */}
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground font-medium mb-2">Contract Amount</p>
-              <p className="text-3xl font-bold text-indigo-600" data-testid="text-contract-amount-card">
-                {formatCurrency(project.contractAmount)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Total contract value</p>
-            </CardContent>
-          </Card>
-
-          {/* Amount Spent */}
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground font-medium mb-2">Amount Spent</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-amount-spent-card">
-                {formatCurrency(totalPaid)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {certificates.length > 0 ? `${certificates.length} payment certificate${certificates.length !== 1 ? 's' : ''}` : "No payments recorded yet"}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Balance */}
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground font-medium mb-2">Balance</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-balance-card">
-                {formatCurrency(balance)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {balance === 0 && totalPaid > 0 ? "Budget fully utilized" : "Remaining budget available"}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Progress Overview Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Progress Overview
-            </CardTitle>
-            <CardDescription>Track project completion and timeline</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Left: Progress Bars */}
-              <div className="md:col-span-2 space-y-6">
-                {/* Physical Progress */}
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-semibold">Physical Progress</span>
-                    <span className="text-sm font-bold text-indigo-600" data-testid="text-physical-progress">
-                      {physicalProgress}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={physicalProgress} 
-                    className="h-3 bg-gray-200" 
-                    style={{"--progress-background": "hsl(239, 84%, 67%)"} as any}
-                    data-testid="progress-physical"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {project.projectType === "Road" ? "Based on road construction layers" : "Based on completed activities"}
-                  </p>
-                </div>
-
-                {/* Time Progress */}
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-semibold">Time Progress</span>
-                    <span className={`text-sm font-bold ${timeLapse > 100 ? 'text-red-600' : 'text-orange-600'}`} data-testid="text-time-lapse">
-                      {timeLapse}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={Math.min(timeLapse, 100)} 
-                    className="h-3 bg-gray-200" 
-                    style={{"--progress-background": timeLapse > 100 ? "hsl(0, 84%, 60%)" : "hsl(38, 92%, 50%)"} as any}
-                    data-testid="progress-time-lapse"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {timeLapse > 100 ? "Project is overdue" : `${Math.max(0, 100 - timeLapse)}% time remaining`}
-                  </p>
-                </div>
-              </div>
-
-              {/* Right: Financial Progress Circle */}
-              <div className="flex flex-col items-center justify-center">
-                <div className="text-center mb-3">
-                  <p className="text-sm font-semibold text-muted-foreground">Financial Progress</p>
-                </div>
-                <div className="relative w-32 h-32">
-                  <svg className="transform -rotate-90 w-32 h-32">
-                    <circle
-                      cx="64"
-                      cy="64"
-                      r="56"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      fill="transparent"
-                      className="text-gray-200 dark:text-gray-700"
-                    />
-                    <circle
-                      cx="64"
-                      cy="64"
-                      r="56"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      fill="transparent"
-                      strokeDasharray={`${2 * Math.PI * 56}`}
-                      strokeDashoffset={`${2 * Math.PI * 56 * (1 - financialProgress / 100)}`}
-                      className="text-indigo-600 dark:text-indigo-500"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-500" data-testid="text-financial-progress">
-                      {financialProgress}%
-                    </span>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-3 text-center">
-                  Based on payment certificates
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Project Alerts - Critical Items Requiring Attention */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Upcoming & Overdue Milestones */}
-          <Card className="border-orange-200 dark:border-orange-900/50">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5 text-orange-600 dark:text-orange-500" />
-                Milestones
-              </CardTitle>
-              <CardDescription>Upcoming and overdue</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!alerts || (alerts.milestones.upcoming.length === 0 && alerts.milestones.overdue.length === 0) ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No milestones due soon</p>
-              ) : (
-                <div className="space-y-3">
-                  {alerts.milestones.overdue.map((milestone) => (
-                    <div key={milestone.id} className="border-l-4 border-red-500 pl-3 py-2" data-testid={`milestone-overdue-${milestone.id}`}>
-                      <p className="text-sm font-semibold text-red-700 dark:text-red-400">
-                        {milestone.activityName}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Overdue by {milestone.daysOverdue} day{milestone.daysOverdue !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  ))}
-                  {alerts.milestones.upcoming.map((milestone) => (
-                    <div key={milestone.id} className="border-l-4 border-orange-500 pl-3 py-2" data-testid={`milestone-upcoming-${milestone.id}`}>
-                      <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">
-                        {milestone.activityName}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Due in {milestone.daysUntil} day{milestone.daysUntil !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Missed Action Point Deadlines */}
-          <Card className="border-red-200 dark:border-red-900/50">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500" />
-                Overdue Action Points
-              </CardTitle>
-              <CardDescription>Missed deadlines</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!alerts || alerts.actionPoints.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No overdue action points</p>
-              ) : (
-                <div className="space-y-3">
-                  {alerts.actionPoints.slice(0, 5).map((actionPoint) => (
-                    <div key={actionPoint.id} className="border-l-4 border-red-500 pl-3 py-2" data-testid={`action-point-${actionPoint.id}`}>
-                      <p className="text-sm font-semibold text-red-700 dark:text-red-400 line-clamp-2">
-                        {actionPoint.description}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className={`text-xs ${
-                          actionPoint.priority === 'high' ? 'border-red-500 text-red-700 dark:text-red-400' :
-                          actionPoint.priority === 'medium' ? 'border-orange-500 text-orange-700 dark:text-orange-400' :
-                          'border-yellow-500 text-yellow-700 dark:text-yellow-400'
-                        }`}>
-                          {actionPoint.priority}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground">
-                          {actionPoint.daysOverdue} day{actionPoint.daysOverdue !== 1 ? 's' : ''} overdue
-                        </p>
-                      </div>
-                      {actionPoint.assignedTo && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Assigned: {actionPoint.assignedTo}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                  {alerts.actionPoints.length > 5 && (
-                    <p className="text-xs text-muted-foreground text-center pt-2">
-                      + {alerts.actionPoints.length - 5} more overdue
-                    </p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Critical Outstanding Issues */}
-          <Card className="border-red-200 dark:border-red-900/50">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500" />
-                Critical Safety Issues
-              </CardTitle>
-              <CardDescription>Open high-priority</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!alerts || alerts.criticalIssues.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No critical issues</p>
-              ) : (
-                <div className="space-y-3">
-                  {alerts.criticalIssues.slice(0, 5).map((issue) => (
-                    <div key={issue.id} className="border-l-4 border-red-500 pl-3 py-2" data-testid={`critical-issue-${issue.id}`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-red-700 dark:text-red-400 line-clamp-2 flex-1">
-                          {issue.description}
-                        </p>
-                        <Badge variant="destructive" className="text-xs shrink-0">
-                          {issue.severity}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Open for {issue.daysOpen} day{issue.daysOpen !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  ))}
-                  {alerts.criticalIssues.length > 5 && (
-                    <p className="text-xs text-muted-foreground text-center pt-2">
-                      + {alerts.criticalIssues.length - 5} more critical issues
-                    </p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Condensed Road Progress Tracker - Only for Road Projects */}
-        {project.projectType === "Road" && project.roads && project.roads.length > 0 && (
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-lg">Road Construction Progress</CardTitle>
-                  <CardDescription>Quick overview of all roads</CardDescription>
-                </div>
-                <Link href={`/projects/${project.id}`}>
-                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700" data-testid="button-view-full-progress">
-                    View Full Tracker
-                    <ArrowRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {project.roads.slice(0, 5).map((road) => {
-                  const roadProgress = calculateRoadProgress(road);
-                  return (
-                    <div key={road.id} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-sm font-semibold" data-testid={`text-road-name-${road.id}`}>
-                            {road.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {road.length} km • {road.roadType}
-                          </p>
-                        </div>
-                        <span className="text-sm font-bold" data-testid={`text-road-progress-${road.id}`}>
-                          {roadProgress}%
-                        </span>
-                      </div>
-                      <Progress 
-                        value={roadProgress} 
-                        className="h-2" 
-                        data-testid={`progress-road-${road.id}`}
-                      />
-                    </div>
-                  );
-                })}
-                {project.roads.length > 5 && (
-                  <p className="text-xs text-muted-foreground text-center pt-2">
-                    + {project.roads.length - 5} more roads
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Description */}
-        {project.description && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Description
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -826,6 +414,14 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           )}
         </Card>
       </div>
+
+      {/* Customize Dashboard Modal */}
+      <CustomizeDashboardModal
+        open={isCustomizeModalOpen}
+        onOpenChange={setIsCustomizeModalOpen}
+        projectId={project.id}
+        currentLayout={project.dashboardLayout as DashboardLayout | null}
+      />
 
       {/* Edit Modal */}
       {isEditModalOpen && (
