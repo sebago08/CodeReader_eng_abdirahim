@@ -85,6 +85,9 @@ export const projects = pgTable("projects", {
   // Financial tracking
   advancePayment: decimal("advance_payment", { precision: 15, scale: 2 }).default("0"),
   
+  // Dashboard customization
+  dashboardLayout: jsonb("dashboard_layout"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
