@@ -155,6 +155,21 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Update project dashboard layout
+  app.patch('/api/projects/:id/dashboard-layout', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      const { dashboardLayout } = req.body;
+      
+      const project = await storage.updateProject(id, userId, { dashboardLayout });
+      res.json({ dashboardLayout: project.dashboardLayout });
+    } catch (error) {
+      console.error("Error updating dashboard layout:", error);
+      res.status(500).json({ message: "Failed to update dashboard layout" });
+    }
+  });
+
   app.patch('/api/projects/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
