@@ -162,6 +162,19 @@ export function registerRoutes(app: Express): Server {
       const userId = req.user.id;
       const { dashboardLayout } = req.body;
       
+      // Validate dashboard layout structure
+      const validWidgetIds = ["basic-info", "financial", "progress", "action-points"];
+      if (!dashboardLayout || typeof dashboardLayout !== "object") {
+        return res.status(400).json({ message: "Invalid dashboard layout" });
+      }
+
+      const requiredFields = ["topLeft", "topRight", "bottomLeft", "bottomRight"];
+      for (const field of requiredFields) {
+        if (!dashboardLayout[field] || !validWidgetIds.includes(dashboardLayout[field])) {
+          return res.status(400).json({ message: `Invalid widget ID for ${field}` });
+        }
+      }
+      
       const project = await storage.updateProject(id, userId, { dashboardLayout });
       res.json({ dashboardLayout: project.dashboardLayout });
     } catch (error) {
