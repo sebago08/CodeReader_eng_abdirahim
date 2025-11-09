@@ -454,54 +454,57 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             <CardDescription>Track project completion and timeline</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
-              {/* Physical Progress */}
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium">Physical Progress</span>
-                  <span className="text-sm font-semibold">{physicalProgress}%</span>
+            <div className="flex items-center gap-6">
+              {/* Left side: Progress bars */}
+              <div className="flex-1 space-y-4">
+                {/* Physical Progress */}
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Physical Progress</span>
+                    <span className="text-sm font-semibold">{physicalProgress}%</span>
+                  </div>
+                  <Progress value={physicalProgress} className="h-2" data-testid="progress-physical" />
                 </div>
-                <Progress value={physicalProgress} className="h-2" data-testid="progress-physical" />
+
+                {/* Time Progress */}
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Time Progress</span>
+                    <span className="text-sm font-semibold">{timeProgress}%</span>
+                  </div>
+                  <Progress value={timeProgress} className="h-2" data-testid="progress-time" />
+                </div>
               </div>
 
-              {/* Time Progress */}
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium">Time Progress</span>
-                  <span className="text-sm font-semibold">{timeProgress}%</span>
-                </div>
-                <Progress value={timeProgress} className="h-2" data-testid="progress-time" />
-              </div>
-
-              {/* Financial Progress Chart */}
-              <div className="flex items-center justify-center pt-4">
+              {/* Right side: Financial Progress Chart */}
+              <div className="flex items-center justify-center">
                 <div className="relative">
-                  <svg className="w-32 h-32 transform -rotate-90">
+                  <svg className="w-28 h-28 transform -rotate-90">
                     <circle
-                      cx="64"
-                      cy="64"
-                      r="56"
+                      cx="56"
+                      cy="56"
+                      r="48"
                       stroke="currentColor"
                       strokeWidth="8"
                       fill="none"
                       className="text-gray-200 dark:text-gray-700"
                     />
                     <circle
-                      cx="64"
-                      cy="64"
-                      r="56"
+                      cx="56"
+                      cy="56"
+                      r="48"
                       stroke="currentColor"
                       strokeWidth="8"
                       fill="none"
-                      strokeDasharray={`${2 * Math.PI * 56}`}
-                      strokeDashoffset={`${2 * Math.PI * 56 * (1 - financialProgress / 100)}`}
+                      strokeDasharray={`${2 * Math.PI * 48}`}
+                      strokeDashoffset={`${2 * Math.PI * 48 * (1 - financialProgress / 100)}`}
                       className="text-blue-600 dark:text-blue-400 transition-all duration-300"
                       strokeLinecap="round"
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="text-2xl font-bold">{financialProgress}%</div>
+                      <div className="text-xl font-bold">{financialProgress}%</div>
                       <div className="text-xs text-muted-foreground">Financial</div>
                     </div>
                   </div>
