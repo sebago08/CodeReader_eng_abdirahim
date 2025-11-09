@@ -155,34 +155,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Update project dashboard layout
-  app.patch('/api/projects/:id/dashboard-layout', isAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const userId = req.user.id;
-      const { dashboardLayout } = req.body;
-      
-      // Validate dashboard layout structure
-      const validWidgetIds = ["basic-info", "financial", "progress", "action-points"];
-      if (!dashboardLayout || typeof dashboardLayout !== "object") {
-        return res.status(400).json({ message: "Invalid dashboard layout" });
-      }
-
-      const requiredFields = ["topLeft", "topRight", "bottomLeft", "bottomRight"];
-      for (const field of requiredFields) {
-        if (!dashboardLayout[field] || !validWidgetIds.includes(dashboardLayout[field])) {
-          return res.status(400).json({ message: `Invalid widget ID for ${field}` });
-        }
-      }
-      
-      const project = await storage.updateProject(id, userId, { dashboardLayout });
-      res.json({ dashboardLayout: project.dashboardLayout });
-    } catch (error) {
-      console.error("Error updating dashboard layout:", error);
-      res.status(500).json({ message: "Failed to update dashboard layout" });
-    }
-  });
-
   app.patch('/api/projects/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
