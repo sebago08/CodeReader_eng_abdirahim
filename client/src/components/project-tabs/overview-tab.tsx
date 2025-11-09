@@ -456,7 +456,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           <CardContent>
             <div className="flex items-center gap-6">
               {/* Left side: Progress bars */}
-              <div className="flex-1 space-y-4">
+              <div className="space-y-4 max-w-md flex-1">
                 {/* Physical Progress */}
                 <div>
                   <div className="flex justify-between mb-2">
@@ -477,7 +477,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
               </div>
 
               {/* Right side: Financial Progress Chart */}
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center flex-shrink-0">
                 <div className="relative">
                   <svg className="w-28 h-28 transform -rotate-90">
                     <circle
