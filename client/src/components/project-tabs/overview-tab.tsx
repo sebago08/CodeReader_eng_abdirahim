@@ -22,7 +22,6 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
-  Settings,
 } from "lucide-react";
 import ProjectModal from "@/components/project-modal";
 import { queryClient } from "@/lib/queryClient";
@@ -30,9 +29,6 @@ import type { ProjectWithRoads, ProjectAlerts } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import type { PaymentCertificate } from "@shared/schema";
 import { Link } from "wouter";
-import DashboardGrid from "@/components/DashboardGrid";
-import CustomizeDashboardModal from "@/components/CustomizeDashboardModal";
-import type { DashboardLayout } from "@/lib/widgetRegistry";
 
 interface OverviewTabProps {
   project: ProjectWithRoads;
@@ -41,7 +37,6 @@ interface OverviewTabProps {
 export default function OverviewTab({ project }: OverviewTabProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [showClientInfo, setShowClientInfo] = useState(false);
-  const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
 
   // Fetch payment certificates for financial progress
   const { data: certificates = [] } = useQuery<PaymentCertificate[]>({
@@ -270,6 +265,23 @@ export default function OverviewTab({ project }: OverviewTabProps) {
   const contractAmount = parseFloat(project.contractAmount || "0");
   const balance = Math.max(0, contractAmount - totalPaid);
 
+  // Calculate time progress
+  const calculateTimeProgress = (): number => {
+    const start = new Date(project.startDate).getTime();
+    const end = new Date(project.endDate).getTime();
+    const now = new Date().getTime();
+    
+    if (end <= start) return 0;
+    
+    const elapsed = now - start;
+    const total = end - start;
+    const progress = (elapsed / total) * 100;
+    
+    return Math.min(100, Math.max(0, Math.round(progress)));
+  };
+
+  const timeProgress = calculateTimeProgress();
+
   return (
     <>
       <div className="space-y-6">
@@ -283,24 +295,293 @@ export default function OverviewTab({ project }: OverviewTabProps) {
               {project.status}
             </Badge>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsCustomizeModalOpen(true)} data-testid="button-customize-dashboard">
-              <Settings className="h-4 w-4 mr-2" />
-              Customize Dashboard
-            </Button>
-            <Button onClick={() => setIsEditModalOpen(true)} data-testid="button-edit-project">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Project
-            </Button>
-          </div>
+          <Button onClick={() => setIsEditModalOpen(true)} data-testid="button-edit-project">
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Project
+          </Button>
         </div>
 
 
-        {/* Customizable Dashboard Grid */}
-        <DashboardGrid 
-          project={project} 
-          layout={project.dashboardLayout as DashboardLayout | null} 
-        />
+        {/* Fixed Dashboard Layout */}
+        {/* Top Row: Project Details */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Project ID</p>
+                  <p className="text-lg font-semibold" data-testid="text-project-id">
+                    {project.projectNumber || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Location</p>
+                  <p className="text-lg font-semibold" data-testid="text-project-location">
+                    {project.location}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Project Type</p>
+                  <p className="text-lg font-semibold" data-testid="text-project-type">
+                    {project.projectType}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Second Row: Dates and Balance */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                  <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Start Date</p>
+                  <p className="text-lg font-semibold" data-testid="text-start-date">
+                    {formatDate(project.startDate)}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                  <Calendar className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">End Date</p>
+                  <p className="text-lg font-semibold" data-testid="text-end-date">
+                    {formatDate(project.endDate)}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Balance</p>
+                  <p className="text-lg font-semibold" data-testid="text-balance">
+                    {formatCurrency(balance)}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Third Row: Financial Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Contract Amount</p>
+                <p className="text-2xl font-bold text-foreground" data-testid="text-contract-amount">
+                  {formatCurrency(contractAmount)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Total project value</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Amount Spent</p>
+                <p className="text-2xl font-bold text-foreground" data-testid="text-amount-spent">
+                  {formatCurrency(totalPaid)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">From payment certificates</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Balance</p>
+                <p className="text-2xl font-bold text-foreground" data-testid="text-balance-remaining">
+                  {formatCurrency(balance)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Remaining funds</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Progress Overview */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Progress Overview
+            </CardTitle>
+            <CardDescription>Track project completion and timeline</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {/* Physical Progress */}
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm font-medium">Physical Progress</span>
+                  <span className="text-sm font-semibold">{physicalProgress}%</span>
+                </div>
+                <Progress value={physicalProgress} className="h-2" data-testid="progress-physical" />
+              </div>
+
+              {/* Time Progress */}
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm font-medium">Time Progress</span>
+                  <span className="text-sm font-semibold">{timeProgress}%</span>
+                </div>
+                <Progress value={timeProgress} className="h-2" data-testid="progress-time" />
+              </div>
+
+              {/* Financial Progress Chart */}
+              <div className="flex items-center justify-center pt-4">
+                <div className="relative">
+                  <svg className="w-32 h-32 transform -rotate-90">
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      className="text-gray-200 dark:text-gray-700"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 56}`}
+                      strokeDashoffset={`${2 * Math.PI * 56 * (1 - financialProgress / 100)}`}
+                      className="text-blue-600 dark:text-blue-400 transition-all duration-300"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold">{financialProgress}%</div>
+                      <div className="text-xs text-muted-foreground">Financial</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Alert Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Milestones */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Milestones
+              </CardTitle>
+              <CardDescription>Upcoming and overdue</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!alerts || (alerts.milestones.upcoming.length === 0 && alerts.milestones.overdue.length === 0) ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No milestones set</p>
+              ) : (
+                <div className="space-y-2">
+                  {alerts.milestones.overdue.length > 0 && (
+                    <div className="text-sm text-red-600 dark:text-red-400 font-medium">
+                      {alerts.milestones.overdue.length} overdue
+                    </div>
+                  )}
+                  {alerts.milestones.upcoming.length > 0 && (
+                    <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">
+                      {alerts.milestones.upcoming.length} upcoming
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Overdue Action Points */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Overdue Action Points
+              </CardTitle>
+              <CardDescription>Missed deadlines</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!alerts || alerts.actionPoints.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No overdue action points</p>
+              ) : (
+                <div className="text-sm text-red-600 dark:text-red-400 font-medium">
+                  {alerts.actionPoints.length} overdue {alerts.actionPoints.length === 1 ? 'item' : 'items'}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Critical Safety Issues */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Critical Safety Issues
+              </CardTitle>
+              <CardDescription>High-risk priority</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!alerts || alerts.criticalIssues.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No critical issues</p>
+              ) : (
+                <div className="text-sm text-red-600 dark:text-red-400 font-medium">
+                  {alerts.criticalIssues.length} critical {alerts.criticalIssues.length === 1 ? 'issue' : 'issues'}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Client and Contractor Information - Collapsible */}
         <Card>
@@ -404,14 +685,6 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           )}
         </Card>
       </div>
-
-      {/* Customize Dashboard Modal */}
-      <CustomizeDashboardModal
-        open={isCustomizeModalOpen}
-        onOpenChange={setIsCustomizeModalOpen}
-        projectId={project.id}
-        currentLayout={project.dashboardLayout as DashboardLayout | null}
-      />
 
       {/* Edit Modal */}
       {isEditModalOpen && (
