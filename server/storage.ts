@@ -1879,7 +1879,7 @@ export class DatabaseStorage implements IStorage {
       // Calculate progress for each project
       activeProjectsWithRoads = activeProjects.map(project => {
         const projectRoads = allRoads.filter(r => r.projectId === project.id);
-        let progress = 0;
+        let physicalProgress = 0;
         
         if (projectRoads.length > 0) {
           const totalLength = projectRoads.reduce((sum, road) => {
@@ -1943,7 +1943,26 @@ export class DatabaseStorage implements IStorage {
               }
             });
             
-            progress = Math.min(100, Math.max(0, weightedProgress));
+            physicalProgress = Math.min(100, Math.max(0, weightedProgress));
+          }
+        }
+        
+        // Calculate financial progress
+        const budget = parseFloat(project.totalBudget || '0');
+        const spent = parseFloat(project.spentAmount || '0');
+        const financialProgress = budget > 0 ? Math.min(100, Math.max(0, (spent / budget) * 100)) : 0;
+        
+        // Calculate time progress
+        let timeProgress = 0;
+        if (project.startDate && project.endDate) {
+          const start = new Date(project.startDate).getTime();
+          const end = new Date(project.endDate).getTime();
+          const now = today.getTime();
+          
+          if (end > start) {
+            const elapsed = now - start;
+            const total = end - start;
+            timeProgress = Math.min(100, Math.max(0, (elapsed / total) * 100));
           }
         }
         
@@ -1951,8 +1970,10 @@ export class DatabaseStorage implements IStorage {
           id: project.id,
           name: project.name,
           status: project.status,
-          progress: Math.round(progress),
-          dueDate: project.targetCompletionDate || null,
+          financialProgress: Math.round(financialProgress),
+          timeProgress: Math.round(timeProgress),
+          physicalProgress: Math.round(physicalProgress),
+          dueDate: project.endDate || null,
         };
       });
     }

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,25 +13,102 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
-import { DollarSign, Wallet, PiggyBank, AlertTriangle, TrendingUp, Calendar, LogOut, Plus } from "lucide-react";
+import { DollarSign, Wallet, PiggyBank, AlertTriangle, TrendingUp, Calendar, LogOut, Plus, MoreVertical, Copy, Trash2 } from "lucide-react";
 import type { DashboardMetrics } from "@shared/schema";
 import ProjectModal from "@/components/project-modal";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const [showProjectModal, setShowProjectModal] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const { logoutMutation, user } = useAuth();
+  const { toast } = useToast();
 
   const { data: metrics, isLoading } = useQuery<DashboardMetrics>({
     queryKey: ["/api/dashboard/metrics"],
   });
 
+  const duplicateMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      return await apiRequest("POST", `/api/projects/${projectId}/duplicate`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
+      toast({
+        title: "Success",
+        description: "Project duplicated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to duplicate project",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      return await apiRequest("DELETE", `/api/projects/${projectId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
+      toast({
+        title: "Success",
+        description: "Project deleted successfully",
+      });
+      setDeleteDialogOpen(false);
+      setProjectToDelete(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete project",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogout = () => {
     logoutMutation.mutate();
+  };
+
+  const handleDuplicate = (projectId: string) => {
+    duplicateMutation.mutate(projectId);
+  };
+
+  const handleDeleteClick = (projectId: string) => {
+    setProjectToDelete(projectId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (projectToDelete) {
+      deleteMutation.mutate(projectToDelete);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -311,7 +388,13 @@ export default function Dashboard() {
                               Status
                             </TableHead>
                             <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
-                              Progress
+                              Financial
+                            </TableHead>
+                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
+                              Time
+                            </TableHead>
+                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
+                              Physical
                             </TableHead>
                             <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
                               Due Date
@@ -327,7 +410,11 @@ export default function Dashboard() {
                               data-testid={`row-project-${project.id}`}
                             >
                               <TableCell className="font-medium text-gray-900 dark:text-white">
-                                {project.name}
+                                <Link href={`/projects/${project.id}`}>
+                                  <span className="hover:underline cursor-pointer text-blue-600 dark:text-blue-400" data-testid={`link-project-name-${project.id}`}>
+                                    {project.name}
+                                  </span>
+                                </Link>
                               </TableCell>
                               <TableCell>
                                 <Badge 
@@ -338,13 +425,35 @@ export default function Dashboard() {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <div className="flex items-center gap-3 min-w-[150px]">
+                                <div className="flex items-center gap-2 min-w-[100px]">
                                   <Progress 
-                                    value={project.progress} 
-                                    className="flex-1 h-2" 
+                                    value={project.financialProgress} 
+                                    className="flex-1 h-2 max-w-[80px]" 
                                   />
-                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[45px]">
-                                    {project.progress}%
+                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[35px]">
+                                    {project.financialProgress}%
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2 min-w-[100px]">
+                                  <Progress 
+                                    value={project.timeProgress} 
+                                    className="flex-1 h-2 max-w-[80px]" 
+                                  />
+                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[35px]">
+                                    {project.timeProgress}%
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2 min-w-[100px]">
+                                  <Progress 
+                                    value={project.physicalProgress} 
+                                    className="flex-1 h-2 max-w-[80px]" 
+                                  />
+                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[35px]">
+                                    {project.physicalProgress}%
                                   </span>
                                 </div>
                               </TableCell>
@@ -352,16 +461,35 @@ export default function Dashboard() {
                                 {project.dueDate ? format(new Date(project.dueDate), 'MMM dd, yyyy') : '-'}
                               </TableCell>
                               <TableCell>
-                                <Link href={`/projects/${project.id}`}>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm"
-                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                    data-testid={`button-view-${project.id}`}
-                                  >
-                                    View
-                                  </Button>
-                                </Link>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      className="h-8 w-8 p-0"
+                                      data-testid={`button-menu-${project.id}`}
+                                    >
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDuplicate(project.id)}
+                                      data-testid={`menu-duplicate-${project.id}`}
+                                    >
+                                      <Copy className="mr-2 h-4 w-4" />
+                                      Duplicate
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDeleteClick(project.id)}
+                                      className="text-red-600 dark:text-red-400"
+                                      data-testid={`menu-delete-${project.id}`}
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -385,6 +513,27 @@ export default function Dashboard() {
           }}
         />
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this project? This action cannot be undone and will permanently delete all associated data including roads, layers, work plans, and documents.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="button-confirm-delete"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -843,7 +843,9 @@ export type DashboardMetrics = {
     id: string;
     name: string;
     status: string;
-    progress: number;
+    financialProgress: number;
+    timeProgress: number;
+    physicalProgress: number;
     dueDate: string | null;
   }[];
 };
