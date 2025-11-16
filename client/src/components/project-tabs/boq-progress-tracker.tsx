@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, ProgressTracker, ProgressTrackerWithItems, WorkPlan, Activity, ProjectWithRoads } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,9 +89,22 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     setLocalValues({});
   }, [selectedTrackerId]);
 
+  // Handle tracker selection with unsaved changes check
+  const handleTrackerChange = (newTrackerId: string) => {
+    if (Object.keys(localValues).length > 0) {
+      const confirmSwitch = confirm(
+        "You have unsaved changes. Switching trackers will discard these changes. Continue?"
+      );
+      if (!confirmSwitch) {
+        return;
+      }
+    }
+    setSelectedTrackerId(newTrackerId);
+  };
+
   // Create tracker mutation
   const createTrackerMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: { name: string; description: string; workPlanId?: string }) => {
       return await apiRequest("POST", `/api/projects/${project.id}/progress-trackers`, data);
     },
     onSuccess: (newTracker: ProgressTracker) => {
@@ -151,13 +164,7 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
       // Also invalidate all trackers query to update overall progress
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/progress-trackers?includeItems=true`] });
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update item",
-        variant: "destructive",
-      });
-    },
+    // Note: No onError toast here - errors are handled by handleSaveAllChanges
   });
 
   const handleCreateTracker = () => {
@@ -179,10 +186,13 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     }
     
     // Only send workPlanId if it's not empty
-    const payload = {
-      ...formData,
-      workPlanId: formData.workPlanId || undefined,
+    const payload: { name: string; description: string; workPlanId?: string } = {
+      name: formData.name,
+      description: formData.description,
     };
+    if (formData.workPlanId) {
+      payload.workPlanId = formData.workPlanId;
+    }
     createTrackerMutation.mutate(payload);
   };
 
@@ -198,14 +208,47 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     }));
   };
 
-  // Save to server when user finishes editing (onBlur)
-  const handleItemUpdate = (itemId: string, field: string, value: string) => {
-    const numValue = value === '' ? 0 : parseFloat(value);
-    updateItemMutation.mutate({
-      id: itemId,
-      data: { [field]: numValue },
-    });
+  // Save all pending changes to server
+  const handleSaveAllChanges = async () => {
+    if (Object.keys(localValues).length === 0) {
+      toast({
+        title: "Info",
+        description: "No changes to save",
+      });
+      return;
+    }
+
+    try {
+      // Create array of all save promises
+      const savePromises = Object.entries(localValues).map(([itemId, values]) =>
+        updateItemMutation.mutateAsync({
+          id: itemId,
+          data: values,
+        })
+      );
+
+      // Wait for all saves to complete
+      await Promise.all(savePromises);
+
+      // Only clear local values if all saves succeeded
+      setLocalValues({});
+      
+      toast({
+        title: "Success",
+        description: "All changes saved successfully",
+      });
+    } catch (error) {
+      // On error, keep localValues so user can retry
+      toast({
+        title: "Error",
+        description: "Failed to save some changes. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = Object.keys(localValues).length > 0;
   
   // Get value from local state or fallback to server value
   const getValue = (itemId: string, field: string, defaultValue: any) => {
@@ -530,7 +573,7 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
             <Label>Select Tracker</Label>
             <Select
               value={selectedTrackerId || ""}
-              onValueChange={setSelectedTrackerId}
+              onValueChange={handleTrackerChange}
             >
               <SelectTrigger data-testid="select-tracker">
                 <SelectValue placeholder="Select a tracker to view" />
@@ -573,8 +616,31 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                 {calculateWeightedProgress().toFixed(1)}%
               </span>
             </div>
-            <Progress value={calculateWeightedProgress()} className="h-3" />
+            <Progress value={calculateWeightedProgress()} className="h-3" data-testid="progress-tracker-selected" />
           </div>
+
+          {/* Save Changes Button */}
+          {hasUnsavedChanges && (
+            <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                  You have unsaved changes
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  {Object.keys(localValues).length} item(s) with pending edits
+                </p>
+              </div>
+              <Button 
+                onClick={handleSaveAllChanges}
+                disabled={updateItemMutation.isPending}
+                className="bg-primary hover:bg-primary/90"
+                data-testid="button-save-changes"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {updateItemMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          )}
 
           {/* Items table */}
           <div className="border rounded-lg overflow-x-auto">
@@ -623,7 +689,6 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                             step="0.01"
                             value={qtyInBoq}
                             onChange={(e) => handleLocalUpdate(item.id, "qtyInBoq", e.target.value)}
-                            onBlur={(e) => handleItemUpdate(item.id, "qtyInBoq", e.target.value)}
                             className="w-full px-2 py-1 text-sm border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded"
                             data-testid={`input-qty-boq-${item.id}`}
                           />
@@ -636,7 +701,6 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                             step="0.01"
                             value={rate}
                             onChange={(e) => handleLocalUpdate(item.id, "rate", e.target.value)}
-                            onBlur={(e) => handleItemUpdate(item.id, "rate", e.target.value)}
                             className="w-full px-2 py-1 text-sm border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded"
                             data-testid={`input-rate-${item.id}`}
                           />
@@ -656,7 +720,6 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                             step="0.01"
                             value={qtyDone}
                             onChange={(e) => handleLocalUpdate(item.id, "qtyDone", e.target.value)}
-                            onBlur={(e) => handleItemUpdate(item.id, "qtyDone", e.target.value)}
                             className="w-full px-2 py-1 text-sm border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded"
                             data-testid={`input-qty-done-${item.id}`}
                           />
