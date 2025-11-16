@@ -1573,7 +1573,34 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateProgressTrackerItem(id: string, item: Partial<InsertProgressTrackerItem>): Promise<ProgressTrackerItem> {
-    // Convert numeric values to strings for decimal fields
+    // First, get the current item to calculate amounts if needed
+    const [currentItem] = await db.select()
+      .from(progressTrackerItems)
+      .where(eq(progressTrackerItems.id, id));
+    
+    if (!currentItem) {
+      throw new Error('Progress tracker item not found');
+    }
+    
+    // Helper to safely parse numeric values (handles both strings and numbers from API)
+    const toNumber = (value: any, fallback: string | null): number => {
+      if (value !== undefined && value !== null) {
+        return typeof value === 'number' ? value : parseFloat(String(value));
+      }
+      return fallback ? parseFloat(fallback) : 0;
+    };
+    
+    // Extract numeric values for calculations - handle both string and number payloads
+    const qtyInBoqNum = toNumber(item.qtyInBoq, currentItem.qtyInBoq);
+    const rateNum = toNumber(item.rate, currentItem.rate);
+    const qtyDoneNum = toNumber(item.qtyDone, currentItem.qtyDone);
+    const rateDoneNum = toNumber(item.rateDone, currentItem.rateDone);
+    
+    // Calculate amounts with numeric values
+    const amountNum = qtyInBoqNum * rateNum;
+    const amountDoneNum = qtyDoneNum * rateDoneNum;
+    
+    // Now convert all numeric values to strings for decimal fields
     const updates: any = { ...item, updatedAt: new Date() };
     if (typeof updates.qtyInBoq === 'number') {
       updates.qtyInBoq = updates.qtyInBoq.toString();
@@ -1583,6 +1610,20 @@ export class DatabaseStorage implements IStorage {
     }
     if (typeof updates.weightedRatio === 'number') {
       updates.weightedRatio = updates.weightedRatio.toString();
+    }
+    if (typeof updates.rate === 'number') {
+      updates.rate = updates.rate.toString();
+    }
+    if (typeof updates.rateDone === 'number') {
+      updates.rateDone = updates.rateDone.toString();
+    }
+    
+    // Always update calculated amounts if any related field changed
+    if (item.qtyInBoq !== undefined || item.rate !== undefined) {
+      updates.amount = amountNum.toString();
+    }
+    if (item.qtyDone !== undefined || item.rateDone !== undefined) {
+      updates.amountDone = amountDoneNum.toString();
     }
     
     const [result] = await db.update(progressTrackerItems)
