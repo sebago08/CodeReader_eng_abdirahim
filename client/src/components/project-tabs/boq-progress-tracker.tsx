@@ -50,12 +50,11 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
   
   // Local state for instant input updates
   const [localValues, setLocalValues] = useState<Record<string, { 
-    qtyInBoq?: number; 
-    rate?: number; 
-    amount?: number; 
-    qtyDone?: number; 
-    rateDone?: number; 
-    amountDone?: number; 
+    qtyInBoq?: number | null; 
+    rate?: number | null; 
+    amount?: number | null; 
+    qtyDone?: number | null; 
+    amountDone?: number | null; 
     weightedRatio?: number 
   }>>({});
 
@@ -177,21 +176,23 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
   };
 
   // Instant local update for responsive typing
-  const handleLocalUpdate = (itemId: string, field: string, value: number) => {
+  const handleLocalUpdate = (itemId: string, field: string, value: string) => {
+    const numValue = value === '' ? null : parseFloat(value);
     setLocalValues(prev => ({
       ...prev,
       [itemId]: {
         ...prev[itemId],
-        [field]: value,
+        [field]: numValue,
       }
     }));
   };
 
   // Save to server when user finishes editing (onBlur)
-  const handleItemUpdate = (itemId: string, field: string, value: number) => {
+  const handleItemUpdate = (itemId: string, field: string, value: string) => {
+    const numValue = value === '' ? null : parseFloat(value);
     updateItemMutation.mutate({
       id: itemId,
-      data: { [field]: value },
+      data: { [field]: numValue },
     });
   };
   
@@ -490,7 +491,6 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                   <TableHead className="w-[100px]">Rate</TableHead>
                   <TableHead className="w-[120px]">Amount</TableHead>
                   <TableHead className="w-[100px]">Qty Done</TableHead>
-                  <TableHead className="w-[100px]">Rate Done</TableHead>
                   <TableHead className="w-[120px]">Amount Done</TableHead>
                   <TableHead className="w-[80px]">Weight</TableHead>
                   <TableHead className="w-[180px]">Progress</TableHead>
@@ -500,15 +500,18 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                 {selectedTracker.items.map((item) => {
                   const isSection = item.itemType === "section";
                   // Use local values for instant updates
-                  const qtyInBoq = getValue(item.id, "qtyInBoq", item.qtyInBoq || "0");
-                  const rate = getValue(item.id, "rate", item.rate || "0");
-                  const qtyDone = getValue(item.id, "qtyDone", item.qtyDone || "0");
-                  const rateDone = getValue(item.id, "rateDone", item.rateDone || "0");
+                  const qtyInBoq = getValue(item.id, "qtyInBoq", item.qtyInBoq);
+                  const rate = getValue(item.id, "rate", item.rate);
+                  const qtyDone = getValue(item.id, "qtyDone", item.qtyDone);
                   
-                  // Auto-calculate amounts
-                  const amount = parseFloat(String(qtyInBoq)) * parseFloat(String(rate));
-                  const amountDone = parseFloat(String(qtyDone)) * parseFloat(String(rateDone));
-                  const progress = calculateProgress(String(qtyInBoq), String(qtyDone));
+                  // Auto-calculate amounts (properly handle null vs zero)
+                  const qtyInBoqNum = (qtyInBoq === null || qtyInBoq === undefined || qtyInBoq === '') ? null : parseFloat(String(qtyInBoq));
+                  const rateNum = (rate === null || rate === undefined || rate === '') ? null : parseFloat(String(rate));
+                  const qtyDoneNum = (qtyDone === null || qtyDone === undefined || qtyDone === '') ? null : parseFloat(String(qtyDone));
+                  
+                  const amount = (qtyInBoqNum !== null && rateNum !== null) ? qtyInBoqNum * rateNum : null;
+                  const amountDone = (qtyDoneNum !== null && rateNum !== null) ? qtyDoneNum * rateNum : null;
+                  const progress = calculateProgress(String(qtyInBoqNum ?? 0), String(qtyDoneNum ?? 0));
 
                   return (
                     <TableRow
@@ -521,84 +524,69 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                       </TableCell>
                       <TableCell>
                         {!isSection && (
-                          <Input
+                          <input
                             type="number"
                             step="0.01"
-                            min="0"
-                            value={getValue(item.id, "qtyInBoq", item.qtyInBoq || "0")}
-                            onChange={(e) => handleLocalUpdate(item.id, "qtyInBoq", parseFloat(e.target.value) || 0)}
-                            onBlur={(e) => handleItemUpdate(item.id, "qtyInBoq", parseFloat(e.target.value) || 0)}
-                            className="h-8"
+                            value={qtyInBoq ?? ''}
+                            onChange={(e) => handleLocalUpdate(item.id, "qtyInBoq", e.target.value)}
+                            onBlur={(e) => handleItemUpdate(item.id, "qtyInBoq", e.target.value)}
+                            className="w-full px-2 py-1 text-sm border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded"
+                            placeholder="0"
                             data-testid={`input-qty-boq-${item.id}`}
                           />
                         )}
                       </TableCell>
                       <TableCell>
                         {!isSection && (
-                          <Input
+                          <input
                             type="number"
                             step="0.01"
-                            min="0"
-                            value={getValue(item.id, "rate", item.rate || "0")}
-                            onChange={(e) => handleLocalUpdate(item.id, "rate", parseFloat(e.target.value) || 0)}
-                            onBlur={(e) => handleItemUpdate(item.id, "rate", parseFloat(e.target.value) || 0)}
-                            className="h-8"
+                            value={rate ?? ''}
+                            onChange={(e) => handleLocalUpdate(item.id, "rate", e.target.value)}
+                            onBlur={(e) => handleItemUpdate(item.id, "rate", e.target.value)}
+                            className="w-full px-2 py-1 text-sm border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded"
+                            placeholder="0"
                             data-testid={`input-rate-${item.id}`}
                           />
                         )}
                       </TableCell>
                       <TableCell>
                         {!isSection && (
-                          <div className="px-2 py-1 text-sm font-medium bg-muted/50 rounded" data-testid={`text-amount-${item.id}`}>
-                            {amount.toFixed(2)}
+                          <div className="px-2 py-1 text-sm text-muted-foreground" data-testid={`text-amount-${item.id}`}>
+                            {amount !== null ? amount.toFixed(2) : '-'}
                           </div>
                         )}
                       </TableCell>
                       <TableCell>
                         {!isSection && (
-                          <Input
+                          <input
                             type="number"
                             step="0.01"
-                            min="0"
-                            value={getValue(item.id, "qtyDone", item.qtyDone || "0")}
-                            onChange={(e) => handleLocalUpdate(item.id, "qtyDone", parseFloat(e.target.value) || 0)}
-                            onBlur={(e) => handleItemUpdate(item.id, "qtyDone", parseFloat(e.target.value) || 0)}
-                            className="h-8"
+                            value={qtyDone ?? ''}
+                            onChange={(e) => handleLocalUpdate(item.id, "qtyDone", e.target.value)}
+                            onBlur={(e) => handleItemUpdate(item.id, "qtyDone", e.target.value)}
+                            className="w-full px-2 py-1 text-sm border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded"
+                            placeholder="0"
                             data-testid={`input-qty-done-${item.id}`}
                           />
                         )}
                       </TableCell>
                       <TableCell>
                         {!isSection && (
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={getValue(item.id, "rateDone", item.rateDone || "0")}
-                            onChange={(e) => handleLocalUpdate(item.id, "rateDone", parseFloat(e.target.value) || 0)}
-                            onBlur={(e) => handleItemUpdate(item.id, "rateDone", parseFloat(e.target.value) || 0)}
-                            className="h-8"
-                            data-testid={`input-rate-done-${item.id}`}
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {!isSection && (
-                          <div className="px-2 py-1 text-sm font-medium bg-muted/50 rounded" data-testid={`text-amount-done-${item.id}`}>
-                            {amountDone.toFixed(2)}
+                          <div className="px-2 py-1 text-sm text-muted-foreground" data-testid={`text-amount-done-${item.id}`}>
+                            {amountDone !== null ? amountDone.toFixed(2) : '-'}
                           </div>
                         )}
                       </TableCell>
                       <TableCell>
                         {!isSection && (
-                          <Input
+                          <input
                             type="number"
                             step="0.01"
-                            min="0"
-                            value={getValue(item.id, "weightedRatio", item.weightedRatio || "1")}
-                            onChange={(e) => handleLocalUpdate(item.id, "weightedRatio", parseFloat(e.target.value) || 1)}
-                            onBlur={(e) => handleItemUpdate(item.id, "weightedRatio", parseFloat(e.target.value) || 1)}
-                            className="h-8"
+                            value={getValue(item.id, "weightedRatio", item.weightedRatio) || 1}
+                            onChange={(e) => handleLocalUpdate(item.id, "weightedRatio", e.target.value)}
+                            onBlur={(e) => handleItemUpdate(item.id, "weightedRatio", e.target.value)}
+                            className="w-full px-2 py-1 text-sm border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded"
                             data-testid={`input-weight-${item.id}`}
                           />
                         )}

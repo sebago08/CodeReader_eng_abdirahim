@@ -1582,48 +1582,47 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Progress tracker item not found');
     }
     
-    // Helper to safely parse numeric values (handles both strings and numbers from API)
-    const toNumber = (value: any, fallback: string | null): number => {
-      if (value !== undefined && value !== null) {
-        return typeof value === 'number' ? value : parseFloat(String(value));
+    // Helper to safely parse numeric values (handles both strings and numbers from API, returns null for empty)
+    const toNumber = (value: any, fallback: string | null): number | null => {
+      if (value === '' || value === null || value === undefined) {
+        return null;
       }
-      return fallback ? parseFloat(fallback) : 0;
+      const num = typeof value === 'number' ? value : parseFloat(String(value));
+      return isNaN(num) ? (fallback ? parseFloat(fallback) : null) : num;
     };
     
     // Extract numeric values for calculations - handle both string and number payloads
     const qtyInBoqNum = toNumber(item.qtyInBoq, currentItem.qtyInBoq);
     const rateNum = toNumber(item.rate, currentItem.rate);
     const qtyDoneNum = toNumber(item.qtyDone, currentItem.qtyDone);
-    const rateDoneNum = toNumber(item.rateDone, currentItem.rateDone);
     
-    // Calculate amounts with numeric values
-    const amountNum = qtyInBoqNum * rateNum;
-    const amountDoneNum = qtyDoneNum * rateDoneNum;
+    // Calculate amounts with numeric values (null if any component is null)
+    const amountNum = (qtyInBoqNum !== null && rateNum !== null) ? qtyInBoqNum * rateNum : null;
+    const amountDoneNum = (qtyDoneNum !== null && rateNum !== null) ? qtyDoneNum * rateNum : null;
     
-    // Now convert all numeric values to strings for decimal fields
+    // Now convert all numeric values to strings for decimal fields, or set to null
     const updates: any = { ...item, updatedAt: new Date() };
-    if (typeof updates.qtyInBoq === 'number') {
-      updates.qtyInBoq = updates.qtyInBoq.toString();
+    
+    // Handle nullable numeric fields
+    if (item.qtyInBoq !== undefined) {
+      updates.qtyInBoq = qtyInBoqNum !== null ? qtyInBoqNum.toString() : null;
     }
-    if (typeof updates.qtyDone === 'number') {
-      updates.qtyDone = updates.qtyDone.toString();
+    if (item.qtyDone !== undefined) {
+      updates.qtyDone = qtyDoneNum !== null ? qtyDoneNum.toString() : null;
+    }
+    if (item.rate !== undefined) {
+      updates.rate = rateNum !== null ? rateNum.toString() : null;
     }
     if (typeof updates.weightedRatio === 'number') {
       updates.weightedRatio = updates.weightedRatio.toString();
     }
-    if (typeof updates.rate === 'number') {
-      updates.rate = updates.rate.toString();
-    }
-    if (typeof updates.rateDone === 'number') {
-      updates.rateDone = updates.rateDone.toString();
-    }
     
     // Always update calculated amounts if any related field changed
     if (item.qtyInBoq !== undefined || item.rate !== undefined) {
-      updates.amount = amountNum.toString();
+      updates.amount = amountNum !== null ? amountNum.toString() : null;
     }
-    if (item.qtyDone !== undefined || item.rateDone !== undefined) {
-      updates.amountDone = amountDoneNum.toString();
+    if (item.qtyDone !== undefined || item.rate !== undefined) {
+      updates.amountDone = amountDoneNum !== null ? amountDoneNum.toString() : null;
     }
     
     const [result] = await db.update(progressTrackerItems)
