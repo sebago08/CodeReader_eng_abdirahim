@@ -50,11 +50,11 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
   
   // Local state for instant input updates
   const [localValues, setLocalValues] = useState<Record<string, { 
-    qtyInBoq?: number | null; 
-    rate?: number | null; 
-    amount?: number | null; 
-    qtyDone?: number | null; 
-    amountDone?: number | null; 
+    qtyInBoq?: number; 
+    rate?: number; 
+    amount?: number; 
+    qtyDone?: number; 
+    amountDone?: number; 
     weightedRatio?: number 
   }>>({});
 
@@ -177,7 +177,7 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
 
   // Instant local update for responsive typing
   const handleLocalUpdate = (itemId: string, field: string, value: string) => {
-    const numValue = value === '' ? null : parseFloat(value);
+    const numValue = value === '' ? 0 : parseFloat(value);
     setLocalValues(prev => ({
       ...prev,
       [itemId]: {
@@ -189,7 +189,7 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
 
   // Save to server when user finishes editing (onBlur)
   const handleItemUpdate = (itemId: string, field: string, value: string) => {
-    const numValue = value === '' ? null : parseFloat(value);
+    const numValue = value === '' ? 0 : parseFloat(value);
     updateItemMutation.mutate({
       id: itemId,
       data: { [field]: numValue },
@@ -214,17 +214,34 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     const activityItems = selectedTracker.items.filter(item => item.itemType === "activity");
     if (activityItems.length === 0) return 0;
     
-    let totalWeightedProgress = 0;
-    let totalWeight = 0;
+    // Calculate total amount for all items
+    const totalAmount = activityItems.reduce((sum, item) => {
+      const qty = parseFloat(String(item.qtyInBoq ?? 0)) || 0;
+      const rate = parseFloat(String(item.rate ?? 0)) || 0;
+      return sum + (qty * rate);
+    }, 0);
     
+    // If total amount is 0, use equal weighting
+    if (totalAmount === 0) {
+      const totalProgress = activityItems.reduce((sum, item) => {
+        const progress = calculateProgress(String(item.qtyInBoq ?? 0), String(item.qtyDone ?? 0));
+        return sum + progress;
+      }, 0);
+      return totalProgress / activityItems.length;
+    }
+    
+    // Calculate weighted progress using amounts
+    let weightedProgress = 0;
     activityItems.forEach(item => {
-      const weight = parseFloat(item.weightedRatio || "1");
-      const progress = calculateProgress(item.qtyInBoq || "0", item.qtyDone || "0");
-      totalWeightedProgress += progress * weight;
-      totalWeight += weight;
+      const qty = parseFloat(String(item.qtyInBoq ?? 0)) || 0;
+      const rate = parseFloat(String(item.rate ?? 0)) || 0;
+      const amount = qty * rate;
+      const weight = amount / totalAmount; // Auto-calculated weight
+      const progress = calculateProgress(String(item.qtyInBoq ?? 0), String(item.qtyDone ?? 0));
+      weightedProgress += progress * weight;
     });
     
-    return totalWeight > 0 ? totalWeightedProgress / totalWeight : 0;
+    return weightedProgress;
   };
 
   // Calculate physical progress from road tracker with road-length weighting
@@ -492,26 +509,25 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                   <TableHead className="w-[120px]">Amount</TableHead>
                   <TableHead className="w-[100px]">Qty Done</TableHead>
                   <TableHead className="w-[120px]">Amount Done</TableHead>
-                  <TableHead className="w-[80px]">Weight</TableHead>
                   <TableHead className="w-[180px]">Progress</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {selectedTracker.items.map((item) => {
                   const isSection = item.itemType === "section";
-                  // Use local values for instant updates
-                  const qtyInBoq = getValue(item.id, "qtyInBoq", item.qtyInBoq);
-                  const rate = getValue(item.id, "rate", item.rate);
-                  const qtyDone = getValue(item.id, "qtyDone", item.qtyDone);
+                  // Use local values for instant updates, default to 0
+                  const qtyInBoq = getValue(item.id, "qtyInBoq", item.qtyInBoq ?? 0);
+                  const rate = getValue(item.id, "rate", item.rate ?? 0);
+                  const qtyDone = getValue(item.id, "qtyDone", item.qtyDone ?? 0);
                   
-                  // Auto-calculate amounts (properly handle null vs zero)
-                  const qtyInBoqNum = (qtyInBoq === null || qtyInBoq === undefined || qtyInBoq === '') ? null : parseFloat(String(qtyInBoq));
-                  const rateNum = (rate === null || rate === undefined || rate === '') ? null : parseFloat(String(rate));
-                  const qtyDoneNum = (qtyDone === null || qtyDone === undefined || qtyDone === '') ? null : parseFloat(String(qtyDone));
+                  // Auto-calculate amounts (always numeric, default to 0)
+                  const qtyInBoqNum = parseFloat(String(qtyInBoq)) || 0;
+                  const rateNum = parseFloat(String(rate)) || 0;
+                  const qtyDoneNum = parseFloat(String(qtyDone)) || 0;
                   
-                  const amount = (qtyInBoqNum !== null && rateNum !== null) ? qtyInBoqNum * rateNum : null;
-                  const amountDone = (qtyDoneNum !== null && rateNum !== null) ? qtyDoneNum * rateNum : null;
-                  const progress = calculateProgress(String(qtyInBoqNum ?? 0), String(qtyDoneNum ?? 0));
+                  const amount = qtyInBoqNum * rateNum;
+                  const amountDone = qtyDoneNum * rateNum;
+                  const progress = calculateProgress(String(qtyInBoqNum), String(qtyDoneNum));
 
                   return (
                     <TableRow
@@ -527,11 +543,10 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                           <input
                             type="number"
                             step="0.01"
-                            value={qtyInBoq ?? ''}
+                            value={qtyInBoq}
                             onChange={(e) => handleLocalUpdate(item.id, "qtyInBoq", e.target.value)}
                             onBlur={(e) => handleItemUpdate(item.id, "qtyInBoq", e.target.value)}
                             className="w-full px-2 py-1 text-sm border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded"
-                            placeholder="0"
                             data-testid={`input-qty-boq-${item.id}`}
                           />
                         )}
@@ -541,11 +556,10 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                           <input
                             type="number"
                             step="0.01"
-                            value={rate ?? ''}
+                            value={rate}
                             onChange={(e) => handleLocalUpdate(item.id, "rate", e.target.value)}
                             onBlur={(e) => handleItemUpdate(item.id, "rate", e.target.value)}
                             className="w-full px-2 py-1 text-sm border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded"
-                            placeholder="0"
                             data-testid={`input-rate-${item.id}`}
                           />
                         )}
@@ -553,7 +567,7 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                       <TableCell>
                         {!isSection && (
                           <div className="px-2 py-1 text-sm text-muted-foreground" data-testid={`text-amount-${item.id}`}>
-                            {amount !== null ? amount.toFixed(2) : '-'}
+                            {amount.toFixed(2)}
                           </div>
                         )}
                       </TableCell>
@@ -562,11 +576,10 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                           <input
                             type="number"
                             step="0.01"
-                            value={qtyDone ?? ''}
+                            value={qtyDone}
                             onChange={(e) => handleLocalUpdate(item.id, "qtyDone", e.target.value)}
                             onBlur={(e) => handleItemUpdate(item.id, "qtyDone", e.target.value)}
                             className="w-full px-2 py-1 text-sm border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded"
-                            placeholder="0"
                             data-testid={`input-qty-done-${item.id}`}
                           />
                         )}
@@ -574,21 +587,8 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                       <TableCell>
                         {!isSection && (
                           <div className="px-2 py-1 text-sm text-muted-foreground" data-testid={`text-amount-done-${item.id}`}>
-                            {amountDone !== null ? amountDone.toFixed(2) : '-'}
+                            {amountDone.toFixed(2)}
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {!isSection && (
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={getValue(item.id, "weightedRatio", item.weightedRatio) || 1}
-                            onChange={(e) => handleLocalUpdate(item.id, "weightedRatio", e.target.value)}
-                            onBlur={(e) => handleItemUpdate(item.id, "weightedRatio", e.target.value)}
-                            className="w-full px-2 py-1 text-sm border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded"
-                            data-testid={`input-weight-${item.id}`}
-                          />
                         )}
                       </TableCell>
                       <TableCell>
