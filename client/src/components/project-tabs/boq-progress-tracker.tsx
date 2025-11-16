@@ -49,7 +49,15 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
   });
   
   // Local state for instant input updates
-  const [localValues, setLocalValues] = useState<Record<string, { qtyInBoq?: number; qtyDone?: number; weightedRatio?: number }>>({});
+  const [localValues, setLocalValues] = useState<Record<string, { 
+    qtyInBoq?: number; 
+    rate?: number; 
+    amount?: number; 
+    qtyDone?: number; 
+    rateDone?: number; 
+    amountDone?: number; 
+    weightedRatio?: number 
+  }>>({});
 
   // Fetch activities for progress calculation
   const { data: activities = [] } = useQuery<Activity[]>({
@@ -379,14 +387,20 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                   onValueChange={(value) => setFormData({ ...formData, workPlanId: value })}
                 >
                   <SelectTrigger id="work-plan" data-testid="select-work-plan">
-                    <SelectValue placeholder="Select a work plan" />
+                    <SelectValue placeholder={workPlans.length > 0 ? "Select a work plan" : "No work plans available"} />
                   </SelectTrigger>
-                  <SelectContent>
-                    {workPlans.map((plan) => (
-                      <SelectItem key={plan.id} value={plan.id}>
-                        {plan.name}
-                      </SelectItem>
-                    ))}
+                  <SelectContent className="z-[100]">
+                    {workPlans.length > 0 ? (
+                      workPlans.map((plan) => (
+                        <SelectItem key={plan.id} value={plan.id} data-testid={`option-work-plan-${plan.id}`}>
+                          {plan.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                        No work plans available
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -467,23 +481,33 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
           </div>
 
           {/* Items table */}
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[40%]">Description</TableHead>
-                  <TableHead className="w-[12%]">Qty in BOQ</TableHead>
-                  <TableHead className="w-[12%]">Qty Done</TableHead>
-                  <TableHead className="w-[12%]">Weight</TableHead>
-                  <TableHead className="w-[24%]">Progress</TableHead>
+                  <TableHead className="min-w-[200px]">Description</TableHead>
+                  <TableHead className="w-[100px]">Qty in BOQ</TableHead>
+                  <TableHead className="w-[100px]">Rate</TableHead>
+                  <TableHead className="w-[120px]">Amount</TableHead>
+                  <TableHead className="w-[100px]">Qty Done</TableHead>
+                  <TableHead className="w-[100px]">Rate Done</TableHead>
+                  <TableHead className="w-[120px]">Amount Done</TableHead>
+                  <TableHead className="w-[80px]">Weight</TableHead>
+                  <TableHead className="w-[180px]">Progress</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {selectedTracker.items.map((item) => {
                   const isSection = item.itemType === "section";
-                  // Use local values for instant progress updates
+                  // Use local values for instant updates
                   const qtyInBoq = getValue(item.id, "qtyInBoq", item.qtyInBoq || "0");
+                  const rate = getValue(item.id, "rate", item.rate || "0");
                   const qtyDone = getValue(item.id, "qtyDone", item.qtyDone || "0");
+                  const rateDone = getValue(item.id, "rateDone", item.rateDone || "0");
+                  
+                  // Auto-calculate amounts
+                  const amount = parseFloat(String(qtyInBoq)) * parseFloat(String(rate));
+                  const amountDone = parseFloat(String(qtyDone)) * parseFloat(String(rateDone));
                   const progress = calculateProgress(String(qtyInBoq), String(qtyDone));
 
                   return (
@@ -515,12 +539,54 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                             type="number"
                             step="0.01"
                             min="0"
+                            value={getValue(item.id, "rate", item.rate || "0")}
+                            onChange={(e) => handleLocalUpdate(item.id, "rate", parseFloat(e.target.value) || 0)}
+                            onBlur={(e) => handleItemUpdate(item.id, "rate", parseFloat(e.target.value) || 0)}
+                            className="h-8"
+                            data-testid={`input-rate-${item.id}`}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {!isSection && (
+                          <div className="px-2 py-1 text-sm font-medium bg-muted/50 rounded" data-testid={`text-amount-${item.id}`}>
+                            {amount.toFixed(2)}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {!isSection && (
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
                             value={getValue(item.id, "qtyDone", item.qtyDone || "0")}
                             onChange={(e) => handleLocalUpdate(item.id, "qtyDone", parseFloat(e.target.value) || 0)}
                             onBlur={(e) => handleItemUpdate(item.id, "qtyDone", parseFloat(e.target.value) || 0)}
                             className="h-8"
                             data-testid={`input-qty-done-${item.id}`}
                           />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {!isSection && (
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={getValue(item.id, "rateDone", item.rateDone || "0")}
+                            onChange={(e) => handleLocalUpdate(item.id, "rateDone", parseFloat(e.target.value) || 0)}
+                            onBlur={(e) => handleItemUpdate(item.id, "rateDone", parseFloat(e.target.value) || 0)}
+                            className="h-8"
+                            data-testid={`input-rate-done-${item.id}`}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {!isSection && (
+                          <div className="px-2 py-1 text-sm font-medium bg-muted/50 rounded" data-testid={`text-amount-done-${item.id}`}>
+                            {amountDone.toFixed(2)}
+                          </div>
                         )}
                       </TableCell>
                       <TableCell>
