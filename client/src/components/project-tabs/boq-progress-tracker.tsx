@@ -585,7 +585,7 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                       <TableCell>
                         {!isSection && (
                           <div className="flex items-center gap-2">
-                            <Progress value={progress} className="flex-1 h-2" />
+                            <Progress value={progress} className="flex-1 h-3" />
                             <span className="text-sm font-medium min-w-[50px] text-right" data-testid={`text-progress-${item.id}`}>
                               {progress.toFixed(1)}%
                             </span>
