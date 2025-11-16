@@ -364,9 +364,9 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
             <div>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-foreground">Activity Progress (BOQ Items)</span>
-                <span className="text-sm font-medium text-primary" data-testid="text-activity-progress">{activityProgress}%</span>
+                <span className="text-sm font-medium text-primary" data-testid="text-activity-progress">{calculateWeightedProgress().toFixed(1)}%</span>
               </div>
-              <Progress value={activityProgress} className="h-5" data-testid="progress-activity" />
+              <Progress value={calculateWeightedProgress()} className="h-5" data-testid="progress-activity" />
             </div>
           </div>
         </CardContent>
@@ -489,17 +489,6 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
       {/* Tracker view */}
       {selectedTracker && (
         <div className="space-y-4">
-          {/* Overall progress */}
-          <div className="bg-muted/50 p-4 rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-semibold">Overall Progress</span>
-              <span className="text-lg font-bold" data-testid="text-overall-progress">
-                {calculateWeightedProgress().toFixed(1)}%
-              </span>
-            </div>
-            <Progress value={calculateWeightedProgress()} className="h-3" />
-          </div>
-
           {/* Items table */}
           <div className="border rounded-lg overflow-x-auto">
             <Table>
