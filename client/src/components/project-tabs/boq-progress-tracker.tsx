@@ -356,7 +356,7 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                   <span className="text-sm font-medium text-foreground">Physical Progress (Road Construction)</span>
                   <span className="text-sm font-medium text-primary" data-testid="text-physical-progress">{physicalProgress}%</span>
                 </div>
-                <Progress value={physicalProgress} className="h-2" data-testid="progress-physical" />
+                <Progress value={physicalProgress} className="h-3" data-testid="progress-physical" />
               </div>
             )}
             
@@ -366,7 +366,7 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
                 <span className="text-sm font-medium text-foreground">Activity Progress (BOQ Items)</span>
                 <span className="text-sm font-medium text-primary" data-testid="text-activity-progress">{activityProgress}%</span>
               </div>
-              <Progress value={activityProgress} className="h-2" data-testid="progress-activity" />
+              <Progress value={activityProgress} className="h-3" data-testid="progress-activity" />
             </div>
           </div>
         </CardContent>
