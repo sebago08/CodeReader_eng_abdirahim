@@ -302,12 +302,11 @@ export const progressTrackerItems = pgTable("progress_tracker_items", {
   itemType: varchar("item_type").notNull().default("activity"), // "activity" or "section"
   description: varchar("description").notNull(), // From work plan activity name
   orderIndex: integer("order_index").default(0).notNull(),
-  qtyInBoq: decimal("qty_in_boq", { precision: 15, scale: 2 }).default("0"), // Quantity in Bill of Quantities
-  rate: decimal("rate", { precision: 15, scale: 2 }).default("0"), // Unit rate/price for BOQ
-  amount: decimal("amount", { precision: 15, scale: 2 }).default("0"), // Auto-calculated: qtyInBoq × rate
-  qtyDone: decimal("qty_done", { precision: 15, scale: 2 }).default("0"), // Quantity completed
-  rateDone: decimal("rate_done", { precision: 15, scale: 2 }).default("0"), // Actual rate for work done
-  amountDone: decimal("amount_done", { precision: 15, scale: 2 }).default("0"), // Auto-calculated: qtyDone × rateDone
+  qtyInBoq: decimal("qty_in_boq", { precision: 15, scale: 2 }), // Quantity in Bill of Quantities (nullable)
+  rate: decimal("rate", { precision: 15, scale: 2 }), // Unit rate/price (nullable)
+  amount: decimal("amount", { precision: 15, scale: 2 }), // Auto-calculated: qtyInBoq × rate (nullable)
+  qtyDone: decimal("qty_done", { precision: 15, scale: 2 }), // Quantity completed (nullable)
+  amountDone: decimal("amount_done", { precision: 15, scale: 2 }), // Auto-calculated: qtyDone × rate (nullable)
   weightedRatio: decimal("weighted_ratio", { precision: 10, scale: 4 }).default("1"), // Weight for progress calculation
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
