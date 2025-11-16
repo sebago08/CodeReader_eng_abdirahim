@@ -214,30 +214,33 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     const activityItems = selectedTracker.items.filter(item => item.itemType === "activity");
     if (activityItems.length === 0) return 0;
     
-    // Calculate total amount for all items
+    // Calculate total amount for all items (using local values)
     const totalAmount = activityItems.reduce((sum, item) => {
-      const qty = parseFloat(String(item.qtyInBoq ?? 0)) || 0;
-      const rate = parseFloat(String(item.rate ?? 0)) || 0;
+      const qty = parseFloat(String(getValue(item.id, 'qtyInBoq', item.qtyInBoq ?? 0))) || 0;
+      const rate = parseFloat(String(getValue(item.id, 'rate', item.rate ?? 0))) || 0;
       return sum + (qty * rate);
     }, 0);
     
     // If total amount is 0, use equal weighting
     if (totalAmount === 0) {
       const totalProgress = activityItems.reduce((sum, item) => {
-        const progress = calculateProgress(String(item.qtyInBoq ?? 0), String(item.qtyDone ?? 0));
+        const qtyInBoq = getValue(item.id, 'qtyInBoq', item.qtyInBoq ?? 0);
+        const qtyDone = getValue(item.id, 'qtyDone', item.qtyDone ?? 0);
+        const progress = calculateProgress(String(qtyInBoq), String(qtyDone));
         return sum + progress;
       }, 0);
       return totalProgress / activityItems.length;
     }
     
-    // Calculate weighted progress using amounts
+    // Calculate weighted progress using amounts (using local values)
     let weightedProgress = 0;
     activityItems.forEach(item => {
-      const qty = parseFloat(String(item.qtyInBoq ?? 0)) || 0;
-      const rate = parseFloat(String(item.rate ?? 0)) || 0;
+      const qty = parseFloat(String(getValue(item.id, 'qtyInBoq', item.qtyInBoq ?? 0))) || 0;
+      const rate = parseFloat(String(getValue(item.id, 'rate', item.rate ?? 0))) || 0;
+      const qtyDone = getValue(item.id, 'qtyDone', item.qtyDone ?? 0);
       const amount = qty * rate;
       const weight = amount / totalAmount; // Auto-calculated weight
-      const progress = calculateProgress(String(item.qtyInBoq ?? 0), String(item.qtyDone ?? 0));
+      const progress = calculateProgress(String(qty), String(qtyDone));
       weightedProgress += progress * weight;
     });
     
