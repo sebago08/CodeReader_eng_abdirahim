@@ -345,29 +345,28 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
       {/* Overall Progress Bars */}
       <Card>
         <CardHeader>
-          <CardTitle data-testid="heading-progress-tracking">Progress Tracking</CardTitle>
-          <CardDescription>Track overall project progress</CardDescription>
+          <CardTitle data-testid="heading-progress-tracking">Overall Progress</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className={project.projectType === "Road" ? "grid grid-cols-2 gap-6" : ""}>
             {/* Physical Progress - Only for Road projects */}
             {project.projectType === "Road" && (
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Physical Progress (Road Construction)</span>
-                  <span className="text-sm font-medium" data-testid="text-physical-progress">{physicalProgress}%</span>
+                  <span className="text-sm font-medium text-foreground">Physical Progress (Road Construction)</span>
+                  <span className="text-sm font-medium text-primary" data-testid="text-physical-progress">{physicalProgress}%</span>
                 </div>
-                <Progress value={physicalProgress} className="h-3" data-testid="progress-physical" />
+                <Progress value={physicalProgress} className="h-2" data-testid="progress-physical" />
               </div>
             )}
             
             {/* Activity Progress - For all projects */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium">Activity Progress (BOQ Items)</span>
-                <span className="text-sm font-medium" data-testid="text-activity-progress">{activityProgress}%</span>
+                <span className="text-sm font-medium text-foreground">Activity Progress (BOQ Items)</span>
+                <span className="text-sm font-medium text-primary" data-testid="text-activity-progress">{activityProgress}%</span>
               </div>
-              <Progress value={activityProgress} className="h-3" data-testid="progress-activity" />
+              <Progress value={activityProgress} className="h-2" data-testid="progress-activity" />
             </div>
           </div>
         </CardContent>
