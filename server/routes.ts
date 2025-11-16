@@ -1529,13 +1529,22 @@ export function registerRoutes(app: Express): Server {
       // Validate request body
       const updateSchema = z.object({
         qtyInBoq: z.number().optional(),
+        rate: z.number().optional(),
         qtyDone: z.number().optional(),
         weightedRatio: z.number().optional(),
         description: z.string().optional(),
       });
       const validated = updateSchema.parse(req.body);
       
-      const updated = await storage.updateProgressTrackerItem(id, validated);
+      // Convert numeric fields to strings for decimal columns
+      const updateData: any = {};
+      if (validated.qtyInBoq !== undefined) updateData.qtyInBoq = validated.qtyInBoq.toString();
+      if (validated.rate !== undefined) updateData.rate = validated.rate.toString();
+      if (validated.qtyDone !== undefined) updateData.qtyDone = validated.qtyDone.toString();
+      if (validated.weightedRatio !== undefined) updateData.weightedRatio = validated.weightedRatio.toString();
+      if (validated.description !== undefined) updateData.description = validated.description;
+      
+      const updated = await storage.updateProgressTrackerItem(id, updateData);
       res.json(updated);
     } catch (error) {
       if (error instanceof ZodError) {
