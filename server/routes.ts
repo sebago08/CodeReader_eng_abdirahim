@@ -1345,6 +1345,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const { projectId } = req.params;
       const userId = req.user!.id;
+      const includeItems = req.query.includeItems === 'true';
       
       // Verify user has access to this project
       const project = await storage.getProject(projectId, userId);
@@ -1353,6 +1354,17 @@ export function registerRoutes(app: Express): Server {
       }
       
       const trackers = await storage.getProgressTrackers(projectId);
+      
+      // If includeItems is true, fetch items for each tracker
+      if (includeItems) {
+        const trackersWithItems = await Promise.all(
+          trackers.map(async (tracker) => {
+            return await storage.getProgressTracker(tracker.id);
+          })
+        );
+        return res.json(trackersWithItems);
+      }
+      
       res.json(trackers);
     } catch (error) {
       console.error("Error fetching progress trackers:", error);

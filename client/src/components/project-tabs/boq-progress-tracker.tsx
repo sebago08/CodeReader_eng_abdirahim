@@ -68,9 +68,14 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     queryKey: [`/api/projects/${project.id}/work-plans`],
   });
 
-  // Fetch progress trackers
+  // Fetch progress trackers (basic info)
   const { data: trackers = [], isLoading } = useQuery<ProgressTracker[]>({
     queryKey: [`/api/projects/${project.id}/progress-trackers`],
+  });
+
+  // Fetch all trackers with items for overall progress calculation
+  const { data: allTrackersWithItems = [] } = useQuery<ProgressTrackerWithItems[]>({
+    queryKey: [`/api/projects/${project.id}/progress-trackers?includeItems=true`],
   });
 
   // Fetch selected tracker with items
@@ -91,6 +96,8 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     },
     onSuccess: (newTracker: ProgressTracker) => {
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/progress-trackers`] });
+      // Also invalidate all trackers query to update overall progress
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/progress-trackers?includeItems=true`] });
       toast({
         title: "Success",
         description: "Progress tracker created successfully",
@@ -115,6 +122,8 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/progress-trackers`] });
+      // Also invalidate all trackers query to update overall progress
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/progress-trackers?includeItems=true`] });
       toast({
         title: "Success",
         description: "Progress tracker deleted successfully",
@@ -139,6 +148,8 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/progress-trackers/${selectedTrackerId}`] });
+      // Also invalidate all trackers query to update overall progress
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/progress-trackers?includeItems=true`] });
     },
     onError: () => {
       toast({
@@ -245,6 +256,71 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
     });
     
     return weightedProgress;
+  };
+
+  // Calculate overall activity progress across all trackers with financial weighting
+  const calculateOverallActivityProgress = (): number => {
+    if (!allTrackersWithItems || allTrackersWithItems.length === 0) return 0;
+    
+    // Calculate total BOQ amount across all trackers
+    let totalProjectAmount = 0;
+    const trackerData: { trackerId: string; amount: number; progress: number }[] = [];
+    
+    allTrackersWithItems.forEach(tracker => {
+      if (!tracker.items) return;
+      
+      const activityItems = tracker.items.filter(item => item.itemType === "activity");
+      if (activityItems.length === 0) return;
+      
+      // Calculate tracker's total BOQ amount
+      const trackerAmount = activityItems.reduce((sum, item) => {
+        const qty = parseFloat(String(item.qtyInBoq ?? 0)) || 0;
+        const rate = parseFloat(String(item.rate ?? 0)) || 0;
+        return sum + (qty * rate);
+      }, 0);
+      
+      // Calculate tracker's weighted progress
+      let trackerProgress = 0;
+      if (trackerAmount > 0) {
+        activityItems.forEach(item => {
+          const qty = parseFloat(String(item.qtyInBoq ?? 0)) || 0;
+          const rate = parseFloat(String(item.rate ?? 0)) || 0;
+          const qtyDone = parseFloat(String(item.qtyDone ?? 0)) || 0;
+          const amount = qty * rate;
+          const weight = amount / trackerAmount;
+          const itemProgress = qty > 0 ? Math.min(100, (qtyDone / qty) * 100) : 0;
+          trackerProgress += itemProgress * weight;
+        });
+      } else {
+        // Equal weighting if no amounts
+        const totalProgress = activityItems.reduce((sum, item) => {
+          const qty = parseFloat(String(item.qtyInBoq ?? 0)) || 0;
+          const qtyDone = parseFloat(String(item.qtyDone ?? 0)) || 0;
+          const itemProgress = qty > 0 ? Math.min(100, (qtyDone / qty) * 100) : 0;
+          return sum + itemProgress;
+        }, 0);
+        trackerProgress = totalProgress / activityItems.length;
+      }
+      
+      totalProjectAmount += trackerAmount;
+      trackerData.push({ trackerId: tracker.id, amount: trackerAmount, progress: trackerProgress });
+    });
+    
+    // If no amounts across all trackers, use equal weighting
+    if (totalProjectAmount === 0) {
+      if (trackerData.length === 0) return 0;
+      const avgProgress = trackerData.reduce((sum, t) => sum + t.progress, 0) / trackerData.length;
+      return avgProgress;
+    }
+    
+    // Calculate weighted average across all trackers
+    let overallProgress = 0;
+    trackerData.forEach(tracker => {
+      const trackerWeight = tracker.amount / totalProjectAmount;
+      overallProgress += tracker.progress * trackerWeight;
+    });
+    
+    return overallProgress;
   };
 
   // Calculate physical progress from road tracker with road-length weighting
@@ -364,9 +440,9 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
             <div>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-foreground">Activity Progress (BOQ Items)</span>
-                <span className="text-sm font-medium text-primary" data-testid="text-activity-progress">{calculateWeightedProgress().toFixed(1)}%</span>
+                <span className="text-sm font-medium text-primary" data-testid="text-activity-progress">{calculateOverallActivityProgress().toFixed(1)}%</span>
               </div>
-              <Progress value={calculateWeightedProgress()} className="h-5" data-testid="progress-activity" />
+              <Progress value={calculateOverallActivityProgress()} className="h-5" data-testid="progress-activity" />
             </div>
           </div>
         </CardContent>
@@ -489,6 +565,17 @@ export default function BOQProgressTracker({ project }: BOQProgressTrackerProps)
       {/* Tracker view */}
       {selectedTracker && (
         <div className="space-y-4">
+          {/* Tracker progress */}
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-semibold">{selectedTracker.name} Progress</span>
+              <span className="text-lg font-bold text-primary" data-testid="text-tracker-progress">
+                {calculateWeightedProgress().toFixed(1)}%
+              </span>
+            </div>
+            <Progress value={calculateWeightedProgress()} className="h-3" />
+          </div>
+
           {/* Items table */}
           <div className="border rounded-lg overflow-x-auto">
             <Table>
