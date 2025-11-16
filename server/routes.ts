@@ -1536,11 +1536,6 @@ export function registerRoutes(app: Express): Server {
       });
       const validated = updateSchema.parse(req.body);
       
-      console.log(`[DEBUG] PATCH tracker item ${id}:`, { 
-        receivedBody: req.body, 
-        validated 
-      });
-      
       // Convert numeric fields to strings for decimal columns
       const updateData: any = {};
       if (validated.qtyInBoq !== undefined) updateData.qtyInBoq = validated.qtyInBoq.toString();
@@ -1549,10 +1544,7 @@ export function registerRoutes(app: Express): Server {
       if (validated.weightedRatio !== undefined) updateData.weightedRatio = validated.weightedRatio.toString();
       if (validated.description !== undefined) updateData.description = validated.description;
       
-      console.log(`[DEBUG] Converted updateData:`, updateData);
-      
       const updated = await storage.updateProgressTrackerItem(id, updateData);
-      console.log(`[DEBUG] Updated result:`, updated);
       res.json(updated);
     } catch (error) {
       if (error instanceof ZodError) {
