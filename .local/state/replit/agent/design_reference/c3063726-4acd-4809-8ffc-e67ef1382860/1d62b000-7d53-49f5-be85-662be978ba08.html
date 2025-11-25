@@ -1,0 +1,894 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Construction Tracker - Professional Construction Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    popover: {
+                        DEFAULT: "var(--popover)",
+                        foreground: "var(--popover-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    destructive: {
+                        DEFAULT: "var(--destructive)",
+                        foreground: "var(--destructive-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                    success: "var(--success)",
+                    warning: "var(--warning)",
+                },
+                fontFamily: {
+                    sans: ["Inter", "system-ui", "sans-serif"],
+                }
+            },
+        }
+    };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --background: hsl(210 40% 96%);
+            --foreground: hsl(222.2 84% 4.9%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(222.2 84% 4.9%);
+            --popover: hsl(0 0% 100%);
+            --popover-foreground: hsl(222.2 84% 4.9%);
+            --primary: hsl(210 22% 22%);
+            --primary-foreground: hsl(210 40% 98%);
+            --secondary: hsl(204 70% 53%);
+            --secondary-foreground: hsl(0 0% 100%);
+            --muted: hsl(210 40% 96%);
+            --muted-foreground: hsl(215.4 16.3% 46.9%);
+            --accent: hsl(6 78% 57%);
+            --accent-foreground: hsl(0 0% 100%);
+            --destructive: hsl(0 62.8% 30.6%);
+            --destructive-foreground: hsl(210 40% 98%);
+            --border: hsl(214.3 31.8% 91.4%);
+            --input: hsl(214.3 31.8% 91.4%);
+            --ring: hsl(204 70% 53%);
+            --success: hsl(142 71% 45%);
+            --warning: hsl(38 92% 50%);
+            --radius: 0.75rem;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        
+        .progress-bar-fill {
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground">
+
+    <!-- Login Page -->
+    <!-- @COMPONENT: LoginPage -->
+    <div id="loginPage" class="page active">
+        <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/10 py-12 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-md w-full space-y-8">
+                <div class="text-center">
+                    <div class="mx-auto h-16 w-16 bg-primary rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-hard-hat text-2xl text-primary-foreground"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-primary mb-2">Road Construction Tracker</h2>
+                    <p class="text-muted-foreground">Professional construction management platform</p>
+                </div>
+                
+                <div class="bg-card p-8 rounded-xl shadow-lg border border-border">
+                    <h3 class="text-xl font-semibold text-card-foreground mb-6">Sign in to your account</h3>
+                    
+                    <form class="space-y-6" data-mock="true">
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-muted-foreground mb-2">Email address</label>
+                            <input type="email" id="email" name="email" 
+                                   class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                                   placeholder="Enter your email" data-mock="true" value="demo@construction.com">
+                        </div>
+                        
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-muted-foreground mb-2">Password</label>
+                            <input type="password" id="password" name="password" 
+                                   class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                                   placeholder="Enter your password" data-mock="true" value="password123">
+                        </div>
+                        
+                        <button type="button" onclick="showDashboard()" 
+                                class="w-full bg-secondary text-secondary-foreground py-3 px-4 rounded-lg font-medium hover:bg-secondary/90 transition-colors">
+                            Sign in
+                        </button>
+                    </form>
+                    
+                    <div class="mt-6 text-center">
+                        <p class="text-muted-foreground">Don't have an account? 
+                            <button onclick="showRegister()" class="text-secondary hover:text-secondary/80 font-medium">Sign up</button>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: LoginPage -->
+
+    <!-- Register Page -->
+    <!-- @COMPONENT: RegisterPage -->
+    <div id="registerPage" class="page">
+        <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/10 py-12 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-md w-full space-y-8">
+                <div class="text-center">
+                    <div class="mx-auto h-16 w-16 bg-primary rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-hard-hat text-2xl text-primary-foreground"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-primary mb-2">Create Account</h2>
+                    <p class="text-muted-foreground">Join our construction management platform</p>
+                </div>
+                
+                <div class="bg-card p-8 rounded-xl shadow-lg border border-border">
+                    <form class="space-y-6" data-mock="true">
+                        <div>
+                            <label for="fullName" class="block text-sm font-medium text-muted-foreground mb-2">Full Name</label>
+                            <input type="text" id="fullName" name="fullName" 
+                                   class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                                   placeholder="Enter your full name" data-mock="true">
+                        </div>
+                        
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-muted-foreground mb-2">Email address</label>
+                            <input type="email" id="email" name="email" 
+                                   class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                                   placeholder="Enter your email" data-mock="true">
+                        </div>
+                        
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-muted-foreground mb-2">Password</label>
+                            <input type="password" id="password" name="password" 
+                                   class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                                   placeholder="Create a password" data-mock="true">
+                        </div>
+                        
+                        <button type="button" onclick="showDashboard()" 
+                                class="w-full bg-secondary text-secondary-foreground py-3 px-4 rounded-lg font-medium hover:bg-secondary/90 transition-colors">
+                            Create Account
+                        </button>
+                    </form>
+                    
+                    <div class="mt-6 text-center">
+                        <p class="text-muted-foreground">Already have an account? 
+                            <button onclick="showLogin()" class="text-secondary hover:text-secondary/80 font-medium">Sign in</button>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: RegisterPage -->
+
+    <!-- Dashboard Page -->
+    <!-- @COMPONENT: DashboardPage -->
+    <div id="dashboardPage" class="page">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-4">
+                        <div class="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-hard-hat text-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold">Road Construction Tracker</h1>
+                            <p class="text-primary-foreground/80 text-sm">Professional Construction Management</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <span class="hidden md:inline text-primary-foreground/90" data-bind="user.email">Welcome, demo@construction.com</span>
+                        <button onclick="showLogin()" 
+                                class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Dashboard Header -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-foreground mb-2">Project Dashboard</h2>
+                    <p class="text-muted-foreground">Manage your construction projects and track progress</p>
+                </div>
+                <button onclick="showModal('projectModal')" 
+                        class="mt-4 md:mt-0 bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-medium hover:bg-secondary/90 transition-colors shadow-lg">
+                    <i class="fas fa-plus mr-2"></i>
+                    New Project
+                </button>
+            </div>
+
+            <!-- Projects Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <!-- @MAP: projects.map(project => ( -->
+                <!-- Project Card 1 -->
+                <!-- @COMPONENT: ProjectCard [project data] -->
+                <div class="bg-card rounded-xl shadow-lg border border-border overflow-hidden card-hover" data-mock="true">
+                    <div class="p-6">
+                        <!-- Project Header -->
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-semibold text-card-foreground mb-1" data-bind="project.name">Highway Bridge Construction</h3>
+                                <div class="flex items-center text-sm text-muted-foreground">
+                                    <i class="fas fa-building mr-1"></i>
+                                    <span data-bind="project.client">Metro Construction Ltd.</span>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="text-muted-foreground hover:text-secondary transition-colors" title="Edit Project">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="text-muted-foreground hover:text-secondary transition-colors" title="Duplicate Project">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="text-muted-foreground hover:text-accent transition-colors" title="Delete Project">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Project Details -->
+                        <div class="space-y-2 mb-6">
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-map-marker-alt w-4 text-muted-foreground mr-2"></i>
+                                <span class="text-muted-foreground">Location:</span>
+                                <span class="ml-1 text-card-foreground" data-bind="project.location">Downtown Bridge District</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-calendar w-4 text-muted-foreground mr-2"></i>
+                                <span class="text-muted-foreground">Duration:</span>
+                                <span class="ml-1 text-card-foreground" data-bind="project.duration">2024-01-15 to 2024-12-30</span>
+                            </div>
+                        </div>
+
+                        <!-- Progress Indicators -->
+                        <div class="space-y-4 mb-6">
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-muted-foreground">Planned Progress</span>
+                                    <span class="text-sm font-semibold text-secondary" data-bind="project.plannedProgress">65%</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-secondary h-2 rounded-full progress-bar-fill" style="width: 65%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-muted-foreground">Actual Progress</span>
+                                    <span class="text-sm font-semibold text-green-600" data-bind="project.actualProgress">58%</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full progress-bar-fill" style="width: 58%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Roads Section -->
+                        <div class="border-t border-border pt-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-semibold text-card-foreground flex items-center">
+                                    <i class="fas fa-road mr-2 text-muted-foreground"></i>
+                                    Roads (3)
+                                </h4>
+                                <button onclick="showModal('roadModal')" 
+                                        class="text-xs bg-muted text-muted-foreground px-3 py-1 rounded-md hover:bg-secondary hover:text-secondary-foreground transition-colors">
+                                    Add Road
+                                </button>
+                            </div>
+                            
+                            <!-- @MAP: project.roads.map(road => ( -->
+                            <div class="space-y-2" data-mock="true">
+                                <div class="bg-muted/50 rounded-lg p-3">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm font-medium" data-bind="road.name">Main Highway Section A</span>
+                                        <div class="flex space-x-1">
+                                            <button class="text-xs text-muted-foreground hover:text-secondary">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button onclick="showModal('progressModal')" class="text-xs text-muted-foreground hover:text-success">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1 text-xs">
+                                        <div class="flex justify-between">
+                                            <span class="text-muted-foreground">Base Layer</span>
+                                            <span class="text-warning font-medium" data-bind="layer.progress">85%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-muted-foreground">Surface Layer</span>
+                                            <span class="text-green-600 font-medium" data-bind="layer.progress">72%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-muted/50 rounded-lg p-3">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm font-medium" data-bind="road.name">Bridge Access Road</span>
+                                        <div class="flex space-x-1">
+                                            <button class="text-xs text-muted-foreground hover:text-secondary">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="text-xs text-muted-foreground hover:text-success">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1 text-xs">
+                                        <div class="flex justify-between">
+                                            <span class="text-muted-foreground">Foundation</span>
+                                            <span class="text-green-600 font-medium" data-bind="layer.progress">95%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-muted-foreground">Base Layer</span>
+                                            <span class="text-secondary font-medium" data-bind="layer.progress">60%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- @END_MAP -->
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: ProjectCard -->
+
+                <!-- Project Card 2 -->
+                <div class="bg-card rounded-xl shadow-lg border border-border overflow-hidden card-hover" data-mock="true">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-semibold text-card-foreground mb-1">Urban Road Expansion</h3>
+                                <div class="flex items-center text-sm text-muted-foreground">
+                                    <i class="fas fa-building mr-1"></i>
+                                    <span>City Development Corp.</span>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="text-muted-foreground hover:text-secondary transition-colors">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="text-muted-foreground hover:text-secondary transition-colors">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="text-muted-foreground hover:text-accent transition-colors">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 mb-6">
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-map-marker-alt w-4 text-muted-foreground mr-2"></i>
+                                <span class="text-muted-foreground">Location:</span>
+                                <span class="ml-1 text-card-foreground">North District</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-calendar w-4 text-muted-foreground mr-2"></i>
+                                <span class="text-muted-foreground">Duration:</span>
+                                <span class="ml-1 text-card-foreground">2024-03-01 to 2024-09-15</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 mb-6">
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-muted-foreground">Planned Progress</span>
+                                    <span class="text-sm font-semibold text-secondary">42%</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-secondary h-2 rounded-full progress-bar-fill" style="width: 42%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-muted-foreground">Actual Progress</span>
+                                    <span class="text-sm font-semibold text-green-600">38%</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full progress-bar-fill" style="width: 38%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-border pt-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-semibold text-card-foreground flex items-center">
+                                    <i class="fas fa-road mr-2 text-muted-foreground"></i>
+                                    Roads (2)
+                                </h4>
+                                <button class="text-xs bg-muted text-muted-foreground px-3 py-1 rounded-md hover:bg-secondary hover:text-secondary-foreground transition-colors">
+                                    Add Road
+                                </button>
+                            </div>
+                            
+                            <div class="space-y-2" data-mock="true">
+                                <div class="bg-muted/50 rounded-lg p-3">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm font-medium">North Avenue Extension</span>
+                                        <div class="flex space-x-1">
+                                            <button class="text-xs text-muted-foreground hover:text-secondary">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="text-xs text-muted-foreground hover:text-success">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1 text-xs">
+                                        <div class="flex justify-between">
+                                            <span class="text-muted-foreground">Excavation</span>
+                                            <span class="text-green-600 font-medium">100%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-muted-foreground">Base Preparation</span>
+                                            <span class="text-warning font-medium">45%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project Card 3 -->
+                <div class="bg-card rounded-xl shadow-lg border border-border overflow-hidden card-hover" data-mock="true">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-semibold text-card-foreground mb-1">Industrial Access Route</h3>
+                                <div class="flex items-center text-sm text-muted-foreground">
+                                    <i class="fas fa-building mr-1"></i>
+                                    <span>Industrial Zone Authority</span>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="text-muted-foreground hover:text-secondary transition-colors">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="text-muted-foreground hover:text-secondary transition-colors">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="text-muted-foreground hover:text-accent transition-colors">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 mb-6">
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-map-marker-alt w-4 text-muted-foreground mr-2"></i>
+                                <span class="text-muted-foreground">Location:</span>
+                                <span class="ml-1 text-card-foreground">Industrial Park East</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-calendar w-4 text-muted-foreground mr-2"></i>
+                                <span class="text-muted-foreground">Duration:</span>
+                                <span class="ml-1 text-card-foreground">2024-02-01 to 2024-08-30</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 mb-6">
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-muted-foreground">Planned Progress</span>
+                                    <span class="text-sm font-semibold text-secondary">78%</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-secondary h-2 rounded-full progress-bar-fill" style="width: 78%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-muted-foreground">Actual Progress</span>
+                                    <span class="text-sm font-semibold text-green-600">82%</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full progress-bar-fill" style="width: 82%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-border pt-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-semibold text-card-foreground flex items-center">
+                                    <i class="fas fa-road mr-2 text-muted-foreground"></i>
+                                    Roads (1)
+                                </h4>
+                                <button class="text-xs bg-muted text-muted-foreground px-3 py-1 rounded-md hover:bg-secondary hover:text-secondary-foreground transition-colors">
+                                    Add Road
+                                </button>
+                            </div>
+                            
+                            <div class="space-y-2" data-mock="true">
+                                <div class="bg-muted/50 rounded-lg p-3">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm font-medium">Main Industrial Road</span>
+                                        <div class="flex space-x-1">
+                                            <button class="text-xs text-muted-foreground hover:text-secondary">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="text-xs text-muted-foreground hover:text-success">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1 text-xs">
+                                        <div class="flex justify-between">
+                                            <span class="text-muted-foreground">Base Layer</span>
+                                            <span class="text-green-600 font-medium">100%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-muted-foreground">Asphalt Layer</span>
+                                            <span class="text-warning font-medium">75%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-muted-foreground">Final Surface</span>
+                                            <span class="text-secondary font-medium">20%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_MAP -->
+            </div>
+        </main>
+    </div>
+    <!-- @END_COMPONENT: DashboardPage -->
+
+    <!-- Project Modal -->
+    <!-- @COMPONENT: ProjectModal -->
+    <div id="projectModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div class="flex items-center justify-between p-6 border-b border-border">
+                <h3 class="text-xl font-semibold text-card-foreground">Add New Project</h3>
+                <button onclick="hideModal('projectModal')" class="text-muted-foreground hover:text-foreground transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form class="p-6 space-y-6 max-h-[calc(90vh-140px)] overflow-y-auto" data-mock="true">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-muted-foreground mb-2">Project Name</label>
+                        <input type="text" 
+                               class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                               placeholder="Enter project name" data-mock="true">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-muted-foreground mb-2">Client</label>
+                        <input type="text" 
+                               class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                               placeholder="Enter client name" data-mock="true">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-muted-foreground mb-2">Location</label>
+                    <input type="text" 
+                           class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                           placeholder="Enter project location" data-mock="true">
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-muted-foreground mb-2">Start Date</label>
+                        <input type="date" 
+                               class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                               data-mock="true">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-muted-foreground mb-2">End Date</label>
+                        <input type="date" 
+                               class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                               data-mock="true">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-muted-foreground mb-2">Description</label>
+                    <textarea rows="4" 
+                              class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                              placeholder="Enter project description" data-mock="true"></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-4 pt-6 border-t border-border">
+                    <button type="button" onclick="hideModal('projectModal')" 
+                            class="px-6 py-3 border border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/90 transition-colors">
+                        Create Project
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: ProjectModal -->
+
+    <!-- Road Modal -->
+    <!-- @COMPONENT: RoadModal -->
+    <div id="roadModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-card rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+            <div class="flex items-center justify-between p-6 border-b border-border">
+                <h3 class="text-xl font-semibold text-card-foreground">Add Road to Project</h3>
+                <button onclick="hideModal('roadModal')" class="text-muted-foreground hover:text-foreground transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form class="p-6 space-y-6 max-h-[calc(90vh-140px)] overflow-y-auto" data-mock="true">
+                <div>
+                    <label class="block text-sm font-medium text-muted-foreground mb-2">Road Name</label>
+                    <input type="text" 
+                           class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                           placeholder="Enter road name" data-mock="true">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-muted-foreground mb-2">Length (km)</label>
+                    <input type="number" step="0.1" 
+                           class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                           placeholder="Enter road length" data-mock="true">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-muted-foreground mb-2">Road Type</label>
+                    <select class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all" data-mock="true">
+                        <option value="">Select road type</option>
+                        <option value="highway">Highway</option>
+                        <option value="arterial">Arterial Road</option>
+                        <option value="collector">Collector Road</option>
+                        <option value="local">Local Road</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-muted-foreground mb-2">Construction Layers</label>
+                    <div class="space-y-3 bg-muted/30 p-4 rounded-lg">
+                        <label class="flex items-center space-x-3">
+                            <input type="checkbox" class="rounded" checked data-mock="true">
+                            <span class="text-sm">Excavation & Earthwork</span>
+                        </label>
+                        <label class="flex items-center space-x-3">
+                            <input type="checkbox" class="rounded" checked data-mock="true">
+                            <span class="text-sm">Base Course</span>
+                        </label>
+                        <label class="flex items-center space-x-3">
+                            <input type="checkbox" class="rounded" checked data-mock="true">
+                            <span class="text-sm">Binder Course</span>
+                        </label>
+                        <label class="flex items-center space-x-3">
+                            <input type="checkbox" class="rounded" data-mock="true">
+                            <span class="text-sm">Surface Course</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-4 pt-6 border-t border-border">
+                    <button type="button" onclick="hideModal('roadModal')" 
+                            class="px-6 py-3 border border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/90 transition-colors">
+                        Add Road
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: RoadModal -->
+
+    <!-- Progress Modal -->
+    <!-- @COMPONENT: ProgressModal -->
+    <div id="progressModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-card rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+            <div class="flex items-center justify-between p-6 border-b border-border">
+                <h3 class="text-xl font-semibold text-card-foreground">Update Layer Progress</h3>
+                <button onclick="hideModal('progressModal')" class="text-muted-foreground hover:text-foreground transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form class="p-6 space-y-6 max-h-[calc(90vh-140px)] overflow-y-auto" data-mock="true">
+                <div>
+                    <label class="block text-sm font-medium text-muted-foreground mb-2">Construction Layer</label>
+                    <select class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all" data-mock="true">
+                        <option value="">Select layer</option>
+                        <option value="excavation">Excavation & Earthwork</option>
+                        <option value="base" selected>Base Course</option>
+                        <option value="binder">Binder Course</option>
+                        <option value="surface">Surface Course</option>
+                    </select>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-muted-foreground mb-2">Start Chainage (km)</label>
+                        <input type="number" step="0.01" 
+                               class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                               placeholder="0.00" data-mock="true" value="2.50">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-muted-foreground mb-2">End Chainage (km)</label>
+                        <input type="number" step="0.01" 
+                               class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                               placeholder="0.00" data-mock="true" value="3.20">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-muted-foreground mb-2">Completion Date</label>
+                    <input type="date" 
+                           class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                           data-mock="true" value="2024-01-25">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-muted-foreground mb-2">Quality Status</label>
+                    <select class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all" data-mock="true">
+                        <option value="approved" selected>Approved</option>
+                        <option value="pending">Pending Review</option>
+                        <option value="rework">Requires Rework</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-muted-foreground mb-2">Notes</label>
+                    <textarea rows="3" 
+                              class="w-full px-4 py-3 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+                              placeholder="Add any notes about this section" data-mock="true">Completed base course installation with proper compaction. Quality tests passed.</textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-4 pt-6 border-t border-border">
+                    <button type="button" onclick="hideModal('progressModal')" 
+                            class="px-6 py-3 border border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-success text-white rounded-lg font-medium hover:bg-success/90 transition-colors">
+                        Update Progress
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: ProgressModal -->
+
+    <script>
+        // TODO: Implement Firebase authentication, Firestore database operations, and React state management
+        
+        (() => {
+            function showLogin() {
+                hideAllPages();
+                document.getElementById('loginPage').classList.add('active');
+            }
+
+            function showRegister() {
+                hideAllPages();
+                document.getElementById('registerPage').classList.add('active');
+            }
+
+            function showDashboard() {
+                hideAllPages();
+                document.getElementById('dashboardPage').classList.add('active');
+            }
+
+            function hideAllPages() {
+                const pages = document.querySelectorAll('.page');
+                pages.forEach(page => page.classList.remove('active'));
+            }
+
+            function showModal(modalId) {
+                document.getElementById(modalId).classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function hideModal(modalId) {
+                document.getElementById(modalId).classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+
+            // Make functions globally available
+            window.showLogin = showLogin;
+            window.showRegister = showRegister;
+            window.showDashboard = showDashboard;
+            window.showModal = showModal;
+            window.hideModal = hideModal;
+
+            // Close modals when clicking outside
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('fixed')) {
+                    const modalId = e.target.id;
+                    if (modalId) {
+                        hideModal(modalId);
+                    }
+                }
+            });
+
+            // Initialize progress bar animations
+            setTimeout(() => {
+                const progressBars = document.querySelectorAll('.progress-bar-fill');
+                progressBars.forEach(bar => {
+                    const width = bar.style.width;
+                    bar.style.width = '0%';
+                    setTimeout(() => {
+                        bar.style.width = width;
+                    }, 100);
+                });
+            }, 500);
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+// App.js
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { auth, db } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { collection, doc, setDoc, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
+import Login from './components/Login';
+import Register from './components/Register';
+import Dashboard from './components/Dashboard';
+import ProjectForm from './components/ProjectForm';
+import RoadForm from './components/RoadForm';
+import LayerProgressForm from './components/LayerProgressForm';
+import './App.css';
+
+function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState([]);
+  const [activeModal, setActiveModal] = useState(null);
+  const [editingProject, setEditingProject] = useState(null);
+  const [editingRoad, setEditingRoad] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+      if (user) {
+        fetchProjects(user.uid);
+      } else {
+        setProjects([]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const fetchProjects = async (userId) => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'users', userId, 'projects'));
+      const projectsData = [];
+      querySnapshot.forEach((doc) => {
+        projectsData.push({ id: doc.id, ...doc.data() });
+      });
+      setProjects(projectsData);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
+
+  const handleLogout = () => {
+    signOut(auth);
+  };
+
+  const addOrUpdateProject = async (projectData) => {
+    try {
+      const userId = auth.currentUser.uid;
+      if (editingProject) {
+        const projectRef = doc(db, 'users', userId, 'projects', editingProject.id);
+        await updateDoc(projectRef, projectData);
+        setEditingProject(null);
+      } else {
+        const newProjectRef = doc(collection(db, 'users', userId, 'projects'));
+        await setDoc(newProjectRef, {
+          ...projectData,
+          createdAt: new Date().toISOString(),
+        });
+      }
+      fetchProjects(userId);
+      setActiveModal(null);
+    } catch (error) {
+      console.error('Error saving project:', error);
+    }
+  };
+
+  const deleteProject = async (projectId) => {
+    try {
+      const userId = auth.currentUser.uid;
+      await deleteDoc(doc(db, 'users', userId, 'projects', projectId));
+      fetchProjects(userId);
+    } catch (error) {
+      console.error('Error deleting project:', error);
+    }
+  };
+
+  const duplicateProject = async (project) => {
+    try {
+      const userId = auth.currentUser.uid;
+      const newProjectRef = doc(collection(db, 'users', userId, 'projects'));
+      await setDoc(newProjectRef, {
+        ...project,
+        name: `${project.name} (Copy)`,
+        createdAt: new Date().toISOString(),
+      });
+      fetchProjects(userId);
+    } catch (error) {
+      console.error('Error duplicating project:', error);
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Loading...</div>;
+  }
+
+  return (
+    <Router>
+      <div className="app">
+        <header className="app-header">
+          <h1>Road Construction Tracker</h1>
+          {user && (
+            <div className="user-menu">
+              <span>Welcome, {user.email}</span>
+              <button onClick={handleLogout} className="logout-btn">Logout</button>
+            </div>
+          )}
+        </header>
+
+        <Routes>
+          <Route 
+            path="/login" 
+            element={user ? <Navigate to="/dashboard" /> : <Login />} 
+          />
+          <Route 
+            path="/register" 
+            element={user ? <Navigate to="/dashboard" /> : <Register />} 
+          />
+          <Route 
+            path="/dashboard" 
+            element={
+              user ? (
+                <Dashboard 
+                  projects={projects} 
+                  onAddProject={() => setActiveModal('project')}
+                  onEditProject={(project) => {
+                    setEditingProject(project);
+                    setActiveModal('project');
+                  }}
+                  onDeleteProject={deleteProject}
+                  onDuplicateProject={duplicateProject}
+                  onAddRoad={(project) => {
+                    setEditingProject(project);
+                    setActiveModal('road');
+                  }}
+                  onEditRoad={(project, road) => {
+                    setEditingProject(project);
+                    setEditingRoad(road);
+                    setActiveModal('road');
+                  }}
+                  onAddProgress={(project, road) => {
+                    setEditingProject(project);
+                    setEditingRoad(road);
+                    setActiveModal('progress');
+                  }}
+                />
+              ) : (
+                <Navigate to="/login" />
+              )
+            } 
+          />
+          <Route 
+            path="/" 
+            element={<Navigate to={user ? "/dashboard" : "/login"} />} 
+          />
+        </Routes>
+
+        {activeModal === 'project' && (
+          <ProjectForm
+            project={editingProject}
+            onSave={addOrUpdateProject}
+            onClose={() => {
+              setActiveModal(null);
+              setEditingProject(null);
+            }}
+          />
+        )}
+
+        {activeModal === 'road' && editingProject && (
+          <RoadForm
+            project={editingProject}
+            road={editingRoad}
+            onSave={() => {
+              fetchProjects(auth.currentUser.uid);
+              setActiveModal(null);
+              setEditingProject(null);
+              setEditingRoad(null);
+            }}
+            onClose={() => {
+              setActiveModal(null);
+              setEditingProject(null);
+              setEditingRoad(null);
+            }}
+          />
+        )}
+
+        {activeModal === 'progress' && editingProject && editingRoad && (
+          <LayerProgressForm
+            project={editingProject}
+            road={editingRoad}
+            onSave={() => {
+              fetchProjects(auth.currentUser.uid);
+              setActiveModal(null);
+              setEditingProject(null);
+              setEditingRoad(null);
+            }}
+            onClose={() => {
+              setActiveModal(null);
+              setEditingProject(null);
+              setEditingRoad(null);
+            }}
+          />
+        )}
+      </div>
+    </Router>
+  );
+}
+
+export default App;
