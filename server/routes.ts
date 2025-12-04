@@ -9,6 +9,7 @@ import {
   insertActivitySchema,
   insertSafetyIncidentSchema,
   insertIncidentReportSchema,
+  insertGrievanceSchema,
   insertWorkPlanSchema,
   insertWorkPlanActivitySchema,
   insertProjectDocumentSchema,
@@ -2203,6 +2204,136 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error deleting incident report:", error);
       res.status(500).json({ message: "Failed to delete incident report" });
+    }
+  });
+
+  // Grievances (World Bank GRM compliant)
+  app.get('/api/projects/:projectId/grievances', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const grievancesList = await storage.getGrievances(projectId);
+      res.json(grievancesList);
+    } catch (error) {
+      console.error("Error fetching grievances:", error);
+      res.status(500).json({ message: "Failed to fetch grievances" });
+    }
+  });
+  
+  app.get('/api/grievances/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      const grievance = await storage.getGrievance(id);
+      
+      if (!grievance) {
+        return res.status(404).json({ message: "Grievance not found" });
+      }
+      
+      // Verify user has access to the project this grievance belongs to
+      const project = await storage.getProject(grievance.projectId, userId);
+      if (!project) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json(grievance);
+    } catch (error) {
+      console.error("Error fetching grievance:", error);
+      res.status(500).json({ message: "Failed to fetch grievance" });
+    }
+  });
+  
+  app.get('/api/grievances/open', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const openGrievances = await storage.getOpenGrievances(userId);
+      res.json(openGrievances);
+    } catch (error) {
+      console.error("Error fetching open grievances:", error);
+      res.status(500).json({ message: "Failed to fetch open grievances" });
+    }
+  });
+  
+  app.post('/api/projects/:projectId/grievances', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const validated = insertGrievanceSchema.parse(req.body);
+      const grievance = await storage.createGrievance(projectId, validated);
+      res.status(201).json(grievance);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error creating grievance:", error);
+      res.status(500).json({ message: "Failed to create grievance" });
+    }
+  });
+  
+  app.patch('/api/grievances/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      // First fetch the grievance to verify access
+      const existingGrievance = await storage.getGrievance(id);
+      if (!existingGrievance) {
+        return res.status(404).json({ message: "Grievance not found" });
+      }
+      
+      // Verify user has access to the project this grievance belongs to
+      const project = await storage.getProject(existingGrievance.projectId, userId);
+      if (!project) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const validated = insertGrievanceSchema.partial().parse(req.body);
+      const grievance = await storage.updateGrievance(id, validated);
+      res.json(grievance);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error updating grievance:", error);
+      res.status(500).json({ message: "Failed to update grievance" });
+    }
+  });
+  
+  app.delete('/api/grievances/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      // First fetch the grievance to verify access
+      const existingGrievance = await storage.getGrievance(id);
+      if (!existingGrievance) {
+        return res.status(404).json({ message: "Grievance not found" });
+      }
+      
+      // Verify user has access to the project this grievance belongs to
+      const project = await storage.getProject(existingGrievance.projectId, userId);
+      if (!project) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.deleteGrievance(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting grievance:", error);
+      res.status(500).json({ message: "Failed to delete grievance" });
     }
   });
 

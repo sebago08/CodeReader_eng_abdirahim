@@ -4,7 +4,22 @@
 
 # Recent Changes
 
-**December 4, 2025 (Latest)** - **Added World Bank-compliant Incident Reporting System**. Implemented comprehensive incident reporting feature for international infrastructure projects. Key components:
+**December 4, 2025 (Latest)** - **Added World Bank-compliant Grievance Redress Mechanism (GRM)**. Implemented comprehensive grievance tracking system for community complaints in compliance with World Bank Environmental & Social Framework requirements. Key components:
+- Created `grievances` database table with 25+ fields supporting multi-channel intake, complainant management, and full resolution workflow
+- Complainant info: name, contact details, gender, anonymous complaint support
+- Intake channels: walk-in, phone, email, letter, community meeting, suggestion box
+- Categories: compensation, resettlement, employment, environment, safety, noise/dust, property damage, access
+- Status workflow: Registered → Acknowledged → Under Investigation → Resolved/Escalated/Appealed → Closed
+- Priority levels: Low, Medium, High, Urgent
+- Resolution tracking: target resolution date, resolution description, satisfaction level (satisfied/partially satisfied/not satisfied), feedback
+- Escalation support: escalation tracking with reason and outcome
+- Appeal mechanism: appeal date and outcome tracking
+- Full CRUD API endpoints with proper project-level authorization
+- Built GrievancesTab component with category/status filtering, list view, and comprehensive form
+- Dashboard integration showing "Open Grievances" summary card with breakdown (Registered/Investigating/Escalated)
+- Active Projects table now includes Grievances column showing open count per project
+
+**December 4, 2025** - **Added World Bank-compliant Incident Reporting System**. Implemented comprehensive incident reporting feature for international infrastructure projects. Key components:
 - Created `incident_reports` database table with 15+ fields matching World Bank ESF compliance requirements
 - Added full CRUD API endpoints with proper authorization checks (GET/PATCH/DELETE verify project access)
 - Built IncidentsTab component with classification filtering (Indicative/Serious/Severe), status workflow (Draft/Submitted/Under Review/Closed)
@@ -36,7 +51,7 @@ The frontend uses TanStack Query for server state management and React Hook Form
 ## Feature Specifications
 
 **Core Functionality:**
-- **Financial Dashboard**: Displays comprehensive project metrics including Financial Total, Amount Spent, Current Balance, Projects Behind Schedule, Critical Safety Issues, Open Incident Reports, and Upcoming Milestones, with road-length-weighted progress.
+- **Financial Dashboard**: Displays comprehensive project metrics including Financial Total, Amount Spent, Current Balance, Projects Behind Schedule, Critical Safety Issues, Open Incident Reports, Open Grievances, and Upcoming Milestones, with road-length-weighted progress.
 - **Project Management**: CRUD operations for projects, including duplication and support for multiple project types.
 - **Road & Layer Management**: Detailed tracking of road segments and construction layers with weighted progress calculations.
 - **Work Plan Scheduling**: Define activities with start dates, durations, and milestones, supporting multiple work plans per project and section-based organization with inline editing.
@@ -44,6 +59,7 @@ The frontend uses TanStack Query for server state management and React Hook Form
 - **Pre-Commencement Checklist**: Tracks essential documents with status, deadlines, responsible parties, and file attachments.
 - **Daily Site Logs & Action Points**: System for documenting daily activities, issues, and tracking follow-up tasks with assignees, priorities, and due dates.
 - **World Bank Incident Reporting**: Comprehensive incident reporting system compliant with World Bank ESF requirements. Features 3-tier classification (Indicative/Serious/Severe), status workflow (Draft/Submitted/Under Review/Closed), and 15+ required fields including project personnel, incident details, discovery information, harm assessment, and agency notifications.
+- **World Bank Grievance Redress Mechanism (GRM)**: Comprehensive grievance tracking system compliant with World Bank ESF requirements. Features multi-channel intake (walk-in, phone, email, letter, community meeting, suggestion box), complainant management with anonymous complaint support, 9 grievance categories (compensation, resettlement, employment, environment, safety, noise/dust, property damage, access, other), status workflow (Registered → Acknowledged → Under Investigation → Resolved/Escalated → Closed), priority levels, satisfaction tracking, and escalation/appeal mechanisms.
 - **Financial Tracking**: Management of payment certificates and financial progress.
 - **Team Collaboration**: Role-based access control for project stakeholders.
 - **File Storage**: Abstracted file management with support for various document types.
@@ -53,7 +69,7 @@ The system uses Passport Local authentication with session-based cookies. Users 
 
 ## System Design Choices
 
-The application uses a PostgreSQL database with a normalized schema covering users, projects, personnel, equipment, payment certificates, work plans, activities, progress trackers, pre-commencement items, daily logs, action points, roads, construction layers, layer progress, incident reports (World Bank compliant), and sessions. The architecture supports both development (Replit's PostgreSQL, in-memory mock storage) and production (Supabase PostgreSQL, Supabase Storage) environments, with environment-based configuration and an abstraction layer for storage services.
+The application uses a PostgreSQL database with a normalized schema covering users, projects, personnel, equipment, payment certificates, work plans, activities, progress trackers, pre-commencement items, daily logs, action points, roads, construction layers, layer progress, incident reports (World Bank compliant), grievances (World Bank GRM compliant), and sessions. The architecture supports both development (Replit's PostgreSQL, in-memory mock storage) and production (Supabase PostgreSQL, Supabase Storage) environments, with environment-based configuration and an abstraction layer for storage services.
 
 # External Dependencies
 

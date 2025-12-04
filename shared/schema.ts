@@ -434,6 +434,80 @@ export const incidentReports = pgTable("incident_reports", {
   index("incident_reports_date_idx").on(table.incidentDateTime),
 ]);
 
+// Grievances table (World Bank GRM compliant)
+export const grievances = pgTable("grievances", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  
+  // Grievance identification
+  grievanceNumber: varchar("grievance_number"), // Auto-generated reference number
+  dateReceived: timestamp("date_received").notNull(),
+  
+  // Source/Channel of grievance
+  source: varchar("source").notNull().default("walk-in"), // "walk-in", "phone", "email", "letter", "community_meeting", "suggestion_box", "other"
+  
+  // Complainant information
+  complainantName: varchar("complainant_name"), // Can be null if anonymous
+  isAnonymous: boolean("is_anonymous").default(false),
+  contactPhone: varchar("contact_phone"),
+  contactEmail: varchar("contact_email"),
+  contactAddress: text("contact_address"),
+  gender: varchar("gender"), // "male", "female", "other", "prefer_not_to_say"
+  
+  // Location details
+  location: varchar("location"), // Village/area where grievance originated
+  district: varchar("district"),
+  
+  // Grievance details
+  category: varchar("category").notNull().default("other"), // "compensation", "resettlement", "employment", "environment", "safety", "noise_dust", "property_damage", "access", "other"
+  subcategory: varchar("subcategory"),
+  description: text("description").notNull(), // Detailed description of grievance
+  
+  // Status workflow
+  status: varchar("status").notNull().default("registered"), // "registered", "acknowledged", "under_investigation", "resolved", "escalated", "closed", "appealed"
+  priority: varchar("priority").default("medium"), // "low", "medium", "high", "urgent"
+  
+  // Assignment and handling
+  assignedTo: varchar("assigned_to"), // Person responsible for resolution
+  assignedDate: timestamp("assigned_date"),
+  
+  // Response and resolution
+  acknowledgementDate: timestamp("acknowledgement_date"),
+  targetResolutionDate: timestamp("target_resolution_date"),
+  resolutionDescription: text("resolution_description"),
+  dateResolved: timestamp("date_resolved"),
+  
+  // Complainant feedback
+  satisfactionLevel: varchar("satisfaction_level"), // "satisfied", "partially_satisfied", "not_satisfied", "no_response"
+  feedbackDate: timestamp("feedback_date"),
+  feedbackComments: text("feedback_comments"),
+  
+  // Escalation details
+  isEscalated: boolean("is_escalated").default(false),
+  escalatedTo: varchar("escalated_to"),
+  escalationDate: timestamp("escalation_date"),
+  escalationReason: text("escalation_reason"),
+  
+  // Appeal details
+  isAppealed: boolean("is_appealed").default(false),
+  appealDate: timestamp("appeal_date"),
+  appealOutcome: text("appeal_outcome"),
+  
+  // Additional notes
+  internalNotes: text("internal_notes"),
+  
+  // Optional link to action point for follow-up
+  linkedActionPointId: varchar("linked_action_point_id"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("grievances_project_idx").on(table.projectId),
+  index("grievances_category_idx").on(table.category),
+  index("grievances_status_idx").on(table.status),
+  index("grievances_date_idx").on(table.dateReceived),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
@@ -448,6 +522,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   activities: many(activities),
   safetyIncidents: many(safetyIncidents),
   incidentReports: many(incidentReports),
+  grievances: many(grievances),
   clientPersonnel: many(clientPersonnel),
   contractorPersonnel: many(contractorPersonnel),
   contractorEquipment: many(contractorEquipment),
@@ -501,6 +576,17 @@ export const incidentReportsRelations = relations(incidentReports, ({ one }) => 
   }),
   linkedActionPoint: one(actionPoints, {
     fields: [incidentReports.linkedActionPointId],
+    references: [actionPoints.id],
+  }),
+}));
+
+export const grievancesRelations = relations(grievances, ({ one }) => ({
+  project: one(projects, {
+    fields: [grievances.projectId],
+    references: [projects.id],
+  }),
+  linkedActionPoint: one(actionPoints, {
+    fields: [grievances.linkedActionPointId],
     references: [actionPoints.id],
   }),
 }));
@@ -710,6 +796,29 @@ export const insertIncidentReportSchema = createInsertSchema(incidentReports).om
   discoveredDateTime: z.coerce.date().optional().nullable(),
 });
 
+// Grievance schema (World Bank GRM compliant)
+export const insertGrievanceSchema = createInsertSchema(grievances).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  source: z.enum(["walk-in", "phone", "email", "letter", "community_meeting", "suggestion_box", "other"]).default("walk-in"),
+  category: z.enum(["compensation", "resettlement", "employment", "environment", "safety", "noise_dust", "property_damage", "access", "other"]).default("other"),
+  status: z.enum(["registered", "acknowledged", "under_investigation", "resolved", "escalated", "closed", "appealed"]).default("registered"),
+  priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+  gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional().nullable(),
+  satisfactionLevel: z.enum(["satisfied", "partially_satisfied", "not_satisfied", "no_response"]).optional().nullable(),
+  dateReceived: z.coerce.date(),
+  assignedDate: z.coerce.date().optional().nullable(),
+  acknowledgementDate: z.coerce.date().optional().nullable(),
+  targetResolutionDate: z.coerce.date().optional().nullable(),
+  dateResolved: z.coerce.date().optional().nullable(),
+  feedbackDate: z.coerce.date().optional().nullable(),
+  escalationDate: z.coerce.date().optional().nullable(),
+  appealDate: z.coerce.date().optional().nullable(),
+});
+
 // User schemas and types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -844,6 +953,8 @@ export type SafetyIncident = typeof safetyIncidents.$inferSelect;
 export type InsertSafetyIncident = z.infer<typeof insertSafetyIncidentSchema>;
 export type IncidentReport = typeof incidentReports.$inferSelect;
 export type InsertIncidentReport = z.infer<typeof insertIncidentReportSchema>;
+export type Grievance = typeof grievances.$inferSelect;
+export type InsertGrievance = z.infer<typeof insertGrievanceSchema>;
 export type ProjectMember = typeof projectMembers.$inferSelect;
 export type InsertProjectMember = z.infer<typeof insertProjectMemberSchema>;
 export type ProjectInvitation = typeof projectInvitations.$inferSelect;
@@ -933,6 +1044,12 @@ export type DashboardMetrics = {
     serious: number;
     indicative: number;
   };
+  openGrievances: {
+    total: number;
+    registered: number;
+    underInvestigation: number;
+    escalated: number;
+  };
   upcomingMilestones: number; // Milestones due in next 30 days
   
   // Active projects summary
@@ -944,6 +1061,7 @@ export type DashboardMetrics = {
     timeProgress: number;
     physicalProgress: number;
     dueDate: string | null;
+    openGrievances?: number; // Count of open grievances for project
   }[];
 };
 
