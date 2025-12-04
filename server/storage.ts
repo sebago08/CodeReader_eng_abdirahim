@@ -716,10 +716,12 @@ export class MemStorage implements IStorage {
       amountSpent: 0,
       currentBalance: 0,
       projectsBehindSchedule: 0,
-      criticalSafetyIssues: { total: 0, high: 0, medium: 0, low: 0 },
       openIncidentReports: { total: 0, severe: 0, serious: 0, indicative: 0 },
       openGrievances: { total: 0, registered: 0, underInvestigation: 0, escalated: 0 },
       upcomingMilestones: 0,
+      delayedProjects: [],
+      incidentsList: [],
+      grievancesList: [],
       activeProjects: [],
     };
   }
@@ -2027,43 +2029,38 @@ export class DatabaseStorage implements IStorage {
         amountSpent: 0,
         currentBalance: 0,
         projectsBehindSchedule: 0,
-        criticalSafetyIssues: { total: 0, high: 0, medium: 0, low: 0 },
         openIncidentReports: { total: 0, severe: 0, serious: 0, indicative: 0 },
         openGrievances: { total: 0, registered: 0, underInvestigation: 0, escalated: 0 },
         upcomingMilestones: 0,
+        delayedProjects: [],
+        incidentsList: [],
+        grievancesList: [],
         activeProjects: [],
       };
     }
     
-    // 1. Calculate financial metrics (only for active projects)
+    // 1. Calculate financial metrics using contractAmount and payment certificates
+    // Total Contracts Amount = sum of all contractAmount fields
     const financialTotal = activeProjects.reduce((sum, p) => {
-      const budget = parseFloat(p.totalBudget || '0');
-      return sum + (isNaN(budget) ? 0 : budget);
+      const contractAmt = parseFloat(p.contractAmount || '0');
+      return sum + (isNaN(contractAmt) ? 0 : contractAmt);
     }, 0);
     
-    const amountSpent = activeProjects.reduce((sum, p) => {
-      const spent = parseFloat(p.spentAmount || '0');
-      return sum + (isNaN(spent) ? 0 : spent);
+    // Get all payment certificates for active projects to calculate IPCs paid
+    const allPaymentCerts = await db.select()
+      .from(paymentCertificates)
+      .where(inArray(paymentCertificates.projectId, activeProjects.map(p => p.id)));
+    
+    // Amount Spent = total IPCs paid (amountPaid from payment certificates)
+    const amountSpent = allPaymentCerts.reduce((sum, cert) => {
+      const paid = parseFloat(cert.amountPaid || '0');
+      return sum + (isNaN(paid) ? 0 : paid);
     }, 0);
     
     const currentBalance = financialTotal - amountSpent;
     
-    // 2. Projects Behind Schedule
+    // 2. Projects Behind Schedule - those where time lapse > BOQ progress
     const projectsBehind = userProjects.filter(p => p.status === 'Behind' || p.status === 'Delayed').length;
-    
-    // 3. Critical Safety Issues (open issues only)
-    const allSafetyIssues = await db.select()
-      .from(safetyIncidents)
-      .where(
-        and(
-          inArray(safetyIncidents.projectId, projectIds),
-          eq(safetyIncidents.status, 'Open')
-        )
-      );
-    
-    const highSafety = allSafetyIssues.filter(si => si.severity === 'High' || si.severity === 'Critical').length;
-    const mediumSafety = allSafetyIssues.filter(si => si.severity === 'Medium').length;
-    const lowSafety = allSafetyIssues.filter(si => si.severity === 'Low').length;
     
     // 3b. Open Incident Reports (World Bank reports not yet closed)
     const allIncidentReports = await db.select()
@@ -2249,17 +2246,47 @@ export class DatabaseStorage implements IStorage {
       });
     }
     
+    // Build delayed projects list with time lapse and BOQ progress
+    const delayedProjects = activeProjectsWithRoads
+      .filter(p => p.timeProgress > p.physicalProgress + 10) // Consider delayed if time > progress + 10%
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        timeLapse: p.timeProgress,
+        boqProgress: p.physicalProgress,
+      }));
+    
+    // Build project name lookup
+    const projectNameMap = new Map(userProjects.map(p => [p.id, p.name]));
+    
+    // Build incidents list for modal
+    const incidentsList = allIncidentReports.map(ir => ({
+      id: ir.id,
+      projectId: ir.projectId,
+      projectName: projectNameMap.get(ir.projectId) || 'Unknown',
+      title: ir.title || 'Untitled Incident',
+      classification: ir.classification,
+      status: ir.status,
+      dateOccurred: ir.dateOfIncident || '',
+    }));
+    
+    // Build grievances list for modal
+    const grievancesList = allOpenGrievances.map(g => ({
+      id: g.id,
+      projectId: g.projectId,
+      projectName: projectNameMap.get(g.projectId) || 'Unknown',
+      title: g.title || 'Untitled Grievance',
+      category: g.category,
+      status: g.status,
+      priority: g.priority,
+      dateReceived: g.dateReceived || '',
+    }));
+    
     return {
       financialTotal: Math.round(financialTotal * 100) / 100,
       amountSpent: Math.round(amountSpent * 100) / 100,
       currentBalance: Math.round(currentBalance * 100) / 100,
-      projectsBehindSchedule: projectsBehind,
-      criticalSafetyIssues: {
-        total: allSafetyIssues.length,
-        high: highSafety,
-        medium: mediumSafety,
-        low: lowSafety,
-      },
+      projectsBehindSchedule: delayedProjects.length, // Use actual delayed count
       openIncidentReports: {
         total: allIncidentReports.length,
         severe: severeIncidents,
@@ -2273,6 +2300,9 @@ export class DatabaseStorage implements IStorage {
         escalated: escalatedGrievances,
       },
       upcomingMilestones: upcomingMilestonesCount,
+      delayedProjects,
+      incidentsList,
+      grievancesList,
       activeProjects: activeProjectsWithRoads,
     };
   }
