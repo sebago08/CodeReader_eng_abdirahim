@@ -8,6 +8,7 @@ import {
   insertLayerProgressSchema,
   insertActivitySchema,
   insertSafetyIncidentSchema,
+  insertIncidentReportSchema,
   insertWorkPlanSchema,
   insertWorkPlanActivitySchema,
   insertProjectDocumentSchema,
@@ -2072,6 +2073,136 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error deleting action point:", error);
       res.status(500).json({ message: "Failed to delete action point" });
+    }
+  });
+
+  // Incident Reports (World Bank compliant)
+  app.get('/api/projects/:projectId/incident-reports', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const reports = await storage.getIncidentReports(projectId);
+      res.json(reports);
+    } catch (error) {
+      console.error("Error fetching incident reports:", error);
+      res.status(500).json({ message: "Failed to fetch incident reports" });
+    }
+  });
+  
+  app.get('/api/incident-reports/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      const report = await storage.getIncidentReport(id);
+      
+      if (!report) {
+        return res.status(404).json({ message: "Incident report not found" });
+      }
+      
+      // Verify user has access to the project this report belongs to
+      const project = await storage.getProject(report.projectId, userId);
+      if (!project) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json(report);
+    } catch (error) {
+      console.error("Error fetching incident report:", error);
+      res.status(500).json({ message: "Failed to fetch incident report" });
+    }
+  });
+  
+  app.get('/api/incident-reports/critical', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const reports = await storage.getCriticalIncidents(userId);
+      res.json(reports);
+    } catch (error) {
+      console.error("Error fetching critical incidents:", error);
+      res.status(500).json({ message: "Failed to fetch critical incidents" });
+    }
+  });
+  
+  app.post('/api/projects/:projectId/incident-reports', isAuthenticated, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const userId = req.user!.id;
+      
+      const project = await storage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+      
+      const validated = insertIncidentReportSchema.parse(req.body);
+      const report = await storage.createIncidentReport(projectId, validated);
+      res.status(201).json(report);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error creating incident report:", error);
+      res.status(500).json({ message: "Failed to create incident report" });
+    }
+  });
+  
+  app.patch('/api/incident-reports/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      // First fetch the report to verify access
+      const existingReport = await storage.getIncidentReport(id);
+      if (!existingReport) {
+        return res.status(404).json({ message: "Incident report not found" });
+      }
+      
+      // Verify user has access to the project this report belongs to
+      const project = await storage.getProject(existingReport.projectId, userId);
+      if (!project) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const validated = insertIncidentReportSchema.partial().parse(req.body);
+      const report = await storage.updateIncidentReport(id, validated);
+      res.json(report);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      console.error("Error updating incident report:", error);
+      res.status(500).json({ message: "Failed to update incident report" });
+    }
+  });
+  
+  app.delete('/api/incident-reports/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+      
+      // First fetch the report to verify access
+      const existingReport = await storage.getIncidentReport(id);
+      if (!existingReport) {
+        return res.status(404).json({ message: "Incident report not found" });
+      }
+      
+      // Verify user has access to the project this report belongs to
+      const project = await storage.getProject(existingReport.projectId, userId);
+      if (!project) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.deleteIncidentReport(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting incident report:", error);
+      res.status(500).json({ message: "Failed to delete incident report" });
     }
   });
 

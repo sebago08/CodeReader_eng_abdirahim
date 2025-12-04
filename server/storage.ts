@@ -6,6 +6,7 @@ import {
   layerProgress,
   activities,
   safetyIncidents,
+  incidentReports,
   projectMembers,
   projectInvitations,
   clientPersonnel,
@@ -34,6 +35,8 @@ import {
   type InsertActivity,
   type SafetyIncident,
   type InsertSafetyIncident,
+  type IncidentReport,
+  type InsertIncidentReport,
   type ProjectWithRoads,
   type ProjectMember,
   type InsertProjectMember,
@@ -219,6 +222,14 @@ export interface IStorage {
   deleteActionPoint(id: string): Promise<void>;
   deletePreCommencementItem(id: string): Promise<void>;
   createDefaultChecklistItems(projectId: string): Promise<PreCommencementItem[]>;
+  
+  // Incident report operations (World Bank compliant)
+  getIncidentReports(projectId: string): Promise<IncidentReport[]>;
+  getIncidentReport(id: string): Promise<IncidentReport | undefined>;
+  createIncidentReport(projectId: string, report: InsertIncidentReport): Promise<IncidentReport>;
+  updateIncidentReport(id: string, report: Partial<InsertIncidentReport>): Promise<IncidentReport>;
+  deleteIncidentReport(id: string): Promise<void>;
+  getCriticalIncidents(userId: string): Promise<IncidentReport[]>;
   
   // Dashboard operations
   getDashboardMetrics(userId: string): Promise<import("@shared/schema").DashboardMetrics>;
@@ -663,6 +674,14 @@ export class MemStorage implements IStorage {
   async updateActionPoint(): Promise<ActionPoint> { throw new Error('Not supported in MemStorage'); }
   async deleteActionPoint(): Promise<void> { throw new Error('Not supported in MemStorage'); }
   
+  // Incident report stubs (World Bank compliant)
+  async getIncidentReports(): Promise<IncidentReport[]> { return []; }
+  async getIncidentReport(): Promise<IncidentReport | undefined> { return undefined; }
+  async createIncidentReport(): Promise<IncidentReport> { throw new Error('Not supported in MemStorage'); }
+  async updateIncidentReport(): Promise<IncidentReport> { throw new Error('Not supported in MemStorage'); }
+  async deleteIncidentReport(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+  async getCriticalIncidents(_userId: string): Promise<IncidentReport[]> { return []; }
+  
   // Progress tracker stubs
   async getProgressTrackers(): Promise<ProgressTracker[]> { return []; }
   async getProgressTracker(): Promise<ProgressTrackerWithItems | undefined> { return undefined; }
@@ -679,6 +698,7 @@ export class MemStorage implements IStorage {
       currentBalance: 0,
       projectsBehindSchedule: 0,
       criticalSafetyIssues: { total: 0, high: 0, medium: 0, low: 0 },
+      openIncidentReports: { total: 0, severe: 0, serious: 0, indicative: 0 },
       upcomingMilestones: 0,
       activeProjects: [],
     };
@@ -1816,6 +1836,79 @@ export class DatabaseStorage implements IStorage {
       .where(eq(actionPoints.id, id));
   }
   
+  // Incident report operations (World Bank compliant)
+  async getIncidentReports(projectId: string): Promise<IncidentReport[]> {
+    return await db.select()
+      .from(incidentReports)
+      .where(eq(incidentReports.projectId, projectId))
+      .orderBy(desc(incidentReports.incidentDateTime));
+  }
+  
+  async getIncidentReport(id: string): Promise<IncidentReport | undefined> {
+    const [report] = await db.select()
+      .from(incidentReports)
+      .where(eq(incidentReports.id, id));
+    return report;
+  }
+  
+  async createIncidentReport(projectId: string, report: InsertIncidentReport): Promise<IncidentReport> {
+    const [created] = await db.insert(incidentReports)
+      .values({
+        ...report,
+        projectId,
+        incidentDateTime: report.incidentDateTime,
+        discoveredDateTime: report.discoveredDateTime ?? null,
+      })
+      .returning();
+    return created;
+  }
+  
+  async updateIncidentReport(id: string, report: Partial<InsertIncidentReport>): Promise<IncidentReport> {
+    const updateData: Record<string, any> = {
+      ...report,
+      updatedAt: new Date(),
+    };
+    
+    const [updated] = await db.update(incidentReports)
+      .set(updateData)
+      .where(eq(incidentReports.id, id))
+      .returning();
+    return updated;
+  }
+  
+  async deleteIncidentReport(id: string): Promise<void> {
+    await db.delete(incidentReports)
+      .where(eq(incidentReports.id, id));
+  }
+  
+  async getCriticalIncidents(userId: string): Promise<IncidentReport[]> {
+    // Get user's projects first
+    const userProjects = await db.select().from(projects).where(eq(projects.userId, userId));
+    const projectIds = userProjects.map(p => p.id);
+    
+    if (projectIds.length === 0) {
+      return [];
+    }
+    
+    return await db.select()
+      .from(incidentReports)
+      .where(
+        and(
+          inArray(incidentReports.projectId, projectIds),
+          or(
+            eq(incidentReports.classification, 'serious'),
+            eq(incidentReports.classification, 'severe')
+          ),
+          or(
+            eq(incidentReports.status, 'draft'),
+            eq(incidentReports.status, 'submitted'),
+            eq(incidentReports.status, 'under_review')
+          )
+        )
+      )
+      .orderBy(desc(incidentReports.incidentDateTime));
+  }
+  
   // Dashboard operations
   async getDashboardMetrics(userId: string): Promise<import("@shared/schema").DashboardMetrics> {
     const today = new Date();
@@ -1839,6 +1932,7 @@ export class DatabaseStorage implements IStorage {
         currentBalance: 0,
         projectsBehindSchedule: 0,
         criticalSafetyIssues: { total: 0, high: 0, medium: 0, low: 0 },
+        openIncidentReports: { total: 0, severe: 0, serious: 0, indicative: 0 },
         upcomingMilestones: 0,
         activeProjects: [],
       };
@@ -1873,6 +1967,24 @@ export class DatabaseStorage implements IStorage {
     const highSafety = allSafetyIssues.filter(si => si.severity === 'High' || si.severity === 'Critical').length;
     const mediumSafety = allSafetyIssues.filter(si => si.severity === 'Medium').length;
     const lowSafety = allSafetyIssues.filter(si => si.severity === 'Low').length;
+    
+    // 3b. Open Incident Reports (World Bank reports not yet closed)
+    const allIncidentReports = await db.select()
+      .from(incidentReports)
+      .where(
+        and(
+          inArray(incidentReports.projectId, projectIds),
+          or(
+            eq(incidentReports.status, 'draft'),
+            eq(incidentReports.status, 'submitted'),
+            eq(incidentReports.status, 'under_review')
+          )
+        )
+      );
+    
+    const severeIncidents = allIncidentReports.filter(ir => ir.classification === 'severe').length;
+    const seriousIncidents = allIncidentReports.filter(ir => ir.classification === 'serious').length;
+    const indicativeIncidents = allIncidentReports.filter(ir => ir.classification === 'indicative').length;
     
     // 4. Upcoming Milestones (next 30 days)
     const upcomingMiles = await db.select()
@@ -2028,6 +2140,12 @@ export class DatabaseStorage implements IStorage {
         high: highSafety,
         medium: mediumSafety,
         low: lowSafety,
+      },
+      openIncidentReports: {
+        total: allIncidentReports.length,
+        severe: severeIncidents,
+        serious: seriousIncidents,
+        indicative: indicativeIncidents,
       },
       upcomingMilestones: upcomingMilestonesCount,
       activeProjects: activeProjectsWithRoads,
