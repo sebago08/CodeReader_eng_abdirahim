@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, Save, Plus, MoreVertical, Trash2, Flag } from "lucide-react";
+import { ArrowLeft, Save, Plus, MoreVertical, Trash2, Flag, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,6 +22,7 @@ export default function WorkPlanEditor() {
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [localActivities, setLocalActivities] = useState<WorkPlanActivity[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
 
   const { data: workPlan, isLoading: loadingPlan } = useQuery<WorkPlan>({
     queryKey: ["/api/work-plans", workPlanId],
@@ -39,8 +40,17 @@ export default function WorkPlanEditor() {
   useEffect(() => {
     if (activities.length > 0) {
       setLocalActivities(activities);
+      
+      // Auto-focus on newly added item
+      if (pendingFocusId) {
+        const newItem = activities.find(a => a.id === pendingFocusId);
+        if (newItem) {
+          setEditingCell({ id: pendingFocusId, field: "activityName" });
+          setPendingFocusId(null);
+        }
+      }
     }
-  }, [activities]);
+  }, [activities, pendingFocusId]);
 
   const saveChangesMutation = useMutation({
     mutationFn: async () => {
@@ -140,11 +150,12 @@ export default function WorkPlanEditor() {
       if (!response.ok) throw new Error("Failed to add section");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (newSection) => {
+      setPendingFocusId(newSection.id);
       queryClient.invalidateQueries({ queryKey: ["/api/work-plans", workPlanId, "activities"] });
       toast({
-        title: "Success",
-        description: "Section added successfully",
+        title: "Section added",
+        description: "Type a name and click Save Changes when done",
       });
     },
   });
@@ -166,11 +177,12 @@ export default function WorkPlanEditor() {
       if (!response.ok) throw new Error("Failed to add activity");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (newActivity) => {
+      setPendingFocusId(newActivity.id);
       queryClient.invalidateQueries({ queryKey: ["/api/work-plans", workPlanId, "activities"] });
       toast({
-        title: "Success",
-        description: "Activity added successfully",
+        title: "Activity added",
+        description: "Type a name and click Save Changes when done",
       });
     },
   });
@@ -335,7 +347,7 @@ export default function WorkPlanEditor() {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
         <div className="text-muted-foreground">Work plan not found</div>
-        <Button onClick={() => navigate(-1)}>Go Back</Button>
+        <Button onClick={() => window.history.back()}>Go Back</Button>
       </div>
     );
   }
@@ -372,6 +384,18 @@ export default function WorkPlanEditor() {
           </div>
         </div>
       </div>
+
+      {/* Unsaved Changes Warning */}
+      {hasChanges && (
+        <div className="bg-amber-500/20 border-b border-amber-500/50 px-6 py-3">
+          <div className="container mx-auto flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <span className="text-amber-200">
+              You have unsaved changes. Click "Save Changes" to keep your edits.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Work Plan Table */}
       <div className="container mx-auto px-6 py-8">
