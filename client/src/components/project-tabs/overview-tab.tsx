@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import ProjectModal from "@/components/project-modal";
 import { queryClient } from "@/lib/queryClient";
-import type { ProjectWithRoads, ProjectAlerts } from "@shared/schema";
+import type { ProjectWithRoads, ProjectAlerts, IncidentReport } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import type { PaymentCertificate } from "@shared/schema";
 import { Link } from "wouter";
@@ -49,6 +49,18 @@ export default function OverviewTab({ project }: OverviewTabProps) {
     queryKey: [`/api/projects/${project.id}/alerts`],
     enabled: !!project.id,
   });
+
+  // Fetch incident reports for project
+  const { data: incidentReports = [] } = useQuery<IncidentReport[]>({
+    queryKey: ['/api/projects', project.id, 'incident-reports'],
+    enabled: !!project.id,
+  });
+
+  // Calculate open incident counts
+  const openIncidents = incidentReports.filter(i => i.status !== 'closed');
+  const severeCount = openIncidents.filter(i => i.classification === 'severe').length;
+  const seriousCount = openIncidents.filter(i => i.classification === 'serious').length;
+  const indicativeCount = openIncidents.filter(i => i.classification === 'indicative').length;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -565,21 +577,32 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             </CardContent>
           </Card>
 
-          {/* Critical Safety Issues */}
+          {/* Open Incidents */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                Critical Safety Issues
+                Open Incidents
               </CardTitle>
-              <CardDescription>High-risk priority</CardDescription>
+              <CardDescription>World Bank ESF compliance</CardDescription>
             </CardHeader>
             <CardContent>
-              {!alerts || alerts.criticalIssues.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No critical issues</p>
+              {openIncidents.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No open incidents</p>
               ) : (
-                <div className="text-sm text-red-600 dark:text-red-400 font-medium">
-                  {alerts.criticalIssues.length} critical {alerts.criticalIssues.length === 1 ? 'issue' : 'issues'}
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold">{openIncidents.length}</div>
+                  <div className="flex gap-3 text-xs">
+                    {severeCount > 0 && (
+                      <span className="text-red-600 dark:text-red-400">Severe: {severeCount}</span>
+                    )}
+                    {seriousCount > 0 && (
+                      <span className="text-orange-600 dark:text-orange-400">Serious: {seriousCount}</span>
+                    )}
+                    {indicativeCount > 0 && (
+                      <span className="text-yellow-600 dark:text-yellow-400">Indicative: {indicativeCount}</span>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>
