@@ -4,7 +4,16 @@
 
 # Recent Changes
 
-**December 4, 2025 (Latest)** - **Switched to dark theme with black background and contrasting text colors**. Updated the entire application to use a dark color scheme for better visual experience. Key changes:
+**December 4, 2025 (Latest)** - **Made the entire app responsive for mobile and tablet devices**. Key improvements:
+- Dashboard cards: Sub-labels (Severe/Serious/Indicative, Registered/Investigating/Escalated) now stack vertically to prevent overflow
+- Icons: Smaller on mobile (5x5) and larger on desktop (6x6)
+- Grid layouts: Responsive breakpoints (1 col → 2 cols → 3 cols → 5 cols)
+- Headers: Compact on mobile with hidden text labels, username hidden on mobile
+- Tabs: Horizontally scrollable on mobile with abbreviated labels
+- Cards: Smaller padding on mobile, truncated text prevents overflow
+- All pages now properly adapt to different screen sizes
+
+**December 4, 2025** - **Switched to dark theme with black background and contrasting text colors**. Updated the entire application to use a dark color scheme for better visual experience. Key changes:
 - Background: Pure black (#000000) across all pages
 - Cards and modals: Very dark gray (7%) for subtle elevation
 - Text: Light/white text (95%) for high contrast readability

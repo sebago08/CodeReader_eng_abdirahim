@@ -157,31 +157,32 @@ export default function ProjectDetail() {
         {/* Header */}
         <header className="bg-black text-primary-foreground shadow-lg">
           <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
-            <div className="flex justify-between items-center py-4">
-              <div className="flex items-center space-x-4">
-                <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-hard-hat text-lg"></i>
+            <div className="flex justify-between items-center py-3 md:py-4 gap-2">
+              <div className="flex items-center space-x-2 md:space-x-4 min-w-0">
+                <div className="h-8 w-8 md:h-10 md:w-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
+                  <i className="fas fa-hard-hat text-sm md:text-lg"></i>
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold">ConstructTrack</h1>
-                  <p className="text-primary-foreground/80 text-sm">Professional Construction Management</p>
+                <div className="min-w-0">
+                  <h1 className="text-base md:text-xl font-bold truncate">ConstructTrack</h1>
+                  <p className="text-primary-foreground/80 text-xs md:text-sm hidden sm:block">Professional Construction Management</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4 shrink-0">
                 {user && (
-                  <div className="text-white" data-testid="text-current-username">
-                    <span className="text-sm text-white/60">Signed in as:</span>
-                    <span className="ml-2 font-medium">{user.username}</span>
+                  <div className="text-white hidden sm:block" data-testid="text-current-username">
+                    <span className="text-xs md:text-sm text-white/60">Signed in as:</span>
+                    <span className="ml-1 md:ml-2 font-medium text-sm md:text-base">{user.username}</span>
                   </div>
                 )}
                 <Button
                   onClick={handleLogout}
                   variant="ghost"
-                  className="text-white hover:bg-white/10"
+                  size="sm"
+                  className="text-white hover:bg-white/10 px-2 md:px-4"
                   data-testid="button-logout"
                 >
-                  <LogOut className="h-5 w-5 mr-2" />
-                  Logout
+                  <LogOut className="h-4 w-4 md:h-5 md:w-5 md:mr-2" />
+                  <span className="hidden md:inline">Logout</span>
                 </Button>
               </div>
             </div>
@@ -209,38 +210,40 @@ export default function ProjectDetail() {
 
           {/* Tabbed Interface */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-6" data-testid="tabs-list">
-              <TabsTrigger value="overview" data-testid="tab-overview">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="workplan" data-testid="tab-workplan">
-                Work Plan
-              </TabsTrigger>
-              <TabsTrigger value="progress" data-testid="tab-progress">
-                Progress
-              </TabsTrigger>
-              <TabsTrigger value="budget" data-testid="tab-budget">
-                Budget
-              </TabsTrigger>
-              <TabsTrigger value="incidents" data-testid="tab-incidents">
-                Incidents
-              </TabsTrigger>
-              <TabsTrigger value="grievances" data-testid="tab-grievances">
-                Grievances
-              </TabsTrigger>
-              <TabsTrigger value="pre-construction" data-testid="tab-pre-construction">
-                Pre-construction
-              </TabsTrigger>
-              <TabsTrigger value="team" data-testid="tab-team">
-                Team
-              </TabsTrigger>
-              <TabsTrigger value="documents" data-testid="tab-documents">
-                Documents
-              </TabsTrigger>
-              <TabsTrigger value="site-logs" data-testid="tab-site-logs">
-                Site Logs
-              </TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+              <TabsList className="mb-4 md:mb-6 inline-flex w-max md:w-auto" data-testid="tabs-list">
+                <TabsTrigger value="overview" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-overview">
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger value="workplan" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-workplan">
+                  Work Plan
+                </TabsTrigger>
+                <TabsTrigger value="progress" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-progress">
+                  Progress
+                </TabsTrigger>
+                <TabsTrigger value="budget" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-budget">
+                  Budget
+                </TabsTrigger>
+                <TabsTrigger value="incidents" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-incidents">
+                  Incidents
+                </TabsTrigger>
+                <TabsTrigger value="grievances" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-grievances">
+                  Grievances
+                </TabsTrigger>
+                <TabsTrigger value="pre-construction" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-pre-construction">
+                  Pre-const
+                </TabsTrigger>
+                <TabsTrigger value="team" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-team">
+                  Team
+                </TabsTrigger>
+                <TabsTrigger value="documents" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-documents">
+                  Docs
+                </TabsTrigger>
+                <TabsTrigger value="site-logs" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-site-logs">
+                  Logs
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="overview" data-testid="tab-content-overview">
               <OverviewTab project={project} />
