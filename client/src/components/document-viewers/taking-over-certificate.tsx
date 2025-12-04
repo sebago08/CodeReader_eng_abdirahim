@@ -249,7 +249,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
       </div>
 
       {/* Certificate Content - A4 Portrait (210mm x 297mm) */}
-      <div className="bg-white w-[210mm] h-[297mm] mx-auto shadow-lg overflow-hidden" id="certificate-content">
+      <div className="bg-card w-[210mm] h-[297mm] mx-auto shadow-lg overflow-hidden print:bg-white" id="certificate-content">
         <div className="p-12 h-full flex flex-col print-content">
           {/* Letterhead */}
           <div className="mb-6 pb-6 border-b-2 border-[#1a5276]">
@@ -279,7 +279,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
           </div>
 
           {/* Project Information */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="mb-6 p-4 bg-muted rounded-lg print:bg-gray-50">
             <div className="space-y-2.5">
               <div className="grid grid-cols-2 gap-3 text-[14px]">
                 <div>
@@ -342,7 +342,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
           {/* Outstanding Work */}
           <div className="mb-5">
             <h3 className="text-[#1a5276] mb-2.5 text-[18px]">Outstanding Work and Defects</h3>
-            <div className="border border-gray-300 rounded p-3 bg-white">
+            <div className="border border-border rounded p-3 bg-card print:border-gray-300 print:bg-white">
               <p className="whitespace-pre-wrap text-[14px]">{outstandingWork}</p>
             </div>
             <p className="text-[12px] text-muted-foreground mt-2">
@@ -351,11 +351,11 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
           </div>
 
           {/* Signatures Section */}
-          <div className="border-t-2 border-gray-300 pt-6 mt-auto">
+          <div className="border-t-2 border-border pt-6 mt-auto print:border-gray-300">
             <div className="grid grid-cols-3 gap-6 mb-6">
               {/* Engineer */}
               <div>
-                <div className="mb-12 border-b-2 border-gray-400"></div>
+                <div className="mb-12 border-b-2 border-border print:border-gray-400"></div>
                 <div className="text-center text-[13px]">
                   <p>Engineer/Engineer's Representative</p>
                   <p className="text-[11px] text-muted-foreground mt-1">Signature & Date</p>
@@ -365,7 +365,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
 
               {/* Contractor */}
               <div>
-                <div className="mb-12 border-b-2 border-gray-400"></div>
+                <div className="mb-12 border-b-2 border-border print:border-gray-400"></div>
                 <div className="text-center text-[13px]">
                   <p>Contractor</p>
                   <p className="text-[11px] text-muted-foreground mt-1">Signature & Date</p>
@@ -375,7 +375,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
 
               {/* Employer */}
               <div>
-                <div className="mb-12 border-b-2 border-gray-400"></div>
+                <div className="mb-12 border-b-2 border-border print:border-gray-400"></div>
                 <div className="text-center text-[13px]">
                   <p>Employer/Employer's Representative</p>
                   <p className="text-[11px] text-muted-foreground mt-1">Signature & Date</p>
@@ -392,7 +392,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
       </div>
 
       {/* Edit Options (Print Hidden) */}
-      <div className="max-w-[210mm] mx-auto mt-8 p-6 bg-white rounded-lg shadow print:hidden">
+      <div className="max-w-[210mm] mx-auto mt-8 p-6 bg-card rounded-lg shadow print:hidden">
         <h3 className="text-[#1a5276] mb-4">Certificate Details</h3>
         <div className="space-y-4">
           <div>
@@ -401,7 +401,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
               type="text"
               value={certificateNumber}
               onChange={(e) => setCertificateNumber(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded"
+              className="w-full px-3 py-2 border border-border rounded bg-background text-foreground"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -411,7 +411,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
                 type="date"
                 value={certificateDate}
                 onChange={(e) => setCertificateDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded"
+                className="w-full px-3 py-2 border border-border rounded bg-background text-foreground"
               />
             </div>
             <div>
@@ -420,7 +420,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
                 type="date"
                 value={takingOverDate}
                 onChange={(e) => setTakingOverDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded"
+                className="w-full px-3 py-2 border border-border rounded bg-background text-foreground"
               />
             </div>
           </div>
@@ -429,7 +429,7 @@ export function TakingOverCertificate({ project, documentId, savedData, onBack, 
             <textarea
               value={outstandingWork}
               onChange={(e) => setOutstandingWork(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded min-h-[100px]"
+              className="w-full px-3 py-2 border border-border rounded min-h-[100px] bg-background text-foreground"
               placeholder="List any outstanding work or defects..."
             />
           </div>

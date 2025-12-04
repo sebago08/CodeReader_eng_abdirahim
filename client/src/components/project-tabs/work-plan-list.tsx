@@ -40,15 +40,15 @@ export function WorkPlanList({ projectId, projectName, onCreateClick, onEditClic
   const getStatusColor = (status: string) => {
     switch (status) {
       case "In Progress":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+        return "bg-blue-950/20 text-blue-400 border border-blue-800";
       case "Completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+        return "bg-green-950/20 text-green-400 border border-green-800";
       case "Blocked":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+        return "bg-red-950/20 text-red-400 border border-red-800";
       case "Not Started":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+        return "bg-muted text-muted-foreground border border-border";
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+        return "bg-muted text-muted-foreground border border-border";
     }
   };
 
@@ -177,7 +177,7 @@ export function WorkPlanList({ projectId, projectName, onCreateClick, onEditClic
                       variant="link"
                       size="sm"
                       onClick={() => onEditClick(plan.id)}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                      className="text-blue-400 hover:text-blue-300"
                       data-testid={`button-edit-${plan.id}`}
                     >
                       Edit

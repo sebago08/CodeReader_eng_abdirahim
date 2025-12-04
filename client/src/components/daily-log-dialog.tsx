@@ -248,7 +248,7 @@ export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialog
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="text-base">Action Points</Label>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Track follow-up items for this daily log
                   </p>
                 </div>
@@ -267,7 +267,7 @@ export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialog
               {log.actionPoints && log.actionPoints.length > 0 ? (
                 <div className="space-y-2">
                   {log.actionPoints.map((actionPoint) => (
-                    <Card key={actionPoint.id} className="bg-gray-50">
+                    <Card key={actionPoint.id} className="bg-muted">
                       <CardContent className="p-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-start gap-2 flex-1">
@@ -277,18 +277,18 @@ export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialog
                               <Clock className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
                             )}
                             <div className="flex-1">
-                              <p className="text-sm text-gray-900">{actionPoint.description}</p>
+                              <p className="text-sm text-foreground">{actionPoint.description}</p>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className="text-xs">
                                   {actionPoint.priority}
                                 </Badge>
                                 {actionPoint.assignedTo && (
-                                  <span className="text-xs text-gray-600">
+                                  <span className="text-xs text-muted-foreground">
                                     {actionPoint.assignedTo}
                                   </span>
                                 )}
                                 {actionPoint.dueDate && (
-                                  <span className="text-xs text-gray-600">
+                                  <span className="text-xs text-muted-foreground">
                                     Due: {format(new Date(actionPoint.dueDate), 'MMM d')}
                                   </span>
                                 )}
@@ -321,7 +321,7 @@ export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialog
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 py-3 text-center">
+                <p className="text-sm text-muted-foreground py-3 text-center">
                   No action points yet. Click "Add Action Point" to create one.
                 </p>
               )}

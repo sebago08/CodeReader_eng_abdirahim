@@ -204,28 +204,28 @@ export default function IncidentsTab({ projectId, project }: IncidentsTabProps) 
   const getClassificationColor = (classification: string) => {
     switch (classification) {
       case "indicative":
-        return "bg-blue-500";
+        return "bg-blue-600";
       case "serious":
-        return "bg-orange-500";
+        return "bg-orange-600";
       case "severe":
-        return "bg-red-600";
+        return "bg-red-700";
       default:
-        return "bg-gray-500";
+        return "bg-muted-foreground";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "draft":
-        return "bg-gray-500";
+        return "bg-muted-foreground";
       case "submitted":
-        return "bg-blue-500";
+        return "bg-blue-600";
       case "under_review":
-        return "bg-yellow-500";
+        return "bg-yellow-600";
       case "closed":
-        return "bg-green-500";
+        return "bg-green-600";
       default:
-        return "bg-gray-500";
+        return "bg-muted-foreground";
     }
   };
 
@@ -256,7 +256,7 @@ export default function IncidentsTab({ projectId, project }: IncidentsTabProps) 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-orange-400" />
       </div>
     );
   }
@@ -264,14 +264,14 @@ export default function IncidentsTab({ projectId, project }: IncidentsTabProps) 
   return (
     <div className="space-y-6">
       {(severeCount > 0 || seriousCount > 0) && (
-        <Card className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
+        <Card className="border-red-800 bg-red-950/20">
           <CardContent className="flex items-center gap-4 py-4">
-            <AlertTriangle className="h-6 w-6 text-red-600" />
+            <AlertTriangle className="h-6 w-6 text-red-400" />
             <div>
-              <p className="font-semibold text-red-800 dark:text-red-200">
+              <p className="font-semibold text-red-200">
                 Active Critical Incidents
               </p>
-              <p className="text-sm text-red-600 dark:text-red-300">
+              <p className="text-sm text-red-300">
                 {severeCount > 0 && `${severeCount} severe`}
                 {severeCount > 0 && seriousCount > 0 && " and "}
                 {seriousCount > 0 && `${seriousCount} serious`}
@@ -286,8 +286,8 @@ export default function IncidentsTab({ projectId, project }: IncidentsTabProps) 
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <FileText className="h-5 w-5 text-orange-600" />
+              <div className="p-2 bg-orange-900/30 rounded-lg">
+                <FileText className="h-5 w-5 text-orange-400" />
               </div>
               <div>
                 <CardTitle>Incident Reports</CardTitle>
@@ -511,11 +511,11 @@ export default function IncidentsTab({ projectId, project }: IncidentsTabProps) 
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
                               field.value === classification
                                 ? classification === "severe"
-                                  ? "border-red-500 bg-red-50 dark:bg-red-950/30"
+                                  ? "border-red-500 bg-red-950/30"
                                   : classification === "serious"
-                                  ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30"
-                                  : "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
-                                : "border-muted hover:border-muted-foreground/50"
+                                  ? "border-orange-500 bg-orange-950/30"
+                                  : "border-blue-500 bg-blue-950/30"
+                                : "border-border hover:border-muted-foreground/50"
                             }`}
                           >
                             <input
@@ -651,7 +651,7 @@ export default function IncidentsTab({ projectId, project }: IncidentsTabProps) 
                   control={form.control}
                   name="factsAreUncontested"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
                       <div className="space-y-0.5">
                         <FormLabel>9. Are the basic facts of the incident clear and uncontested?</FormLabel>
                         <FormDescription>
@@ -716,7 +716,7 @@ export default function IncidentsTab({ projectId, project }: IncidentsTabProps) 
                     control={form.control}
                     name="isOngoing"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
                         <div className="space-y-0.5">
                           <FormLabel>12. Is incident still ongoing?</FormLabel>
                         </div>
@@ -734,7 +734,7 @@ export default function IncidentsTab({ projectId, project }: IncidentsTabProps) 
                     control={form.control}
                     name="isContained"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
                         <div className="space-y-0.5">
                           <FormLabel>Is it contained?</FormLabel>
                         </div>
@@ -755,9 +755,9 @@ export default function IncidentsTab({ projectId, project }: IncidentsTabProps) 
                     control={form.control}
                     name="involvesLossOfLife"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 border-red-200">
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 border-red-800">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-red-600">13. Is loss of life involved?</FormLabel>
+                          <FormLabel className="text-red-400">13. Is loss of life involved?</FormLabel>
                         </div>
                         <FormControl>
                           <Switch
@@ -773,9 +773,9 @@ export default function IncidentsTab({ projectId, project }: IncidentsTabProps) 
                     control={form.control}
                     name="involvesSevereHarm"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 border-orange-200">
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 border-orange-800">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-orange-600">Is severe harm involved?</FormLabel>
+                          <FormLabel className="text-orange-400">Is severe harm involved?</FormLabel>
                         </div>
                         <FormControl>
                           <Switch
@@ -986,13 +986,13 @@ export default function IncidentsTab({ projectId, project }: IncidentsTabProps) 
                     <span>{viewingReport.isContained ? 'Contained' : 'Not Contained'}</span>
                   </div>
                   {viewingReport.involvesLossOfLife && (
-                    <div className="flex items-center gap-2 text-red-600">
+                    <div className="flex items-center gap-2 text-red-400">
                       <AlertTriangle className="h-4 w-4" />
                       <span>Loss of Life Involved</span>
                     </div>
                   )}
                   {viewingReport.involvesSevereHarm && (
-                    <div className="flex items-center gap-2 text-orange-600">
+                    <div className="flex items-center gap-2 text-orange-400">
                       <AlertTriangle className="h-4 w-4" />
                       <span>Severe Harm Involved</span>
                     </div>

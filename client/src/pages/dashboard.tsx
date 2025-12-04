@@ -120,18 +120,18 @@ export default function Dashboard() {
 
   const getStatusBadgeColor = (status: string) => {
     const statusColors: Record<string, string> = {
-      "On Track": "bg-green-100 text-green-800 border-green-200",
-      "Active": "bg-green-100 text-green-800 border-green-200",
-      "At Risk": "bg-orange-100 text-orange-800 border-orange-200",
-      "Behind": "bg-red-100 text-red-800 border-red-200",
-      "Delayed": "bg-red-100 text-red-800 border-red-200",
-      "Completed": "bg-blue-100 text-blue-800 border-blue-200",
+      "On Track": "bg-green-900/50 text-green-400 border-green-700",
+      "Active": "bg-green-900/50 text-green-400 border-green-700",
+      "At Risk": "bg-orange-900/50 text-orange-400 border-orange-700",
+      "Behind": "bg-red-900/50 text-red-400 border-red-700",
+      "Delayed": "bg-red-900/50 text-red-400 border-red-700",
+      "Completed": "bg-blue-900/50 text-blue-400 border-blue-700",
     };
-    return statusColors[status] || "bg-gray-100 text-gray-800 border-gray-200";
+    return statusColors[status] || "bg-muted text-muted-foreground border-border";
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen bg-background">
       <div className="hidden md:block md:fixed md:left-0 md:top-0 md:h-screen">
         <Sidebar />
       </div>
@@ -174,13 +174,13 @@ export default function Dashboard() {
         </header>
 
         {/* Dashboard Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 md:px-8 py-6">
+        <header className="bg-card border-b border-border px-4 md:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-dashboard-title">
+              <h1 className="text-3xl font-bold text-foreground" data-testid="text-dashboard-title">
                 Dashboard
               </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1" data-testid="text-dashboard-subtitle">
+              <p className="text-sm text-muted-foreground mt-1" data-testid="text-dashboard-subtitle">
                 Key financial and project metrics overview.
               </p>
             </div>
@@ -200,20 +200,20 @@ export default function Dashboard() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[1, 2, 3].map((i) => (
-                  <Card key={i} className="border-gray-200 dark:border-gray-700">
+                  <Card key={i} className="border-border">
                     <CardContent className="pt-6">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 animate-pulse mb-4"></div>
-                      <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
+                      <div className="h-4 bg-muted rounded w-2/3 animate-pulse mb-4"></div>
+                      <div className="h-10 bg-muted rounded w-1/3 animate-pulse"></div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[1, 2, 3].map((i) => (
-                  <Card key={i} className="border-gray-200 dark:border-gray-700">
+                  <Card key={i} className="border-border">
                     <CardContent className="pt-6">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 animate-pulse mb-4"></div>
-                      <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
+                      <div className="h-4 bg-muted rounded w-2/3 animate-pulse mb-4"></div>
+                      <div className="h-10 bg-muted rounded w-1/3 animate-pulse"></div>
                     </CardContent>
                   </Card>
                 ))}
@@ -222,20 +222,20 @@ export default function Dashboard() {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800" data-testid="card-financial-total">
+                <Card className="border-border bg-card" data-testid="card-financial-total">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                        <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
+                      <div className="p-3 bg-green-900/30 rounded-lg">
+                        <DollarSign className="w-6 h-6 text-green-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        <p className="text-sm font-medium text-muted-foreground">
                           Financial Total
                         </p>
-                        <p className="text-2xl font-bold text-green-600 dark:text-green-400" data-testid="text-financial-total">
+                        <p className="text-2xl font-bold text-green-400" data-testid="text-financial-total">
                           ${formatCurrency(metrics?.financialTotal || 0)}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           Total budget across all projects
                         </p>
                       </div>
@@ -243,20 +243,20 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800" data-testid="card-amount-spent">
+                <Card className="border-border bg-card" data-testid="card-amount-spent">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                        <Wallet className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                      <div className="p-3 bg-orange-900/30 rounded-lg">
+                        <Wallet className="w-6 h-6 text-orange-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        <p className="text-sm font-medium text-muted-foreground">
                           Amount Spent
                         </p>
-                        <p className="text-2xl font-bold text-orange-600 dark:text-orange-400" data-testid="text-amount-spent">
+                        <p className="text-2xl font-bold text-orange-400" data-testid="text-amount-spent">
                           ${formatCurrency(metrics?.amountSpent || 0)}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           Total expenditure to date
                         </p>
                       </div>
@@ -264,20 +264,20 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800" data-testid="card-current-balance">
+                <Card className="border-border bg-card" data-testid="card-current-balance">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                        <PiggyBank className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                      <div className="p-3 bg-blue-900/30 rounded-lg">
+                        <PiggyBank className="w-6 h-6 text-blue-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        <p className="text-sm font-medium text-muted-foreground">
                           Current Balance
                         </p>
-                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-current-balance">
+                        <p className="text-2xl font-bold text-blue-400" data-testid="text-current-balance">
                           ${formatCurrency(metrics?.currentBalance || 0)}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           Remaining budget available
                         </p>
                       </div>
@@ -287,20 +287,20 @@ export default function Dashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800" data-testid="card-projects-behind">
+                <Card className="border-border bg-card" data-testid="card-projects-behind">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                        <AlertTriangle className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                      <div className="p-3 bg-orange-900/30 rounded-lg">
+                        <AlertTriangle className="w-6 h-6 text-orange-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        <p className="text-sm font-medium text-muted-foreground">
                           Projects Behind Schedule
                         </p>
-                        <p className="text-3xl font-bold text-orange-600 dark:text-orange-400" data-testid="text-projects-behind">
+                        <p className="text-3xl font-bold text-orange-400" data-testid="text-projects-behind">
                           {metrics?.projectsBehindSchedule || 0}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           Requiring immediate attention
                         </p>
                       </div>
@@ -308,27 +308,27 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800" data-testid="card-safety-issues">
+                <Card className="border-border bg-card" data-testid="card-safety-issues">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                        <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                      <div className="p-3 bg-red-900/30 rounded-lg">
+                        <AlertTriangle className="w-6 h-6 text-red-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        <p className="text-sm font-medium text-muted-foreground">
                           Critical Safety Issues
                         </p>
-                        <p className="text-3xl font-bold text-red-600 dark:text-red-400" data-testid="text-safety-issues-total">
+                        <p className="text-3xl font-bold text-red-400" data-testid="text-safety-issues-total">
                           {metrics?.criticalSafetyIssues.total || 0}
                         </p>
                         <div className="flex gap-3 text-xs mt-2">
-                          <span className="text-red-600 dark:text-red-400" data-testid="text-safety-high">
+                          <span className="text-red-400" data-testid="text-safety-high">
                             High: {metrics?.criticalSafetyIssues.high || 0}
                           </span>
-                          <span className="text-orange-600 dark:text-orange-400" data-testid="text-safety-medium">
+                          <span className="text-orange-400" data-testid="text-safety-medium">
                             Medium: {metrics?.criticalSafetyIssues.medium || 0}
                           </span>
-                          <span className="text-yellow-600 dark:text-yellow-400" data-testid="text-safety-low">
+                          <span className="text-yellow-400" data-testid="text-safety-low">
                             Low: {metrics?.criticalSafetyIssues.low || 0}
                           </span>
                         </div>
@@ -337,27 +337,27 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800" data-testid="card-incident-reports">
+                <Card className="border-border bg-card" data-testid="card-incident-reports">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                        <AlertTriangle className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                      <div className="p-3 bg-purple-900/30 rounded-lg">
+                        <AlertTriangle className="w-6 h-6 text-purple-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        <p className="text-sm font-medium text-muted-foreground">
                           Open Incident Reports
                         </p>
-                        <p className="text-3xl font-bold text-purple-600 dark:text-purple-400" data-testid="text-incident-reports-total">
+                        <p className="text-3xl font-bold text-purple-400" data-testid="text-incident-reports-total">
                           {metrics?.openIncidentReports?.total || 0}
                         </p>
                         <div className="flex gap-3 text-xs mt-2">
-                          <span className="text-red-600 dark:text-red-400" data-testid="text-incidents-severe">
+                          <span className="text-red-400" data-testid="text-incidents-severe">
                             Severe: {metrics?.openIncidentReports?.severe || 0}
                           </span>
-                          <span className="text-orange-600 dark:text-orange-400" data-testid="text-incidents-serious">
+                          <span className="text-orange-400" data-testid="text-incidents-serious">
                             Serious: {metrics?.openIncidentReports?.serious || 0}
                           </span>
-                          <span className="text-yellow-600 dark:text-yellow-400" data-testid="text-incidents-indicative">
+                          <span className="text-yellow-400" data-testid="text-incidents-indicative">
                             Indicative: {metrics?.openIncidentReports?.indicative || 0}
                           </span>
                         </div>
@@ -366,27 +366,27 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800" data-testid="card-open-grievances">
+                <Card className="border-border bg-card" data-testid="card-open-grievances">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg">
-                        <MessageSquare className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                      <div className="p-3 bg-cyan-900/30 rounded-lg">
+                        <MessageSquare className="w-6 h-6 text-cyan-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        <p className="text-sm font-medium text-muted-foreground">
                           Open Grievances
                         </p>
-                        <p className="text-3xl font-bold text-cyan-600 dark:text-cyan-400" data-testid="text-grievances-total">
+                        <p className="text-3xl font-bold text-cyan-400" data-testid="text-grievances-total">
                           {metrics?.openGrievances?.total || 0}
                         </p>
                         <div className="flex gap-3 text-xs mt-2">
-                          <span className="text-blue-600 dark:text-blue-400" data-testid="text-grievances-registered">
+                          <span className="text-blue-400" data-testid="text-grievances-registered">
                             Registered: {metrics?.openGrievances?.registered || 0}
                           </span>
-                          <span className="text-yellow-600 dark:text-yellow-400" data-testid="text-grievances-investigating">
+                          <span className="text-yellow-400" data-testid="text-grievances-investigating">
                             Investigating: {metrics?.openGrievances?.underInvestigation || 0}
                           </span>
-                          <span className="text-red-600 dark:text-red-400" data-testid="text-grievances-escalated">
+                          <span className="text-red-400" data-testid="text-grievances-escalated">
                             Escalated: {metrics?.openGrievances?.escalated || 0}
                           </span>
                         </div>
@@ -395,20 +395,20 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800" data-testid="card-upcoming-milestones">
+                <Card className="border-border bg-card" data-testid="card-upcoming-milestones">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                        <Calendar className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                      <div className="p-3 bg-muted rounded-lg">
+                        <Calendar className="w-6 h-6 text-muted-foreground" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        <p className="text-sm font-medium text-muted-foreground">
                           Upcoming Milestones (30 Days)
                         </p>
-                        <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-upcoming-milestones">
+                        <p className="text-3xl font-bold text-foreground" data-testid="text-upcoming-milestones">
                           {metrics?.upcomingMilestones || 0}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           Key deadlines approaching
                         </p>
                       </div>
@@ -417,15 +417,15 @@ export default function Dashboard() {
                 </Card>
               </div>
 
-              <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800">
+              <Card className="border-border bg-card">
                 <CardContent className="pt-6">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4" data-testid="text-active-projects-title">
+                  <h2 className="text-xl font-bold text-foreground mb-4" data-testid="text-active-projects-title">
                     Active Projects
                   </h2>
                   {!metrics?.activeProjects || metrics.activeProjects.length === 0 ? (
                     <div className="text-center py-12">
-                      <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 dark:text-gray-400 mb-4">No active projects found</p>
+                      <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground mb-4">No active projects found</p>
                       <Button 
                         onClick={() => setShowProjectModal(true)} 
                         className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -438,41 +438,41 @@ export default function Dashboard() {
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow className="border-gray-200 dark:border-gray-700">
-                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
+                          <TableRow className="border-border">
+                            <TableHead className="text-muted-foreground font-semibold">
                               Project Name
                             </TableHead>
-                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
+                            <TableHead className="text-muted-foreground font-semibold">
                               Status
                             </TableHead>
-                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
+                            <TableHead className="text-muted-foreground font-semibold">
                               Financial
                             </TableHead>
-                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
+                            <TableHead className="text-muted-foreground font-semibold">
                               Time
                             </TableHead>
-                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
+                            <TableHead className="text-muted-foreground font-semibold">
                               Physical
                             </TableHead>
-                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
+                            <TableHead className="text-muted-foreground font-semibold">
                               Due Date
                             </TableHead>
-                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
+                            <TableHead className="text-muted-foreground font-semibold">
                               Grievances
                             </TableHead>
-                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold"></TableHead>
+                            <TableHead className="text-muted-foreground font-semibold"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {metrics.activeProjects.map((project) => (
                             <TableRow 
                               key={project.id} 
-                              className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                              className="border-border hover:bg-muted"
                               data-testid={`row-project-${project.id}`}
                             >
-                              <TableCell className="font-medium text-gray-900 dark:text-white">
+                              <TableCell className="font-medium text-foreground">
                                 <Link href={`/projects/${project.id}`}>
-                                  <span className="hover:underline cursor-pointer text-blue-600 dark:text-blue-400" data-testid={`link-project-name-${project.id}`}>
+                                  <span className="hover:underline cursor-pointer text-blue-400" data-testid={`link-project-name-${project.id}`}>
                                     {project.name}
                                   </span>
                                 </Link>
@@ -491,7 +491,7 @@ export default function Dashboard() {
                                     value={project.financialProgress} 
                                     className="flex-1 h-2 max-w-[80px]" 
                                   />
-                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[35px]">
+                                  <span className="text-sm font-medium text-muted-foreground min-w-[35px]">
                                     {project.financialProgress}%
                                   </span>
                                 </div>
@@ -502,7 +502,7 @@ export default function Dashboard() {
                                     value={project.timeProgress} 
                                     className="flex-1 h-2 max-w-[80px]" 
                                   />
-                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[35px]">
+                                  <span className="text-sm font-medium text-muted-foreground min-w-[35px]">
                                     {project.timeProgress}%
                                   </span>
                                 </div>
@@ -513,24 +513,24 @@ export default function Dashboard() {
                                     value={project.physicalProgress} 
                                     className="flex-1 h-2 max-w-[80px]" 
                                   />
-                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[35px]">
+                                  <span className="text-sm font-medium text-muted-foreground min-w-[35px]">
                                     {project.physicalProgress}%
                                   </span>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-gray-600 dark:text-gray-400">
+                              <TableCell className="text-muted-foreground">
                                 {project.dueDate ? format(new Date(project.dueDate), 'MMM dd, yyyy') : '-'}
                               </TableCell>
                               <TableCell>
                                 {project.openGrievances && project.openGrievances > 0 ? (
                                   <Badge 
-                                    className="bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-100 border-cyan-200"
+                                    className="bg-cyan-900 text-cyan-100 border-cyan-200"
                                     data-testid={`badge-grievances-${project.id}`}
                                   >
                                     {project.openGrievances}
                                   </Badge>
                                 ) : (
-                                  <span className="text-gray-400 text-sm" data-testid={`text-grievances-${project.id}`}>0</span>
+                                  <span className="text-muted-foreground text-sm" data-testid={`text-grievances-${project.id}`}>0</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -555,7 +555,7 @@ export default function Dashboard() {
                                     </DropdownMenuItem>
                                     <DropdownMenuItem 
                                       onClick={() => handleDeleteClick(project.id)}
-                                      className="text-red-600 dark:text-red-400"
+                                      className="text-red-400"
                                       data-testid={`menu-delete-${project.id}`}
                                     >
                                       <Trash2 className="mr-2 h-4 w-4" />

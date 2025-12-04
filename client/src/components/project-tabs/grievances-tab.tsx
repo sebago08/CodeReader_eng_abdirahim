@@ -247,38 +247,38 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
 
   const getCategoryBadgeColor = (category: string) => {
     switch (category) {
-      case "compensation": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
-      case "resettlement": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
-      case "employment": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100";
-      case "environment": return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100";
-      case "safety": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100";
-      case "noise_dust": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100";
-      case "property_damage": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100";
-      case "access": return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-100";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100";
+      case "compensation": return "bg-green-950/20 text-green-400";
+      case "resettlement": return "bg-blue-950/20 text-blue-400";
+      case "employment": return "bg-purple-950/20 text-purple-400";
+      case "environment": return "bg-emerald-950/20 text-emerald-400";
+      case "safety": return "bg-red-950/20 text-red-400";
+      case "noise_dust": return "bg-orange-950/20 text-orange-400";
+      case "property_damage": return "bg-yellow-950/20 text-yellow-400";
+      case "access": return "bg-indigo-950/20 text-indigo-400";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case "registered": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
-      case "acknowledged": return "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-100";
-      case "under_investigation": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100";
-      case "resolved": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
-      case "escalated": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100";
-      case "closed": return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100";
-      case "appealed": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100";
+      case "registered": return "bg-blue-950/20 text-blue-400";
+      case "acknowledged": return "bg-cyan-950/20 text-cyan-400";
+      case "under_investigation": return "bg-yellow-950/20 text-yellow-400";
+      case "resolved": return "bg-green-950/20 text-green-400";
+      case "escalated": return "bg-red-950/20 text-red-400";
+      case "closed": return "bg-muted text-muted-foreground";
+      case "appealed": return "bg-purple-950/20 text-purple-400";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
   const getPriorityBadgeColor = (priority: string) => {
     switch (priority) {
-      case "urgent": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100";
-      case "high": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100";
-      case "medium": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100";
-      case "low": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100";
+      case "urgent": return "bg-red-950/20 text-red-400";
+      case "high": return "bg-orange-950/20 text-orange-400";
+      case "medium": return "bg-yellow-950/20 text-yellow-400";
+      case "low": return "bg-green-950/20 text-green-400";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
@@ -298,9 +298,9 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
 
   if (isLoading) {
     return (
-      <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800">
+      <Card className="border-border bg-card">
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
     );
@@ -308,14 +308,14 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
 
   return (
     <div className="space-y-6">
-      <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800">
+      <Card className="border-border bg-card">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
               Grievance Redress Mechanism
             </CardTitle>
-            <CardDescription className="text-gray-600 dark:text-gray-400">
+            <CardDescription className="text-muted-foreground">
               Record and track community grievances in compliance with World Bank GRM requirements
             </CardDescription>
           </div>
@@ -370,8 +370,8 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
 
           {filteredGrievances.length === 0 ? (
             <div className="text-center py-12">
-              <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400 mb-4">No Grievances Found</p>
+              <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">No Grievances Found</p>
               <Button 
                 onClick={() => setIsFormOpen(true)} 
                 variant="outline"
@@ -385,33 +385,33 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-gray-200 dark:border-gray-700">
-                    <TableHead className="text-gray-700 dark:text-gray-300">Ref #</TableHead>
-                    <TableHead className="text-gray-700 dark:text-gray-300">Date</TableHead>
-                    <TableHead className="text-gray-700 dark:text-gray-300">Complainant</TableHead>
-                    <TableHead className="text-gray-700 dark:text-gray-300">Category</TableHead>
-                    <TableHead className="text-gray-700 dark:text-gray-300">Status</TableHead>
-                    <TableHead className="text-gray-700 dark:text-gray-300">Priority</TableHead>
-                    <TableHead className="text-gray-700 dark:text-gray-300">Assigned To</TableHead>
-                    <TableHead className="text-gray-700 dark:text-gray-300 text-right">Actions</TableHead>
+                  <TableRow className="border-border">
+                    <TableHead className="text-muted-foreground">Ref #</TableHead>
+                    <TableHead className="text-muted-foreground">Date</TableHead>
+                    <TableHead className="text-muted-foreground">Complainant</TableHead>
+                    <TableHead className="text-muted-foreground">Category</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground">Priority</TableHead>
+                    <TableHead className="text-muted-foreground">Assigned To</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredGrievances.map((grievance) => (
                     <TableRow 
                       key={grievance.id} 
-                      className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      className="border-border hover:bg-muted/50"
                       data-testid={`row-grievance-${grievance.id}`}
                     >
-                      <TableCell className="font-medium text-gray-900 dark:text-white">
+                      <TableCell className="font-medium text-foreground">
                         {grievance.grievanceNumber || '-'}
                       </TableCell>
-                      <TableCell className="text-gray-700 dark:text-gray-300">
+                      <TableCell className="text-foreground">
                         {format(new Date(grievance.dateReceived), 'MMM d, yyyy')}
                       </TableCell>
-                      <TableCell className="text-gray-700 dark:text-gray-300">
+                      <TableCell className="text-foreground">
                         {grievance.isAnonymous ? (
-                          <span className="text-gray-500 italic">Anonymous</span>
+                          <span className="text-muted-foreground italic">Anonymous</span>
                         ) : (
                           grievance.complainantName || '-'
                         )}
@@ -431,7 +431,7 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
                           {(grievance.priority || 'medium').charAt(0).toUpperCase() + (grievance.priority || 'medium').slice(1)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-gray-700 dark:text-gray-300">
+                      <TableCell className="text-foreground">
                         {grievance.assignedTo || '-'}
                       </TableCell>
                       <TableCell className="text-right">
@@ -440,7 +440,7 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
                             variant="ghost"
                             size="sm"
                             onClick={() => handleView(grievance)}
-                            className="text-blue-600 hover:text-blue-700"
+                            className="text-blue-400 hover:text-blue-300"
                             data-testid={`button-view-grievance-${grievance.id}`}
                           >
                             <Eye className="h-4 w-4" />
@@ -449,7 +449,7 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEdit(grievance)}
-                            className="text-gray-600 hover:text-gray-700"
+                            className="text-muted-foreground hover:text-foreground"
                             data-testid={`button-edit-grievance-${grievance.id}`}
                           >
                             <Edit className="h-4 w-4" />
@@ -458,7 +458,7 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
                             variant="ghost"
                             size="sm"
                             onClick={() => deleteMutation.mutate(grievance.id)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-400 hover:text-red-300"
                             data-testid={`button-delete-grievance-${grievance.id}`}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -494,7 +494,7 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                 {/* Complainant Information */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Complainant Information</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Complainant Information</h3>
                   <Separator />
                   
                   <FormField
@@ -601,7 +601,7 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
 
                 {/* Grievance Details */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Grievance Details</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Grievance Details</h3>
                   <Separator />
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -741,7 +741,7 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
 
                 {/* Status and Assignment */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Status & Assignment</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Status & Assignment</h3>
                   <Separator />
                   
                   <div className="grid grid-cols-3 gap-4">
@@ -853,7 +853,7 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
 
                 {/* Resolution */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Resolution</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Resolution</h3>
                   <Separator />
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -924,7 +924,7 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
 
                 {/* Internal Notes */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Internal Notes</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Internal Notes</h3>
                   <Separator />
                   
                   <FormField
@@ -988,32 +988,32 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
               <div className="space-y-6">
                 {/* Complainant Info */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                  <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                     <UserCircle className="h-4 w-4" />
                     Complainant Information
                   </h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Name:</span>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <span className="text-muted-foreground">Name:</span>
+                      <p className="font-medium text-foreground">
                         {viewingGrievance.isAnonymous ? 'Anonymous' : (viewingGrievance.complainantName || '-')}
                       </p>
                     </div>
                     {!viewingGrievance.isAnonymous && (
                       <>
                         <div>
-                          <span className="text-gray-500 dark:text-gray-400">Gender:</span>
-                          <p className="font-medium text-gray-900 dark:text-white">
+                          <span className="text-muted-foreground">Gender:</span>
+                          <p className="font-medium text-foreground">
                             {viewingGrievance.gender ? formatStatusLabel(viewingGrievance.gender) : '-'}
                           </p>
                         </div>
                         <div>
-                          <span className="text-gray-500 dark:text-gray-400">Phone:</span>
-                          <p className="font-medium text-gray-900 dark:text-white">{viewingGrievance.contactPhone || '-'}</p>
+                          <span className="text-muted-foreground">Phone:</span>
+                          <p className="font-medium text-foreground">{viewingGrievance.contactPhone || '-'}</p>
                         </div>
                         <div>
-                          <span className="text-gray-500 dark:text-gray-400">Email:</span>
-                          <p className="font-medium text-gray-900 dark:text-white">{viewingGrievance.contactEmail || '-'}</p>
+                          <span className="text-muted-foreground">Email:</span>
+                          <p className="font-medium text-foreground">{viewingGrievance.contactEmail || '-'}</p>
                         </div>
                       </>
                     )}
@@ -1024,44 +1024,44 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
                 
                 {/* Grievance Details */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Grievance Details</h4>
+                  <h4 className="font-semibold text-foreground mb-3">Grievance Details</h4>
                   <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Date Received:</span>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <span className="text-muted-foreground">Date Received:</span>
+                      <p className="font-medium text-foreground">
                         {format(new Date(viewingGrievance.dateReceived), 'MMM d, yyyy h:mm a')}
                       </p>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Source:</span>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <span className="text-muted-foreground">Source:</span>
+                      <p className="font-medium text-foreground">
                         {formatCategoryLabel(viewingGrievance.source)}
                       </p>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Category:</span>
+                      <span className="text-muted-foreground">Category:</span>
                       <Badge className={getCategoryBadgeColor(viewingGrievance.category)}>
                         {formatCategoryLabel(viewingGrievance.category)}
                       </Badge>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Status:</span>
+                      <span className="text-muted-foreground">Status:</span>
                       <Badge className={getStatusBadgeColor(viewingGrievance.status)}>
                         {formatStatusLabel(viewingGrievance.status)}
                       </Badge>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Location:</span>
-                      <p className="font-medium text-gray-900 dark:text-white">{viewingGrievance.location || '-'}</p>
+                      <span className="text-muted-foreground">Location:</span>
+                      <p className="font-medium text-foreground">{viewingGrievance.location || '-'}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">District:</span>
-                      <p className="font-medium text-gray-900 dark:text-white">{viewingGrievance.district || '-'}</p>
+                      <span className="text-muted-foreground">District:</span>
+                      <p className="font-medium text-foreground">{viewingGrievance.district || '-'}</p>
                     </div>
                   </div>
                   <div>
-                    <span className="text-gray-500 dark:text-gray-400 text-sm">Description:</span>
-                    <p className="font-medium text-gray-900 dark:text-white mt-1 whitespace-pre-wrap">
+                    <span className="text-muted-foreground text-sm">Description:</span>
+                    <p className="font-medium text-foreground mt-1 whitespace-pre-wrap">
                       {viewingGrievance.description}
                     </p>
                   </div>
@@ -1071,21 +1071,21 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
                 
                 {/* Assignment & Resolution */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Assignment & Resolution</h4>
+                  <h4 className="font-semibold text-foreground mb-3">Assignment & Resolution</h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Assigned To:</span>
-                      <p className="font-medium text-gray-900 dark:text-white">{viewingGrievance.assignedTo || '-'}</p>
+                      <span className="text-muted-foreground">Assigned To:</span>
+                      <p className="font-medium text-foreground">{viewingGrievance.assignedTo || '-'}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Priority:</span>
+                      <span className="text-muted-foreground">Priority:</span>
                       <Badge className={getPriorityBadgeColor(viewingGrievance.priority || 'medium')}>
                         {(viewingGrievance.priority || 'medium').charAt(0).toUpperCase() + (viewingGrievance.priority || 'medium').slice(1)}
                       </Badge>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Target Resolution:</span>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <span className="text-muted-foreground">Target Resolution:</span>
+                      <p className="font-medium text-foreground">
                         {viewingGrievance.targetResolutionDate 
                           ? format(new Date(viewingGrievance.targetResolutionDate), 'MMM d, yyyy')
                           : '-'
@@ -1093,8 +1093,8 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
                       </p>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Date Resolved:</span>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <span className="text-muted-foreground">Date Resolved:</span>
+                      <p className="font-medium text-foreground">
                         {viewingGrievance.dateResolved 
                           ? format(new Date(viewingGrievance.dateResolved), 'MMM d, yyyy')
                           : '-'
@@ -1104,8 +1104,8 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
                   </div>
                   {viewingGrievance.resolutionDescription && (
                     <div className="mt-4">
-                      <span className="text-gray-500 dark:text-gray-400 text-sm">Resolution:</span>
-                      <p className="font-medium text-gray-900 dark:text-white mt-1 whitespace-pre-wrap">
+                      <span className="text-muted-foreground text-sm">Resolution:</span>
+                      <p className="font-medium text-foreground mt-1 whitespace-pre-wrap">
                         {viewingGrievance.resolutionDescription}
                       </p>
                     </div>
@@ -1116,10 +1116,10 @@ export default function GrievancesTab({ projectId, project }: GrievancesTabProps
                   <>
                     <Separator />
                     <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Feedback</h4>
+                      <h4 className="font-semibold text-foreground mb-3">Feedback</h4>
                       <div className="text-sm">
-                        <span className="text-gray-500 dark:text-gray-400">Satisfaction Level:</span>
-                        <p className="font-medium text-gray-900 dark:text-white">
+                        <span className="text-muted-foreground">Satisfaction Level:</span>
+                        <p className="font-medium text-foreground">
                           {formatStatusLabel(viewingGrievance.satisfactionLevel)}
                         </p>
                       </div>

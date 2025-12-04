@@ -224,7 +224,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
       </div>
 
       {/* Letter Content - A4 Portrait (210mm x 297mm) */}
-      <div className="bg-white w-[210mm] h-[297mm] mx-auto shadow-lg overflow-hidden" id="instruction-letter-content">
+      <div className="bg-card w-[210mm] h-[297mm] mx-auto shadow-lg overflow-hidden print:bg-white" id="instruction-letter-content">
         <div className="p-12 h-full flex flex-col print-content">
           {/* Letterhead */}
           <div className="text-center border-b-4 border-[#1a5276] pb-4 mb-6">
@@ -287,11 +287,11 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
           </div>
 
           {/* Signature Section */}
-          <div className="border-t-2 border-gray-300 pt-6 mt-auto">
+          <div className="border-t-2 border-border pt-6 mt-auto print:border-gray-300">
             <div className="max-w-md">
               {/* Client/Employer Signature */}
               <div>
-                <div className="mb-12 border-b-2 border-gray-400"></div>
+                <div className="mb-12 border-b-2 border-border print:border-gray-400"></div>
                 <div className="text-[13px]">
                   <p>{displayProject?.clientContactPerson || "Client Contact"}</p>
                   <p className="text-muted-foreground text-[12px] mt-1">{displayProject?.client || "Client Name"}</p>
@@ -304,7 +304,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
       </div>
 
       {/* Edit Options (Print Hidden) */}
-      <div className="max-w-[210mm] mx-auto mt-8 p-6 bg-white rounded-lg shadow print:hidden">
+      <div className="max-w-[210mm] mx-auto mt-8 p-6 bg-card rounded-lg shadow print:hidden">
         <h3 className="text-[#1a5276] mb-4">Letter Details</h3>
         <div className="space-y-4">
           <div>
@@ -313,7 +313,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
               type="text"
               value={letterNumber}
               onChange={(e) => setLetterNumber(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded"
+              className="w-full px-3 py-2 border border-border rounded bg-background text-foreground"
             />
           </div>
           <div>
@@ -322,7 +322,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
               type="date"
               value={letterDate}
               onChange={(e) => setLetterDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded"
+              className="w-full px-3 py-2 border border-border rounded bg-background text-foreground"
             />
           </div>
           <div>
@@ -332,7 +332,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="e.g., SITE INSTRUCTION - CONCRETE WORKS"
-              className="w-full px-3 py-2 border border-gray-300 rounded"
+              className="w-full px-3 py-2 border border-border rounded bg-background text-foreground"
             />
           </div>
           <div>
@@ -342,7 +342,7 @@ export function InstructionLetter({ project, documentId, savedData, onBack, onSa
               onChange={(e) => setLetterContent(e.target.value)}
               placeholder={`Dear ${project?.contractorContactPerson || 'Contractor Contact'},\n\n[Enter your letter content here]\n\nSincerely,`}
               rows={15}
-              className="w-full px-3 py-2 border border-gray-300 rounded font-mono text-sm"
+              className="w-full px-3 py-2 border border-border rounded font-mono text-sm bg-background text-foreground"
             />
           </div>
         </div>

@@ -335,14 +335,14 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-900">
+      <div className="bg-card rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h3 className="text-xl font-semibold text-foreground">
             {project ? "Edit Project" : "Add New Project"}
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
             data-testid="button-close-modal"
           >
             <X className="w-5 h-5" />
@@ -351,7 +351,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
         
         <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-140px)]">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="w-full justify-start border-b border-gray-200 rounded-none bg-white px-6">
+            <TabsList className="w-full justify-start border-b border-border rounded-none bg-card px-6">
               <TabsTrigger value="basic" className="data-[state=active]:border-b-2 data-[state=active]:border-[#0EA5E9] rounded-none">
                 Basic Info
               </TabsTrigger>
@@ -370,7 +370,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
             <TabsContent value="basic" className="p-6 space-y-6 min-h-[500px]">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Project Name *</Label>
+                  <Label className="block text-sm font-medium text-muted-foreground mb-2">Project Name *</Label>
                   <Input
                     type="text"
                     name="name"
@@ -384,7 +384,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                 </div>
                 
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Project Number</Label>
+                  <Label className="block text-sm font-medium text-muted-foreground mb-2">Project Number</Label>
                   <Input
                     type="text"
                     name="projectNumber"
@@ -399,7 +399,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Location *</Label>
+                  <Label className="block text-sm font-medium text-muted-foreground mb-2">Location *</Label>
                   <Input
                     type="text"
                     name="location"
@@ -413,7 +413,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                 </div>
                 
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Contract Amount ($)</Label>
+                  <Label className="block text-sm font-medium text-muted-foreground mb-2">Contract Amount ($)</Label>
                   <Input
                     type="number"
                     name="contractAmount"
@@ -428,7 +428,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
               </div>
 
               <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">Project Description</Label>
+                <Label className="block text-sm font-medium text-muted-foreground mb-2">Project Description</Label>
                 <RichTextEditor
                   value={formData.description}
                   onChange={(value) => setFormData({ ...formData, description: value })}
@@ -440,7 +440,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Start Date *</Label>
+                  <Label className="block text-sm font-medium text-muted-foreground mb-2">Start Date *</Label>
                   <Input
                     type="date"
                     name="startDate"
@@ -453,7 +453,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                 </div>
                 
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Duration (Months)</Label>
+                  <Label className="block text-sm font-medium text-muted-foreground mb-2">Duration (Months)</Label>
                   <Input
                     type="number"
                     name="duration"
@@ -468,7 +468,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Expected Completion *</Label>
+                  <Label className="block text-sm font-medium text-muted-foreground mb-2">Expected Completion *</Label>
                   <Input
                     type="date"
                     name="endDate"
@@ -481,7 +481,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                 </div>
                 
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Defects Liability Period (Months)</Label>
+                  <Label className="block text-sm font-medium text-muted-foreground mb-2">Defects Liability Period (Months)</Label>
                   <Input
                     type="number"
                     name="defectsLiabilityPeriod"
@@ -496,7 +496,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Project Type</Label>
+                  <Label className="block text-sm font-medium text-muted-foreground mb-2">Project Type</Label>
                   <Select
                     value={formData.projectType}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, projectType: value }))}
@@ -515,7 +515,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                 </div>
                 
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-2">Status</Label>
+                  <Label className="block text-sm font-medium text-muted-foreground mb-2">Status</Label>
                   <Select
                     value={formData.status}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
@@ -535,14 +535,14 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
             {/* Client Tab with nested tabs */}
             <TabsContent value="client" className="p-0 min-h-[500px]">
-              <div className="flex items-center gap-1 px-6 pt-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center gap-1 px-6 pt-4 border-b border-border bg-muted">
                 <button
                   type="button"
                   onClick={() => setClientSubTab("details")}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     clientSubTab === "details"
-                      ? "text-gray-900 border-b-2 border-gray-900"
-                      : "text-gray-600 hover:text-gray-900"
+                      ? "text-foreground border-b-2 border-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                   data-testid="button-client-details-tab"
                 >
@@ -553,8 +553,8 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                   onClick={() => setClientSubTab("personnel")}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     clientSubTab === "personnel"
-                      ? "text-gray-900 border-b-2 border-gray-900"
-                      : "text-gray-600 hover:text-gray-900"
+                      ? "text-foreground border-b-2 border-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                   data-testid="button-client-personnel-tab"
                 >
@@ -566,7 +566,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                 <div className="p-6 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <Label className="block text-sm font-medium text-gray-700 mb-2">Client Name *</Label>
+                      <Label className="block text-sm font-medium text-muted-foreground mb-2">Client Name *</Label>
                       <Input
                         type="text"
                         name="client"
@@ -580,7 +580,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                     </div>
                     
                     <div>
-                      <Label className="block text-sm font-medium text-gray-700 mb-2">Contact Person</Label>
+                      <Label className="block text-sm font-medium text-muted-foreground mb-2">Contact Person</Label>
                       <Input
                         type="text"
                         name="clientContactPerson"
@@ -595,7 +595,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <Label className="block text-sm font-medium text-gray-700 mb-2">Email</Label>
+                      <Label className="block text-sm font-medium text-muted-foreground mb-2">Email</Label>
                       <Input
                         type="email"
                         name="clientEmail"
@@ -608,7 +608,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                     </div>
                     
                     <div>
-                      <Label className="block text-sm font-medium text-gray-700 mb-2">Phone</Label>
+                      <Label className="block text-sm font-medium text-muted-foreground mb-2">Phone</Label>
                       <Input
                         type="tel"
                         name="clientPhone"
@@ -622,7 +622,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                   </div>
 
                   <div>
-                    <Label className="block text-sm font-medium text-gray-700 mb-2">Address</Label>
+                    <Label className="block text-sm font-medium text-muted-foreground mb-2">Address</Label>
                     <Textarea
                       name="clientAddress"
                       value={formData.clientAddress}
@@ -635,7 +635,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                   </div>
 
                   <div>
-                    <Label className="block text-sm font-medium text-gray-700 mb-2">Client Logo</Label>
+                    <Label className="block text-sm font-medium text-muted-foreground mb-2">Client Logo</Label>
                     <input
                       ref={clientLogoInputRef}
                       type="file"
@@ -649,7 +649,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                     />
                     <div className="flex items-center gap-4">
                       {formData.clientLogo ? (
-                        <div className="relative w-32 h-32 border-2 border-gray-200 rounded-lg overflow-hidden">
+                        <div className="relative w-32 h-32 border-2 border-border rounded-lg overflow-hidden">
                           <img
                             src={formData.clientLogo}
                             alt="Client logo"
@@ -658,8 +658,8 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                           />
                         </div>
                       ) : (
-                        <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                          <ImageIcon className="w-12 h-12 text-gray-400" />
+                        <div className="w-32 h-32 border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-muted">
+                          <ImageIcon className="w-12 h-12 text-muted-foreground" />
                         </div>
                       )}
                       <div className="flex flex-col gap-2">
@@ -674,7 +674,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                           {isUploadingClientLogo ? "Uploading..." : formData.clientLogo ? "Change Logo" : "Upload Logo"}
                         </Button>
                         {!project && (
-                          <p className="text-xs text-gray-500">Save project first to upload logo</p>
+                          <p className="text-xs text-muted-foreground">Save project first to upload logo</p>
                         )}
                       </div>
                     </div>
@@ -685,33 +685,33 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
               {clientSubTab === "personnel" && (
                 <div className="p-6 space-y-6">
                   {!project && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       Please save the project first before adding personnel
                     </div>
                   )}
                   {project && (
                     <>
-                  <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+                  <div className="bg-muted rounded-lg overflow-hidden border border-border">
                     <table className="w-full">
-                      <thead className="bg-gray-100">
+                      <thead className="bg-muted">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Name</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Qualification</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Designation</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Qualification</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Designation</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-card divide-y divide-border">
                         {clientPersonnel.map((person) => (
                           <tr key={person.id}>
-                            <td className="px-4 py-3 text-sm text-gray-900">{person.name}</td>
-                            <td className="px-4 py-3 text-sm text-gray-700">{person.qualification}</td>
-                            <td className="px-4 py-3 text-sm text-gray-700">{person.designation}</td>
+                            <td className="px-4 py-3 text-sm text-foreground">{person.name}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">{person.qualification}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">{person.designation}</td>
                             <td className="px-4 py-3">
                               <button
                                 type="button"
                                 onClick={() => deleteClientPersonnelMutation.mutate(person.id)}
-                                className="text-red-600 hover:text-red-800"
+                                className="text-red-400 hover:text-red-300"
                                 data-testid={`button-delete-client-personnel-${person.id}`}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -723,7 +723,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                     </table>
                   </div>
 
-                  <div className="border-t border-gray-200 pt-4">
+                  <div className="border-t border-border pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <Input
                         type="text"
@@ -766,14 +766,14 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
             {/* Contractor Tab with nested tabs */}
             <TabsContent value="contractor" className="p-0 min-h-[500px]">
-              <div className="flex items-center gap-1 px-6 pt-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center gap-1 px-6 pt-4 border-b border-border bg-muted">
                 <button
                   type="button"
                   onClick={() => setContractorSubTab("details")}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     contractorSubTab === "details"
-                      ? "text-gray-900 border-b-2 border-gray-900"
-                      : "text-gray-600 hover:text-gray-900"
+                      ? "text-foreground border-b-2 border-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                   data-testid="button-contractor-details-tab"
                 >
@@ -784,8 +784,8 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                   onClick={() => setContractorSubTab("personnel")}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     contractorSubTab === "personnel"
-                      ? "text-gray-900 border-b-2 border-gray-900"
-                      : "text-gray-600 hover:text-gray-900"
+                      ? "text-foreground border-b-2 border-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                   data-testid="button-contractor-personnel-tab"
                 >
@@ -796,8 +796,8 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                   onClick={() => setContractorSubTab("equipment")}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     contractorSubTab === "equipment"
-                      ? "text-gray-900 border-b-2 border-gray-900"
-                      : "text-gray-600 hover:text-gray-900"
+                      ? "text-foreground border-b-2 border-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                   data-testid="button-contractor-equipment-tab"
                 >
@@ -809,7 +809,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                 <div className="p-6 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <Label className="block text-sm font-medium text-gray-700 mb-2">Contractor Name</Label>
+                      <Label className="block text-sm font-medium text-muted-foreground mb-2">Contractor Name</Label>
                       <Input
                         type="text"
                         name="contractorName"
@@ -822,7 +822,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                     </div>
                     
                     <div>
-                      <Label className="block text-sm font-medium text-gray-700 mb-2">Contact Person</Label>
+                      <Label className="block text-sm font-medium text-muted-foreground mb-2">Contact Person</Label>
                       <Input
                         type="text"
                         name="contractorContactPerson"
@@ -837,7 +837,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <Label className="block text-sm font-medium text-gray-700 mb-2">Email</Label>
+                      <Label className="block text-sm font-medium text-muted-foreground mb-2">Email</Label>
                       <Input
                         type="email"
                         name="contractorEmail"
@@ -850,7 +850,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                     </div>
                     
                     <div>
-                      <Label className="block text-sm font-medium text-gray-700 mb-2">Phone</Label>
+                      <Label className="block text-sm font-medium text-muted-foreground mb-2">Phone</Label>
                       <Input
                         type="tel"
                         name="contractorPhone"
@@ -864,7 +864,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                   </div>
 
                   <div>
-                    <Label className="block text-sm font-medium text-gray-700 mb-2">Contractor Logo</Label>
+                    <Label className="block text-sm font-medium text-muted-foreground mb-2">Contractor Logo</Label>
                     <input
                       ref={contractorLogoInputRef}
                       type="file"
@@ -878,7 +878,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                     />
                     <div className="flex items-center gap-4">
                       {formData.contractorLogo ? (
-                        <div className="relative w-32 h-32 border-2 border-gray-200 rounded-lg overflow-hidden">
+                        <div className="relative w-32 h-32 border-2 border-border rounded-lg overflow-hidden">
                           <img
                             src={formData.contractorLogo}
                             alt="Contractor logo"
@@ -887,8 +887,8 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                           />
                         </div>
                       ) : (
-                        <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                          <ImageIcon className="w-12 h-12 text-gray-400" />
+                        <div className="w-32 h-32 border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-muted">
+                          <ImageIcon className="w-12 h-12 text-muted-foreground" />
                         </div>
                       )}
                       <div className="flex flex-col gap-2">
@@ -903,7 +903,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                           {isUploadingContractorLogo ? "Uploading..." : formData.contractorLogo ? "Change Logo" : "Upload Logo"}
                         </Button>
                         {!project && (
-                          <p className="text-xs text-gray-500">Save project first to upload logo</p>
+                          <p className="text-xs text-muted-foreground">Save project first to upload logo</p>
                         )}
                       </div>
                     </div>
@@ -914,33 +914,33 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
               {contractorSubTab === "personnel" && (
                 <div className="p-6 space-y-6">
                   {!project && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       Please save the project first before adding personnel
                     </div>
                   )}
                   {project && (
                     <>
-                  <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+                  <div className="bg-muted rounded-lg overflow-hidden border border-border">
                     <table className="w-full">
-                      <thead className="bg-gray-100">
+                      <thead className="bg-muted">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Name</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Qualification</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Designation</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Qualification</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Designation</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-card divide-y divide-border">
                         {contractorPersonnel.map((person) => (
                           <tr key={person.id}>
-                            <td className="px-4 py-3 text-sm text-gray-900">{person.name}</td>
-                            <td className="px-4 py-3 text-sm text-gray-700">{person.qualification}</td>
-                            <td className="px-4 py-3 text-sm text-gray-700">{person.designation}</td>
+                            <td className="px-4 py-3 text-sm text-foreground">{person.name}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">{person.qualification}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">{person.designation}</td>
                             <td className="px-4 py-3">
                               <button
                                 type="button"
                                 onClick={() => deleteContractorPersonnelMutation.mutate(person.id)}
-                                className="text-red-600 hover:text-red-800"
+                                className="text-red-400 hover:text-red-300"
                                 data-testid={`button-delete-contractor-personnel-${person.id}`}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -952,7 +952,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                     </table>
                   </div>
 
-                  <div className="border-t border-gray-200 pt-4">
+                  <div className="border-t border-border pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <Input
                         type="text"
@@ -995,35 +995,35 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
               {contractorSubTab === "equipment" && (
                 <div className="p-6 space-y-6">
                   {!project && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       Please save the project first before adding equipment
                     </div>
                   )}
                   {project && (
                     <>
-                    <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+                    <div className="bg-muted rounded-lg overflow-hidden border border-border">
                     <table className="w-full">
-                      <thead className="bg-gray-100">
+                      <thead className="bg-muted">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Equipment Name</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Type</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Quantity</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Condition</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Equipment Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Quantity</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Condition</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-card divide-y divide-border">
                         {contractorEquipment.map((equipment) => (
                           <tr key={equipment.id}>
-                            <td className="px-4 py-3 text-sm text-gray-900">{equipment.equipmentName}</td>
-                            <td className="px-4 py-3 text-sm text-gray-700">{equipment.type}</td>
-                            <td className="px-4 py-3 text-sm text-gray-700">{equipment.quantity}</td>
-                            <td className="px-4 py-3 text-sm text-gray-700">{equipment.condition}</td>
+                            <td className="px-4 py-3 text-sm text-foreground">{equipment.equipmentName}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">{equipment.type}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">{equipment.quantity}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">{equipment.condition}</td>
                             <td className="px-4 py-3">
                               <button
                                 type="button"
                                 onClick={() => deleteContractorEquipmentMutation.mutate(equipment.id)}
-                                className="text-red-600 hover:text-red-800"
+                                className="text-red-400 hover:text-red-300"
                                 data-testid={`button-delete-contractor-equipment-${equipment.id}`}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1035,7 +1035,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
                     </table>
                   </div>
 
-                  <div className="border-t border-gray-200 pt-4">
+                  <div className="border-t border-border pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                       <Input
                         type="text"
@@ -1098,7 +1098,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
             {/* Introduction Tab */}
             <TabsContent value="scope" className="p-6 space-y-6 min-h-[500px]">
               <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">Executive Summary</Label>
+                <Label className="block text-sm font-medium text-muted-foreground mb-2">Executive Summary</Label>
                 <RichTextEditor
                   value={formData.executiveSummary}
                   onChange={(value) => setFormData({ ...formData, executiveSummary: value })}
@@ -1109,7 +1109,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
               </div>
 
               <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">Location</Label>
+                <Label className="block text-sm font-medium text-muted-foreground mb-2">Location</Label>
                 <Textarea
                   name="projectLocation"
                   value={formData.projectLocation}
@@ -1122,7 +1122,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
               </div>
 
               <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">Scope of Work</Label>
+                <Label className="block text-sm font-medium text-muted-foreground mb-2">Scope of Work</Label>
                 <RichTextEditor
                   value={formData.scopeOfWork}
                   onChange={(value) => setFormData({ ...formData, scopeOfWork: value })}
@@ -1134,7 +1134,7 @@ export default function ProjectModal({ project, onClose, onSuccess }: ProjectMod
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-end space-x-4 px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex justify-end space-x-4 px-6 py-4 border-t border-border bg-muted">
             <Button
               type="button"
               onClick={onClose}

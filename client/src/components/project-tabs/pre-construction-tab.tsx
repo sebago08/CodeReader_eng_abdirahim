@@ -217,7 +217,7 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
             <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-600" data-testid="text-pending-count">
+            <div className="text-2xl font-bold text-muted-foreground" data-testid="text-pending-count">
               {statusCounts.pending || 0}
             </div>
           </CardContent>
@@ -228,7 +228,7 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
             <CardTitle className="text-sm font-medium text-muted-foreground">Submitted</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600" data-testid="text-submitted-count">
+            <div className="text-2xl font-bold text-yellow-400" data-testid="text-submitted-count">
               {statusCounts.submitted || 0}
             </div>
           </CardContent>
@@ -239,7 +239,7 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
             <CardTitle className="text-sm font-medium text-muted-foreground">Approved</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600" data-testid="text-approved-count">
+            <div className="text-2xl font-bold text-green-400" data-testid="text-approved-count">
               {statusCounts.approved || 0}
             </div>
           </CardContent>
@@ -250,7 +250,7 @@ export default function PreConstructionTab({ project }: PreConstructionTabProps)
             <CardTitle className="text-sm font-medium text-muted-foreground">Rejected/Expired</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600" data-testid="text-rejected-expired-count">
+            <div className="text-2xl font-bold text-red-400" data-testid="text-rejected-expired-count">
               {(statusCounts.rejected || 0) + (statusCounts.expired || 0)}
             </div>
           </CardContent>
