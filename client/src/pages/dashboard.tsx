@@ -623,19 +623,17 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {metrics.delayedProjects.map((project) => (
-                  <Link key={project.id} href={`/projects/${project.id}`}>
-                    <div className="p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors">
-                      <p className="font-medium text-foreground mb-2">{project.name}</p>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-orange-400">
-                          Time: {project.timeLapse}%
-                        </span>
-                        <span className="text-blue-400">
-                          Progress: {project.boqProgress}%
-                        </span>
-                      </div>
+                  <div key={project.id} className="p-3 rounded-lg bg-muted/50">
+                    <p className="font-medium text-foreground mb-2">{project.name}</p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-orange-400">
+                        Time: {project.timeLapse}%
+                      </span>
+                      <span className="text-blue-400">
+                        Progress: {project.boqProgress}%
+                      </span>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             )}
