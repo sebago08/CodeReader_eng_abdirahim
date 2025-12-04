@@ -4,7 +4,15 @@
 
 # Recent Changes
 
-**December 4, 2025 (Latest)** - **Added World Bank-compliant Grievance Redress Mechanism (GRM)**. Implemented comprehensive grievance tracking system for community complaints in compliance with World Bank Environmental & Social Framework requirements. Key components:
+**December 4, 2025 (Latest)** - **Enhanced Overview tab with interactive alert cards and drill-down grievance details**. Made the 4 alert cards (Milestones, Action Points, Incidents, Grievances) clickable to show detail modals. For grievances specifically, users can now click any grievance in the list to see full details including:
+- Description, complainant information (or "Anonymous"), intake details (date received, source, location)
+- Assignment & timeline (assigned to, acknowledged date, target resolution, date resolved)
+- Resolution details (if resolved) with satisfaction level and feedback
+- Escalation details (if escalated) with escalated to, date, and reason
+- Appeal details (if appealed) with date and outcome
+A "Back" button returns to the grievances list. This provides quick access to grievance details from the Overview without navigating to the Grievances tab.
+
+**December 4, 2025** - **Added World Bank-compliant Grievance Redress Mechanism (GRM)**. Implemented comprehensive grievance tracking system for community complaints in compliance with World Bank Environmental & Social Framework requirements. Key components:
 - Created `grievances` database table with 25+ fields supporting multi-channel intake, complainant management, and full resolution workflow
 - Complainant info: name, contact details, gender, anonymous complaint support
 - Intake channels: walk-in, phone, email, letter, community meeting, suggestion box
