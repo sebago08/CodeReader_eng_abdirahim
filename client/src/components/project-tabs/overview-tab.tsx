@@ -345,8 +345,8 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                <div className="h-10 w-10 rounded-lg bg-orange-950/20 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-orange-400" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Project ID</p>
@@ -361,8 +361,8 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
-                  <MapPin className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <div className="h-10 w-10 rounded-lg bg-purple-950/20 flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-purple-400" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Location</p>
@@ -377,8 +377,8 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                  <Building2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <div className="h-10 w-10 rounded-lg bg-green-950/20 flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-green-400" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Project Type</p>
@@ -396,8 +396,8 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                <div className="h-10 w-10 rounded-lg bg-orange-950/20 flex items-center justify-center">
+                  <Calendar className="h-5 w-5 text-orange-400" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Start Date</p>
@@ -412,8 +412,8 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <div className="h-10 w-10 rounded-lg bg-red-950/20 flex items-center justify-center">
+                  <Calendar className="h-5 w-5 text-red-400" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">End Date</p>
@@ -428,8 +428,8 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div className="h-10 w-10 rounded-lg bg-blue-950/20 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-blue-400" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Balance</p>
@@ -524,7 +524,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                       stroke="currentColor"
                       strokeWidth="8"
                       fill="none"
-                      className="text-gray-200 dark:text-gray-700"
+                      className="text-muted"
                     />
                     <circle
                       cx="56"
@@ -535,7 +535,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                       fill="none"
                       strokeDasharray={`${2 * Math.PI * 48}`}
                       strokeDashoffset={`${2 * Math.PI * 48 * (1 - financialProgress / 100)}`}
-                      className="text-blue-600 dark:text-blue-400 transition-all duration-300"
+                      className="text-blue-400 transition-all duration-300"
                       strokeLinecap="round"
                     />
                   </svg>
@@ -572,12 +572,12 @@ export default function OverviewTab({ project }: OverviewTabProps) {
               ) : (
                 <div className="space-y-2">
                   {alerts.milestones.overdue.length > 0 && (
-                    <div className="text-sm text-red-600 dark:text-red-400 font-medium">
+                    <div className="text-sm text-red-400 font-medium">
                       {alerts.milestones.overdue.length} overdue
                     </div>
                   )}
                   {alerts.milestones.upcoming.length > 0 && (
-                    <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">
+                    <div className="text-sm text-orange-400 font-medium">
                       {alerts.milestones.upcoming.length} upcoming
                     </div>
                   )}
@@ -603,7 +603,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
               {!alerts || alerts.actionPoints.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No overdue action points</p>
               ) : (
-                <div className="text-sm text-red-600 dark:text-red-400 font-medium">
+                <div className="text-sm text-red-400 font-medium">
                   {alerts.actionPoints.length} overdue {alerts.actionPoints.length === 1 ? 'item' : 'items'}
                 </div>
               )}
@@ -631,13 +631,13 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                   <div className="text-2xl font-bold">{openIncidents.length}</div>
                   <div className="flex gap-3 text-xs">
                     {severeCount > 0 && (
-                      <span className="text-red-600 dark:text-red-400">Severe: {severeCount}</span>
+                      <span className="text-red-400">Severe: {severeCount}</span>
                     )}
                     {seriousCount > 0 && (
-                      <span className="text-orange-600 dark:text-orange-400">Serious: {seriousCount}</span>
+                      <span className="text-orange-400">Serious: {seriousCount}</span>
                     )}
                     {indicativeCount > 0 && (
-                      <span className="text-yellow-600 dark:text-yellow-400">Indicative: {indicativeCount}</span>
+                      <span className="text-yellow-400">Indicative: {indicativeCount}</span>
                     )}
                   </div>
                 </div>
@@ -666,13 +666,13 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                   <div className="text-2xl font-bold">{openGrievances.length}</div>
                   <div className="flex gap-3 text-xs">
                     {registeredCount > 0 && (
-                      <span className="text-blue-600 dark:text-blue-400">Registered: {registeredCount}</span>
+                      <span className="text-blue-400">Registered: {registeredCount}</span>
                     )}
                     {investigatingCount > 0 && (
-                      <span className="text-orange-600 dark:text-orange-400">Investigating: {investigatingCount}</span>
+                      <span className="text-orange-400">Investigating: {investigatingCount}</span>
                     )}
                     {escalatedCount > 0 && (
-                      <span className="text-red-600 dark:text-red-400">Escalated: {escalatedCount}</span>
+                      <span className="text-red-400">Escalated: {escalatedCount}</span>
                     )}
                   </div>
                 </div>
@@ -810,10 +810,10 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             <div className="space-y-4 pr-4">
               {alerts?.milestones.overdue && alerts.milestones.overdue.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-sm text-red-600 dark:text-red-400 mb-2">Overdue</h4>
+                  <h4 className="font-semibold text-sm text-red-400 mb-2">Overdue</h4>
                   <div className="space-y-2">
                     {alerts.milestones.overdue.map((m: any) => (
-                      <div key={m.id} className="p-3 border rounded-lg bg-red-50 dark:bg-red-950/20">
+                      <div key={m.id} className="p-3 border rounded-lg bg-red-950/20">
                         <p className="font-medium text-sm">{m.activityName}</p>
                         <div className="flex items-center justify-between mt-1">
                           <span className="text-xs text-muted-foreground">Due: {formatDate(m.dueDate)}</span>
@@ -826,10 +826,10 @@ export default function OverviewTab({ project }: OverviewTabProps) {
               )}
               {alerts?.milestones.upcoming && alerts.milestones.upcoming.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-sm text-orange-600 dark:text-orange-400 mb-2">Upcoming (Next 7 Days)</h4>
+                  <h4 className="font-semibold text-sm text-orange-400 mb-2">Upcoming (Next 7 Days)</h4>
                   <div className="space-y-2">
                     {alerts.milestones.upcoming.map((m: any) => (
-                      <div key={m.id} className="p-3 border rounded-lg bg-orange-50 dark:bg-orange-950/20">
+                      <div key={m.id} className="p-3 border rounded-lg bg-orange-950/20">
                         <p className="font-medium text-sm">{m.activityName}</p>
                         <div className="flex items-center justify-between mt-1">
                           <span className="text-xs text-muted-foreground">Due: {formatDate(m.dueDate)}</span>
@@ -864,7 +864,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             <div className="space-y-2 pr-4">
               {alerts?.actionPoints && alerts.actionPoints.length > 0 ? (
                 alerts.actionPoints.map((ap: any) => (
-                  <div key={ap.id} className="p-3 border rounded-lg bg-red-50 dark:bg-red-950/20">
+                  <div key={ap.id} className="p-3 border rounded-lg bg-red-950/20">
                     <p className="font-medium text-sm">{ap.description}</p>
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center gap-2">
@@ -882,7 +882,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                           </Badge>
                         )}
                       </div>
-                      <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+                      <span className="text-xs text-red-400 font-medium">
                         {ap.daysOverdue} days overdue
                       </span>
                     </div>
@@ -914,10 +914,10 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                     key={incident.id} 
                     className={`p-3 border rounded-lg ${
                       incident.classification === 'severe' 
-                        ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
+                        ? 'bg-red-950/20 border-red-800'
                         : incident.classification === 'serious'
-                        ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800'
-                        : 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800'
+                        ? 'bg-orange-950/20 border-orange-800'
+                        : 'bg-yellow-950/20 border-yellow-800'
                     }`}
                   >
                     <div className="flex items-start justify-between">
@@ -1146,7 +1146,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                           <CheckCircle2 className="h-4 w-4 text-green-600" />
                           Resolution
                         </h4>
-                        <p className="text-sm text-muted-foreground bg-green-50 dark:bg-green-950/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                        <p className="text-sm text-muted-foreground bg-green-950/20 p-3 rounded-lg border border-green-800">
                           {selectedGrievance.resolutionDescription}
                         </p>
                         {selectedGrievance.satisfactionLevel && (
@@ -1183,7 +1183,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                           <AlertTriangle className="h-4 w-4" />
                           Escalation Details
                         </h4>
-                        <div className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
+                        <div className="bg-orange-950/20 p-3 rounded-lg border border-orange-800">
                           {selectedGrievance.escalatedTo && (
                             <p className="text-sm">
                               <span className="text-muted-foreground">Escalated To:</span>{' '}
@@ -1216,7 +1216,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                           <XCircle className="h-4 w-4" />
                           Appeal Details
                         </h4>
-                        <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                        <div className="bg-red-950/20 p-3 rounded-lg border border-red-800">
                           {selectedGrievance.appealDate && (
                             <p className="text-sm">
                               <span className="text-muted-foreground">Appeal Date:</span>{' '}
@@ -1271,10 +1271,10 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                         onClick={() => setSelectedGrievance(grievance)}
                         className={`p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md hover:border-primary/50 ${
                           grievance.priority === 'urgent' 
-                            ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
+                            ? 'bg-red-950/20 border-red-800'
                             : grievance.priority === 'high'
-                            ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800'
-                            : 'bg-gray-50 dark:bg-gray-950/20'
+                            ? 'bg-orange-950/20 border-orange-800'
+                            : 'bg-muted'
                         }`}
                         data-testid={`grievance-item-${grievance.id}`}
                       >

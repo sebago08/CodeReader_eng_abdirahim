@@ -12,15 +12,15 @@ export function Sidebar() {
   ];
 
   return (
-    <div className="h-screen w-64 bg-white border-r border-gray-200 flex flex-col">
+    <div className="h-screen w-64 bg-card border-r border-border flex flex-col">
       {/* Logo/Brand */}
-      <div className="p-6 flex items-center gap-3 border-b border-gray-200">
-        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-          <Briefcase className="w-5 h-5 text-gray-700" />
+      <div className="p-6 flex items-center gap-3 border-b border-border">
+        <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
+          <Briefcase className="w-5 h-5 text-muted-foreground" />
         </div>
         <div>
-          <h1 className="text-base font-semibold text-gray-900" data-testid="app-title">Keystone Inc.</h1>
-          <p className="text-xs text-gray-500">Workspace</p>
+          <h1 className="text-base font-semibold text-foreground" data-testid="app-title">Keystone Inc.</h1>
+          <p className="text-xs text-muted-foreground">Workspace</p>
         </div>
       </div>
 
@@ -37,8 +37,8 @@ export function Sidebar() {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer",
                   isActive
-                    ? "bg-[#0EA5E9] text-white"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-foreground hover:bg-muted"
                 )}
               >
                 <Icon className="w-5 h-5" />
@@ -50,15 +50,15 @@ export function Sidebar() {
       </nav>
 
       {/* Settings at Bottom */}
-      <div className="p-3 border-t border-gray-200">
+      <div className="p-3 border-t border-border">
         <Link href="/settings">
           <div
             data-testid="nav-settings"
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer",
               location.startsWith("/settings")
-                ? "bg-[#0EA5E9] text-white"
-                : "text-gray-700 hover:bg-gray-100"
+                ? "bg-primary text-primary-foreground"
+                : "text-foreground hover:bg-muted"
             )}
           >
             <Settings className="w-5 h-5" />

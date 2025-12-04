@@ -190,9 +190,9 @@ export function MeetingMinutes({ project, documentId, savedData, onBack, onSave 
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f7fa]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white border-b border-border p-6 print:hidden">
+      <div className="bg-card border-b border-border p-6 print:hidden">
         <div className="max-w-[1200px] mx-auto">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
@@ -237,7 +237,7 @@ export function MeetingMinutes({ project, documentId, savedData, onBack, onSave 
 
       {/* Editor Form */}
       <div className="max-w-[1200px] mx-auto p-6 print:hidden">
-        <div className="bg-white rounded-lg border border-border p-6 mb-6">
+        <div className="bg-card rounded-lg border border-border p-6 mb-6">
           <h2 className="text-[#1a5276] mb-4">Meeting Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -318,7 +318,7 @@ export function MeetingMinutes({ project, documentId, savedData, onBack, onSave 
 
       {/* Document Preview */}
       <div className="max-w-[1200px] mx-auto p-6 print:!p-0 print:!max-w-full print-content">
-        <div id="meeting-minutes-content" className="bg-white rounded-lg border border-border p-12 print:!border-0 print:!rounded-none print:!p-8">
+        <div id="meeting-minutes-content" className="bg-card rounded-lg border border-border p-12 print:!border-0 print:!rounded-none print:!p-8 print:bg-white">
           {/* Letterhead */}
           <div className="text-center border-b-4 border-[#1a5276] pb-4 mb-6">
             <div className="mb-3">
@@ -405,13 +405,13 @@ export function MeetingMinutes({ project, documentId, savedData, onBack, onSave 
             <div className="grid grid-cols-2 gap-8">
               <div>
                 <p className="mb-8">Prepared by:</p>
-                <div className="border-t border-gray-400 pt-2">
+                <div className="border-t border-border pt-2 print:border-gray-400">
                   <p className="text-sm text-muted-foreground">Name & Signature</p>
                 </div>
               </div>
               <div>
                 <p className="mb-8">Date:</p>
-                <div className="border-t border-gray-400 pt-2">
+                <div className="border-t border-border pt-2 print:border-gray-400">
                   <p>{new Date(meetingDate).toLocaleDateString('en-US', { 
                     year: 'numeric', 
                     month: 'long', 

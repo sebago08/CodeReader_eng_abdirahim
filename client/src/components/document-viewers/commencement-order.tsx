@@ -232,7 +232,7 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
       </div>
 
       {/* Letter Content - A4 Portrait (210mm x 297mm) */}
-      <div className="bg-white w-[210mm] h-[297mm] mx-auto shadow-lg overflow-hidden" id="commencement-content">
+      <div className="bg-card w-[210mm] h-[297mm] mx-auto shadow-lg overflow-hidden print:bg-white" id="commencement-content">
         <div className="p-12 h-full flex flex-col print-content">
           {/* Letterhead */}
           <div className="text-center border-b-4 border-[#1a5276] pb-4 mb-6">
@@ -312,11 +312,11 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
           </div>
 
           {/* Signature Section */}
-          <div className="border-t-2 border-gray-300 pt-6 mt-auto">
+          <div className="border-t-2 border-border pt-6 mt-auto print:border-gray-300">
             <div className="max-w-md">
               {/* Client/Employer Signature */}
               <div>
-                <div className="mb-12 border-b-2 border-gray-400"></div>
+                <div className="mb-12 border-b-2 border-border print:border-gray-400"></div>
                 <div className="text-[13px]">
                   <p>{displayProject.clientContactPerson}</p>
                   <p className="text-muted-foreground text-[12px] mt-1">{displayProject.client}</p>
@@ -329,7 +329,7 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
       </div>
 
       {/* Edit Options (Print Hidden) */}
-      <div className="max-w-[210mm] mx-auto mt-8 p-6 bg-white rounded-lg shadow print:hidden">
+      <div className="max-w-[210mm] mx-auto mt-8 p-6 bg-card rounded-lg shadow print:hidden">
         <h3 className="text-[#1a5276] mb-4">Order Details</h3>
         <div className="space-y-4">
           <div>
@@ -338,7 +338,7 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
               type="text"
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded"
+              className="w-full px-3 py-2 border border-border rounded bg-background text-foreground"
             />
           </div>
           <div className="grid grid-cols-3 gap-4">
@@ -348,7 +348,7 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
                 type="date"
                 value={orderDate}
                 onChange={(e) => setOrderDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded"
+                className="w-full px-3 py-2 border border-border rounded bg-background text-foreground"
               />
             </div>
             <div>
@@ -357,7 +357,7 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
                 type="date"
                 value={commencementDate}
                 onChange={(e) => setCommencementDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded"
+                className="w-full px-3 py-2 border border-border rounded bg-background text-foreground"
               />
             </div>
             <div>
@@ -366,7 +366,7 @@ export function CommencementOrder({ project, documentId, savedData, onBack, onSa
                 type="date"
                 value={completionDate}
                 onChange={(e) => setCompletionDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded"
+                className="w-full px-3 py-2 border border-border rounded bg-background text-foreground"
               />
             </div>
           </div>

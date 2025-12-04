@@ -4,7 +4,16 @@
 
 # Recent Changes
 
-**December 4, 2025 (Latest)** - **Enhanced Overview tab with interactive alert cards and drill-down grievance details**. Made the 4 alert cards (Milestones, Action Points, Incidents, Grievances) clickable to show detail modals. For grievances specifically, users can now click any grievance in the list to see full details including:
+**December 4, 2025 (Latest)** - **Switched to dark theme with black background and contrasting text colors**. Updated the entire application to use a dark color scheme for better visual experience. Key changes:
+- Background: Pure black (#000000) across all pages
+- Cards and modals: Very dark gray (7%) for subtle elevation
+- Text: Light/white text (95%) for high contrast readability
+- Borders: Dark gray (20%) for subtle separation
+- Accent colors: Adjusted to dark-optimized variants (e.g., green-400 instead of green-600)
+- All components updated: sidebar, dashboard, project details, forms, modals, document viewers, and all project tabs
+- Print styles preserved with light backgrounds for document printing
+
+**December 4, 2025** - **Enhanced Overview tab with interactive alert cards and drill-down grievance details**. Made the 4 alert cards (Milestones, Action Points, Incidents, Grievances) clickable to show detail modals. For grievances specifically, users can now click any grievance in the list to see full details including:
 - Description, complainant information (or "Anonymous"), intake details (date received, source, location)
 - Assignment & timeline (assigned to, acknowledged date, target resolution, date resolved)
 - Resolution details (if resolved) with satisfaction level and feedback

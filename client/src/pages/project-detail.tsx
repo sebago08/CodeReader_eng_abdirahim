@@ -134,7 +134,7 @@ export default function ProjectDetail() {
               <h3 className="text-xl font-semibold text-card-foreground mb-2">Project Not Found</h3>
               <p className="text-muted-foreground mb-6">The project you're looking for doesn't exist.</p>
               <Link href="/projects">
-                <Button className="bg-orange-500 text-white hover:bg-orange-600">
+                <Button className="bg-orange-900/30 text-orange-400 hover:bg-orange-900/50 border border-orange-400/30">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Projects
                 </Button>

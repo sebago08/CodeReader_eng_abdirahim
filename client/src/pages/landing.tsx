@@ -77,7 +77,7 @@ export default function Landing() {
           <h2 className="text-5xl font-bold leading-tight">
             Your Project, Perfectly<br />Planned.
           </h2>
-          <p className="text-gray-400 text-lg max-w-md">
+          <p className="text-muted-foreground text-lg max-w-md">
             The ultimate platform for tracking construction projects from groundbreaking to completion.
           </p>
         </div>
@@ -86,27 +86,27 @@ export default function Landing() {
         <div></div>
       </div>
 
-      {/* Right Side - Light Background */}
-      <div className="w-1/2 bg-gray-50 flex items-center justify-center p-12">
+      {/* Right Side - Dark Background */}
+      <div className="w-1/2 bg-background flex items-center justify-center p-12">
         <div className="w-full max-w-md">
           {viewMode === "welcome" && (
             <div className="space-y-8">
               <div className="text-center">
-                <h2 className="text-4xl font-bold text-gray-900 mb-8">Welcome Back</h2>
+                <h2 className="text-4xl font-bold text-foreground mb-8">Welcome Back</h2>
               </div>
 
               {/* Sign In / Sign Up Buttons */}
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => setViewMode("signin")}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                  className="px-6 py-3 bg-muted text-muted-foreground rounded-lg font-medium hover:bg-muted/80 transition-colors"
                   data-testid="button-sign-in"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => setViewMode("signup")}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                  className="px-6 py-3 bg-muted text-muted-foreground rounded-lg font-medium hover:bg-muted/80 transition-colors"
                   data-testid="button-sign-up"
                 >
                   Sign Up
@@ -114,13 +114,13 @@ export default function Landing() {
               </div>
 
               {/* Terms and Privacy */}
-              <p className="text-center text-sm text-gray-500">
+              <p className="text-center text-sm text-muted-foreground">
                 By continuing, you agree to ConstructTrack's{" "}
-                <a href="#" className="text-blue-600 hover:underline">
+                <a href="#" className="text-blue-400 hover:underline">
                   Terms of Service
                 </a>{" "}
                 and{" "}
-                <a href="#" className="text-blue-600 hover:underline">
+                <a href="#" className="text-blue-400 hover:underline">
                   Privacy Policy
                 </a>
                 .
@@ -132,7 +132,7 @@ export default function Landing() {
             <div className="space-y-6">
               <button
                 onClick={handleBackToWelcome}
-                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="button-back-to-welcome"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -140,8 +140,8 @@ export default function Landing() {
               </button>
 
               <div className="text-center">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h2>
-                <p className="text-gray-600">Welcome back! Please enter your details.</p>
+                <h2 className="text-3xl font-bold text-foreground mb-2">Sign In</h2>
+                <p className="text-muted-foreground">Welcome back! Please enter your details.</p>
               </div>
 
               <Form {...loginForm}>
@@ -201,11 +201,11 @@ export default function Landing() {
               </Form>
 
               <div className="text-center">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Don't have an account?{" "}
                   <button
                     onClick={() => setViewMode("signup")}
-                    className="text-blue-600 hover:underline font-medium"
+                    className="text-blue-400 hover:underline font-medium"
                     data-testid="link-to-signup"
                   >
                     Sign Up
@@ -219,7 +219,7 @@ export default function Landing() {
             <div className="space-y-6">
               <button
                 onClick={handleBackToWelcome}
-                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="button-back-to-welcome"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -227,8 +227,8 @@ export default function Landing() {
               </button>
 
               <div className="text-center">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
-                <p className="text-gray-600">Get started with ConstructTrack today</p>
+                <h2 className="text-3xl font-bold text-foreground mb-2">Create Account</h2>
+                <p className="text-muted-foreground">Get started with ConstructTrack today</p>
               </div>
 
               <Form {...registerForm}>
@@ -342,11 +342,11 @@ export default function Landing() {
               </Form>
 
               <div className="text-center">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Already have an account?{" "}
                   <button
                     onClick={() => setViewMode("signin")}
-                    className="text-blue-600 hover:underline font-medium"
+                    className="text-blue-400 hover:underline font-medium"
                     data-testid="link-to-signin"
                   >
                     Sign In

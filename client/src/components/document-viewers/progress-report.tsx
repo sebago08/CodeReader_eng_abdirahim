@@ -298,7 +298,7 @@ export function ProgressReport({
   return (
     <>
       {/* Header Section - Hidden on Print */}
-      <div className="print:hidden bg-white border-b sticky top-0 z-10">
+      <div className="print:hidden bg-card border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -507,7 +507,7 @@ export function ProgressReport({
 
         {/* 1. Introduction */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-introduction">1. INTRODUCTION</h2>
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-border pb-2 print:border-gray-300" data-testid="heading-introduction">1. INTRODUCTION</h2>
           
           <h3 className="text-lg font-semibold mb-2">1.1 Project Summary</h3>
           <p className="mb-4">{project.description || 'No description provided for this project.'}</p>
@@ -523,13 +523,13 @@ export function ProgressReport({
 
         {/* 2. Project Information */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-project-info">2. PROJECT INFORMATION</h2>
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-border pb-2 print:border-gray-300" data-testid="heading-project-info">2. PROJECT INFORMATION</h2>
           <h3 className="text-lg font-semibold mb-4">2.1 Project Summary - {project.projectNumber || 'N/A'}</h3>
           
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="border-b-2 border-gray-300">
+                <tr className="border-b-2 border-border print:border-gray-300">
                   <th className="text-left py-2 px-4 font-semibold">Item</th>
                   <th className="text-left py-2 px-4 font-semibold">Details</th>
                 </tr>
@@ -556,13 +556,13 @@ export function ProgressReport({
 
         {/* 3. Scope of Work */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-scope">3. SCOPE OF WORK</h2>
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-border pb-2 print:border-gray-300" data-testid="heading-scope">3. SCOPE OF WORK</h2>
           <p>{project.scopeOfWork || 'No scope of work details provided.'}</p>
         </div>
 
         {/* 4. Progress */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-6 border-b-2 border-gray-300 pb-2" data-testid="heading-progress">4. PROGRESS</h2>
+          <h2 className="text-xl font-bold mb-6 border-b-2 border-border pb-2 print:border-gray-300" data-testid="heading-progress">4. PROGRESS</h2>
           
           {/* 4.1 Overall Progress */}
           <h3 className="text-lg font-semibold mb-4">4.1 Overall Progress</h3>
@@ -597,7 +597,7 @@ export function ProgressReport({
             </div>
           </div>
 
-          <div className="my-6 border-t border-gray-200"></div>
+          <div className="my-6 border-t border-border print:border-gray-200"></div>
 
           {/* 4.2 Work Progress */}
           <h3 className="text-lg font-semibold mb-4">4.2 Work Progress</h3>
@@ -615,10 +615,10 @@ export function ProgressReport({
               ))}
             </div>
           ) : (
-            <p className="text-gray-600">No work plan activities recorded.</p>
+            <p className="text-muted-foreground">No work plan activities recorded.</p>
           )}
 
-          <div className="my-6 border-t border-gray-200"></div>
+          <div className="my-6 border-t border-border print:border-gray-200"></div>
 
           {/* 4.3 Financial Progress */}
           <h3 className="text-lg font-semibold mb-4">4.3 Financial Progress</h3>
@@ -647,7 +647,7 @@ export function ProgressReport({
               <h4 className="text-base font-semibold mb-3">Interim Payment Certificates (IPCs)</h4>
               <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="border-b-2 border-gray-300">
+                  <tr className="border-b-2 border-border print:border-gray-300">
                     <th className="text-left py-2 px-4 font-semibold">#</th>
                     <th className="text-left py-2 px-4 font-semibold">Certificate No.</th>
                     <th className="text-left py-2 px-4 font-semibold">Date Certified</th>
@@ -686,7 +686,7 @@ export function ProgressReport({
                         </td>
                       </tr>
                     ))}
-                  <tr className="bg-gray-100 font-semibold border-t-2 border-gray-300">
+                  <tr className="bg-muted font-semibold border-t-2 border-border print:bg-gray-100 print:border-gray-300">
                     <td className="py-2 px-4" colSpan={3}>Total</td>
                     <td className="py-2 px-4">{formatCurrency(totalSubmitted.toString())}</td>
                     <td className="py-2 px-4">{formatCurrency(totalInProcess.toString())}</td>
@@ -697,18 +697,18 @@ export function ProgressReport({
               </table>
             </div>
           ) : (
-            <p className="text-gray-600 text-sm">No payment certificates recorded for this project.</p>
+            <p className="text-muted-foreground text-sm">No payment certificates recorded for this project.</p>
           )}
         </div>
 
         {/* 5. Work Plan */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-workplan">5. WORK PLAN</h2>
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-border pb-2 print:border-gray-300" data-testid="heading-workplan">5. WORK PLAN</h2>
           {workPlanActivities.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="border-b-2 border-gray-300">
+                  <tr className="border-b-2 border-border print:border-gray-300">
                     <th className="text-left py-2 px-4 font-semibold">Activity Name</th>
                     <th className="text-left py-2 px-4 font-semibold">Start Date</th>
                     <th className="text-left py-2 px-4 font-semibold">Duration</th>
@@ -728,18 +728,18 @@ export function ProgressReport({
               </table>
             </div>
           ) : (
-            <p className="text-gray-600">No work plan activities have been added to this project.</p>
+            <p className="text-muted-foreground">No work plan activities have been added to this project.</p>
           )}
         </div>
 
         {/* 6. Client Personnel */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-client-personnel">6. CLIENT PERSONNEL</h2>
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-border pb-2 print:border-gray-300" data-testid="heading-client-personnel">6. CLIENT PERSONNEL</h2>
           {clientPersonnel.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="border-b-2 border-gray-300">
+                  <tr className="border-b-2 border-border print:border-gray-300">
                     <th className="text-left py-2 px-4 font-semibold">#</th>
                     <th className="text-left py-2 px-4 font-semibold">Name</th>
                     <th className="text-left py-2 px-4 font-semibold">Qualification</th>
@@ -759,18 +759,18 @@ export function ProgressReport({
               </table>
             </div>
           ) : (
-            <p className="text-gray-600">No client personnel recorded for this project.</p>
+            <p className="text-muted-foreground">No client personnel recorded for this project.</p>
           )}
         </div>
 
         {/* 7. Contractor Personnel */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-contractor-personnel">7. CONTRACTOR PERSONNEL</h2>
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-border pb-2 print:border-gray-300" data-testid="heading-contractor-personnel">7. CONTRACTOR PERSONNEL</h2>
           {contractorPersonnel.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="border-b-2 border-gray-300">
+                  <tr className="border-b-2 border-border print:border-gray-300">
                     <th className="text-left py-2 px-4 font-semibold">#</th>
                     <th className="text-left py-2 px-4 font-semibold">Name</th>
                     <th className="text-left py-2 px-4 font-semibold">Qualification</th>
@@ -790,18 +790,18 @@ export function ProgressReport({
               </table>
             </div>
           ) : (
-            <p className="text-gray-600">No contractor personnel recorded for this project.</p>
+            <p className="text-muted-foreground">No contractor personnel recorded for this project.</p>
           )}
         </div>
 
         {/* 8. Contractor's Equipment */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-equipment">8. CONTRACTOR'S EQUIPMENT</h2>
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-border pb-2 print:border-gray-300" data-testid="heading-equipment">8. CONTRACTOR'S EQUIPMENT</h2>
           {contractorEquipment.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="border-b-2 border-gray-300">
+                  <tr className="border-b-2 border-border print:border-gray-300">
                     <th className="text-left py-2 px-4 font-semibold">#</th>
                     <th className="text-left py-2 px-4 font-semibold">Equipment Name</th>
                     <th className="text-left py-2 px-4 font-semibold">Type</th>
@@ -823,17 +823,17 @@ export function ProgressReport({
               </table>
             </div>
           ) : (
-            <p className="text-gray-600">No contractor equipment recorded for this project.</p>
+            <p className="text-muted-foreground">No contractor equipment recorded for this project.</p>
           )}
         </div>
 
         {/* 9. Issues and Concerns */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2" data-testid="heading-issues">9. ISSUES AND CONCERNS</h2>
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-border pb-2 print:border-gray-300" data-testid="heading-issues">9. ISSUES AND CONCERNS</h2>
           {safetyIncidents.length > 0 ? (
             <div className="space-y-3">
               {safetyIncidents.map((incident: any) => (
-                <div key={incident.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <div key={incident.id} className="flex items-start gap-3 p-3 bg-muted rounded-lg print:bg-gray-50">
                   <div className="flex-1">
                     <p className="font-medium">{incident.description}</p>
                     <div className="flex items-center gap-2 mt-2 text-sm">
@@ -847,30 +847,30 @@ export function ProgressReport({
               ))}
             </div>
           ) : (
-            <p className="text-gray-600">No issues or concerns recorded for this project.</p>
+            <p className="text-muted-foreground">No issues or concerns recorded for this project.</p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="mt-12 pt-6 border-t-2 border-gray-300">
+        <div className="mt-12 pt-6 border-t-2 border-border print:border-gray-300">
           <div className="grid grid-cols-2 gap-8 mb-6">
             <div>
               <p className="text-sm font-semibold mb-2">Prepared by:</p>
               <p className="text-sm">{project.contractorContactPerson || 'Project Manager'}</p>
-              <p className="text-sm text-gray-600">{project.contractorName}</p>
+              <p className="text-sm text-muted-foreground">{project.contractorName}</p>
             </div>
             <div>
               <p className="text-sm font-semibold mb-2">Reviewed by:</p>
               <p className="text-sm">{project.clientContactPerson || 'Client Representative'}</p>
-              <p className="text-sm text-gray-600">{project.client}</p>
+              <p className="text-sm text-muted-foreground">{project.client}</p>
             </div>
           </div>
-          <p className="text-sm text-center text-gray-600 mt-6">{currentDate}</p>
-          <div className="my-4 border-t border-gray-200"></div>
-          <p className="text-xs text-center text-gray-600">
+          <p className="text-sm text-center text-muted-foreground mt-6">{currentDate}</p>
+          <div className="my-4 border-t border-border print:border-gray-200"></div>
+          <p className="text-xs text-center text-muted-foreground">
             This report is confidential and intended solely for the use of {project.client}
           </p>
-          <p className="text-xs text-center text-gray-600 mt-2">
+          <p className="text-xs text-center text-muted-foreground mt-2">
             ConstructTrack Project Management System - {currentDate}
           </p>
         </div>

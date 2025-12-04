@@ -267,46 +267,46 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
         {/* Financial Sub-Tab */}
         <TabsContent value="financial" className="space-y-6">
           {/* Payment Certificates Summary */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
+          <div className="bg-gradient-to-r from-blue-950/20 to-indigo-950/20 rounded-xl p-6 border border-blue-800">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-blue-500 text-white rounded-lg">
                 <DollarSign className="h-6 w-6" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Payment Certificates</h3>
+              <h3 className="text-xl font-semibold text-foreground">Payment Certificates</h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+              <Card className="bg-card border-border">
                 <CardContent className="pt-6">
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Contract Amount</div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  <div className="text-sm text-muted-foreground mb-1">Contract Amount</div>
+                  <div className="text-2xl font-bold text-foreground">
                     ${contractAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+              <Card className="bg-card border-border">
                 <CardContent className="pt-6">
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Amount Paid</div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  <div className="text-sm text-muted-foreground mb-1">Amount Paid</div>
+                  <div className="text-2xl font-bold text-foreground">
                     ${totalCertified.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+              <Card className="bg-card border-border">
                 <CardContent className="pt-6">
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Amount Left</div>
-                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  <div className="text-sm text-muted-foreground mb-1">Amount Left</div>
+                  <div className="text-2xl font-bold text-green-400">
                     ${amountLeft.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+              <Card className="bg-card border-border">
                 <CardContent className="pt-6">
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Financial Progress</div>
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+                  <div className="text-sm text-muted-foreground mb-1">Financial Progress</div>
+                  <div className="text-2xl font-bold text-blue-400 mb-2">
                     {financialProgress.toFixed(1)}%
                   </div>
                   <Progress value={financialProgress} className="h-2" />
@@ -342,7 +342,7 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                     Add as Certificate
                   </Button>
                 </div>
-                <p className="text-sm text-gray-500">Enter the advance payment amount and click "Add as Certificate" to include it in the IPC table</p>
+                <p className="text-sm text-muted-foreground">Enter the advance payment amount and click "Add as Certificate" to include it in the IPC table</p>
               </div>
             </CardContent>
           </Card>
@@ -473,10 +473,10 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                               <SelectTrigger 
                                 className={`w-[140px] ${
                                   certificate.paymentStatus === "Paid"
-                                    ? "bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700"
+                                    ? "bg-green-950/20 text-green-400 border-green-800"
                                     : certificate.paymentStatus === "In Process"
-                                    ? "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-700"
-                                    : "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600"
+                                    ? "bg-yellow-950/20 text-yellow-400 border-yellow-800"
+                                    : "bg-muted text-muted-foreground border-border"
                                 }`}
                                 data-testid={`select-status-${certificate.id}`}
                               >
@@ -502,7 +502,7 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                           </TableCell>
                         </TableRow>
                       ))}
-                      <TableRow className="bg-gray-50 dark:bg-gray-800 font-semibold">
+                      <TableRow className="bg-muted font-semibold">
                         <TableCell>Total</TableCell>
                         <TableCell>
                           ${totalPending.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
