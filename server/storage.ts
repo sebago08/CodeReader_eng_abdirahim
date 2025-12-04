@@ -2264,10 +2264,10 @@ export class DatabaseStorage implements IStorage {
       id: ir.id,
       projectId: ir.projectId,
       projectName: projectNameMap.get(ir.projectId) || 'Unknown',
-      title: ir.title || 'Untitled Incident',
+      title: ir.incidentTitle || 'Untitled Incident',
       classification: ir.classification,
       status: ir.status,
-      dateOccurred: ir.dateOfIncident || '',
+      dateOccurred: ir.incidentDateTime ? ir.incidentDateTime.toISOString() : '',
     }));
     
     // Build grievances list for modal
@@ -2275,11 +2275,11 @@ export class DatabaseStorage implements IStorage {
       id: g.id,
       projectId: g.projectId,
       projectName: projectNameMap.get(g.projectId) || 'Unknown',
-      title: g.title || 'Untitled Grievance',
+      title: g.description?.substring(0, 50) + (g.description && g.description.length > 50 ? '...' : '') || 'Untitled Grievance',
       category: g.category,
       status: g.status,
-      priority: g.priority,
-      dateReceived: g.dateReceived || '',
+      priority: g.priority || 'medium',
+      dateReceived: g.dateReceived ? g.dateReceived.toISOString() : '',
     }));
     
     return {

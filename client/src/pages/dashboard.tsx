@@ -29,9 +29,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
-import { DollarSign, Wallet, PiggyBank, AlertTriangle, TrendingUp, Calendar, LogOut, Plus, MoreVertical, Copy, Trash2, MessageSquare } from "lucide-react";
+import { DollarSign, Wallet, PiggyBank, AlertTriangle, TrendingUp, Calendar, LogOut, Plus, MoreVertical, Copy, Trash2, MessageSquare, Clock, FileWarning } from "lucide-react";
 import type { DashboardMetrics } from "@shared/schema";
 import ProjectModal from "@/components/project-modal";
 import { format } from "date-fns";
@@ -39,10 +46,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+type ModalType = 'delayed' | 'incidents' | 'grievances' | null;
+
 export default function Dashboard() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [activeModal, setActiveModal] = useState<ModalType>(null);
   const { logoutMutation, user } = useAuth();
   const { toast } = useToast();
 
@@ -231,13 +241,13 @@ export default function Dashboard() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs md:text-sm font-medium text-muted-foreground">
-                          Financial Total
+                          Total Contracts
                         </p>
                         <p className="text-xl md:text-2xl font-bold text-green-400 truncate" data-testid="text-financial-total">
                           ${formatCurrency(metrics?.financialTotal || 0)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1 truncate">
-                          Total budget
+                          Sum of all contract amounts
                         </p>
                       </div>
                     </div>
@@ -252,13 +262,13 @@ export default function Dashboard() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs md:text-sm font-medium text-muted-foreground">
-                          Amount Spent
+                          IPCs Paid
                         </p>
                         <p className="text-xl md:text-2xl font-bold text-orange-400 truncate" data-testid="text-amount-spent">
                           ${formatCurrency(metrics?.amountSpent || 0)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1 truncate">
-                          Expenditure to date
+                          Total payment certificates
                         </p>
                       </div>
                     </div>
@@ -273,13 +283,13 @@ export default function Dashboard() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs md:text-sm font-medium text-muted-foreground">
-                          Current Balance
+                          Balance
                         </p>
                         <p className="text-xl md:text-2xl font-bold text-blue-400 truncate" data-testid="text-current-balance">
                           ${formatCurrency(metrics?.currentBalance || 0)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1 truncate">
-                          Remaining budget
+                          Contracts - IPCs paid
                         </p>
                       </div>
                     </div>
@@ -287,12 +297,16 @@ export default function Dashboard() {
                 </Card>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6 mb-6">
-                <Card className="border-border bg-card" data-testid="card-projects-behind">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+                <Card 
+                  className="border-border bg-card cursor-pointer hover:border-orange-500/50 transition-colors" 
+                  data-testid="card-projects-behind"
+                  onClick={() => setActiveModal('delayed')}
+                >
                   <CardContent className="p-4 md:pt-6">
                     <div className="flex items-start gap-3">
                       <div className="p-2 md:p-3 bg-orange-900/30 rounded-lg shrink-0">
-                        <AlertTriangle className="w-5 h-5 md:w-6 md:h-6 text-orange-400" />
+                        <Clock className="w-5 h-5 md:w-6 md:h-6 text-orange-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs md:text-sm font-medium text-muted-foreground truncate">
@@ -302,47 +316,22 @@ export default function Dashboard() {
                           {metrics?.projectsBehindSchedule || 0}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1 truncate">
-                          Needs attention
+                          Click to view details
                         </p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card" data-testid="card-safety-issues">
-                  <CardContent className="p-4 md:pt-6">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 md:p-3 bg-red-900/30 rounded-lg shrink-0">
-                        <AlertTriangle className="w-5 h-5 md:w-6 md:h-6 text-red-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs md:text-sm font-medium text-muted-foreground truncate">
-                          Safety Issues
-                        </p>
-                        <p className="text-2xl md:text-3xl font-bold text-red-400" data-testid="text-safety-issues-total">
-                          {metrics?.criticalSafetyIssues.total || 0}
-                        </p>
-                        <div className="flex flex-col gap-0.5 text-xs mt-1">
-                          <span className="text-red-400" data-testid="text-safety-high">
-                            High: {metrics?.criticalSafetyIssues.high || 0}
-                          </span>
-                          <span className="text-orange-400" data-testid="text-safety-medium">
-                            Med: {metrics?.criticalSafetyIssues.medium || 0}
-                          </span>
-                          <span className="text-yellow-400" data-testid="text-safety-low">
-                            Low: {metrics?.criticalSafetyIssues.low || 0}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-border bg-card" data-testid="card-incident-reports">
+                <Card 
+                  className="border-border bg-card cursor-pointer hover:border-purple-500/50 transition-colors" 
+                  data-testid="card-incident-reports"
+                  onClick={() => setActiveModal('incidents')}
+                >
                   <CardContent className="p-4 md:pt-6">
                     <div className="flex items-start gap-3">
                       <div className="p-2 md:p-3 bg-purple-900/30 rounded-lg shrink-0">
-                        <AlertTriangle className="w-5 h-5 md:w-6 md:h-6 text-purple-400" />
+                        <FileWarning className="w-5 h-5 md:w-6 md:h-6 text-purple-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs md:text-sm font-medium text-muted-foreground truncate">
@@ -367,7 +356,11 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card" data-testid="card-open-grievances">
+                <Card 
+                  className="border-border bg-card cursor-pointer hover:border-cyan-500/50 transition-colors" 
+                  data-testid="card-open-grievances"
+                  onClick={() => setActiveModal('grievances')}
+                >
                   <CardContent className="p-4 md:pt-6">
                     <div className="flex items-start gap-3">
                       <div className="p-2 md:p-3 bg-cyan-900/30 rounded-lg shrink-0">
@@ -608,6 +601,124 @@ export default function Dashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delayed Projects Modal */}
+      <Dialog open={activeModal === 'delayed'} onOpenChange={(open) => !open && setActiveModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-400" />
+              Projects Behind Schedule
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[400px]">
+            {(!metrics?.delayedProjects || metrics.delayedProjects.length === 0) ? (
+              <p className="text-muted-foreground text-center py-4">No delayed projects</p>
+            ) : (
+              <div className="space-y-3">
+                {metrics.delayedProjects.map((project) => (
+                  <Link key={project.id} href={`/projects/${project.id}`}>
+                    <div className="p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors">
+                      <p className="font-medium text-foreground mb-2">{project.name}</p>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-orange-400">
+                          Time: {project.timeLapse}%
+                        </span>
+                        <span className="text-blue-400">
+                          Progress: {project.boqProgress}%
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Incidents Modal */}
+      <Dialog open={activeModal === 'incidents'} onOpenChange={(open) => !open && setActiveModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileWarning className="h-5 w-5 text-purple-400" />
+              Open Incidents
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[400px]">
+            {(!metrics?.incidentsList || metrics.incidentsList.length === 0) ? (
+              <p className="text-muted-foreground text-center py-4">No open incidents</p>
+            ) : (
+              <div className="space-y-3">
+                {metrics.incidentsList.map((incident) => (
+                  <Link key={incident.id} href={`/projects/${incident.projectId}`}>
+                    <div className="p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors">
+                      <p className="font-medium text-foreground">{incident.title}</p>
+                      <p className="text-xs text-muted-foreground">{incident.projectName}</p>
+                      <div className="flex gap-2 mt-1">
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            incident.classification === 'severe' ? 'text-red-400 border-red-400' :
+                            incident.classification === 'serious' ? 'text-orange-400 border-orange-400' :
+                            'text-yellow-400 border-yellow-400'
+                          }
+                        >
+                          {incident.classification}
+                        </Badge>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Grievances Modal */}
+      <Dialog open={activeModal === 'grievances'} onOpenChange={(open) => !open && setActiveModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-cyan-400" />
+              Open Grievances
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[400px]">
+            {(!metrics?.grievancesList || metrics.grievancesList.length === 0) ? (
+              <p className="text-muted-foreground text-center py-4">No open grievances</p>
+            ) : (
+              <div className="space-y-3">
+                {metrics.grievancesList.map((grievance) => (
+                  <Link key={grievance.id} href={`/projects/${grievance.projectId}`}>
+                    <div className="p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors">
+                      <p className="font-medium text-foreground">{grievance.title}</p>
+                      <p className="text-xs text-muted-foreground">{grievance.projectName}</p>
+                      <div className="flex gap-2 mt-1">
+                        <Badge variant="outline" className="text-cyan-400 border-cyan-400">
+                          {grievance.category}
+                        </Badge>
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            grievance.priority === 'urgent' ? 'text-red-400 border-red-400' :
+                            grievance.priority === 'high' ? 'text-orange-400 border-orange-400' :
+                            'text-muted-foreground border-muted-foreground'
+                          }
+                        >
+                          {grievance.priority}
+                        </Badge>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
