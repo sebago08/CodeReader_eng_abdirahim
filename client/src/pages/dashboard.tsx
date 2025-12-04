@@ -142,31 +142,32 @@ export default function Dashboard() {
         {/* Top Bar with User Info */}
         <header className="bg-black text-white shadow-lg">
           <div className="w-full px-4 md:px-8">
-            <div className="flex justify-between items-center py-4">
-              <div className="flex items-center space-x-4">
-                <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-hard-hat text-lg"></i>
+            <div className="flex justify-between items-center py-3 md:py-4 gap-2">
+              <div className="flex items-center space-x-2 md:space-x-4 min-w-0">
+                <div className="h-8 w-8 md:h-10 md:w-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
+                  <i className="fas fa-hard-hat text-sm md:text-lg"></i>
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold">ConstructTrack</h1>
-                  <p className="text-white/80 text-sm">Professional Construction Management</p>
+                <div className="min-w-0">
+                  <h1 className="text-base md:text-xl font-bold truncate">ConstructTrack</h1>
+                  <p className="text-white/80 text-xs md:text-sm hidden sm:block">Professional Construction Management</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4 shrink-0">
                 {user && (
-                  <div className="text-white" data-testid="text-current-username">
-                    <span className="text-sm text-white/60">Signed in as:</span>
-                    <span className="ml-2 font-medium">{user.username}</span>
+                  <div className="text-white hidden sm:block" data-testid="text-current-username">
+                    <span className="text-xs md:text-sm text-white/60">Signed in as:</span>
+                    <span className="ml-1 md:ml-2 font-medium text-sm md:text-base">{user.username}</span>
                   </div>
                 )}
                 <Button
                   onClick={handleLogout}
                   variant="ghost"
-                  className="text-white hover:bg-white/10"
+                  size="sm"
+                  className="text-white hover:bg-white/10 px-2 md:px-4"
                   data-testid="button-logout"
                 >
-                  <LogOut className="h-5 w-5 mr-2" />
-                  Logout
+                  <LogOut className="h-4 w-4 md:h-5 md:w-5 md:mr-2" />
+                  <span className="hidden md:inline">Logout</span>
                 </Button>
               </div>
             </div>
@@ -174,22 +175,22 @@ export default function Dashboard() {
         </header>
 
         {/* Dashboard Header */}
-        <header className="bg-card border-b border-border px-4 md:px-8 py-6">
-          <div className="flex items-center justify-between">
+        <header className="bg-card border-b border-border px-4 md:px-8 py-4 md:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-bold text-foreground" data-testid="text-dashboard-title">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground" data-testid="text-dashboard-title">
                 Dashboard
               </h1>
-              <p className="text-sm text-muted-foreground mt-1" data-testid="text-dashboard-subtitle">
+              <p className="text-xs md:text-sm text-muted-foreground mt-1" data-testid="text-dashboard-subtitle">
                 Key financial and project metrics overview.
               </p>
             </div>
             <Button
               onClick={() => setShowProjectModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
               data-testid="button-create-project"
             >
-              <Plus className="h-5 w-5 mr-2" />
+              <Plus className="h-4 w-4 md:h-5 md:w-5 mr-2" />
               Create Project
             </Button>
           </div>
@@ -221,22 +222,22 @@ export default function Dashboard() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
                 <Card className="border-border bg-card" data-testid="card-financial-total">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-green-900/30 rounded-lg">
-                        <DollarSign className="w-6 h-6 text-green-400" />
+                  <CardContent className="p-4 md:pt-6">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 md:p-3 bg-green-900/30 rounded-lg shrink-0">
+                        <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-green-400" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-muted-foreground">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs md:text-sm font-medium text-muted-foreground">
                           Financial Total
                         </p>
-                        <p className="text-2xl font-bold text-green-400" data-testid="text-financial-total">
+                        <p className="text-xl md:text-2xl font-bold text-green-400 truncate" data-testid="text-financial-total">
                           ${formatCurrency(metrics?.financialTotal || 0)}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Total budget across all projects
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                          Total budget
                         </p>
                       </div>
                     </div>
@@ -244,41 +245,41 @@ export default function Dashboard() {
                 </Card>
 
                 <Card className="border-border bg-card" data-testid="card-amount-spent">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-orange-900/30 rounded-lg">
-                        <Wallet className="w-6 h-6 text-orange-400" />
+                  <CardContent className="p-4 md:pt-6">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 md:p-3 bg-orange-900/30 rounded-lg shrink-0">
+                        <Wallet className="w-5 h-5 md:w-6 md:h-6 text-orange-400" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-muted-foreground">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs md:text-sm font-medium text-muted-foreground">
                           Amount Spent
                         </p>
-                        <p className="text-2xl font-bold text-orange-400" data-testid="text-amount-spent">
+                        <p className="text-xl md:text-2xl font-bold text-orange-400 truncate" data-testid="text-amount-spent">
                           ${formatCurrency(metrics?.amountSpent || 0)}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Total expenditure to date
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                          Expenditure to date
                         </p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card" data-testid="card-current-balance">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-blue-900/30 rounded-lg">
-                        <PiggyBank className="w-6 h-6 text-blue-400" />
+                <Card className="border-border bg-card sm:col-span-2 lg:col-span-1" data-testid="card-current-balance">
+                  <CardContent className="p-4 md:pt-6">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 md:p-3 bg-blue-900/30 rounded-lg shrink-0">
+                        <PiggyBank className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-muted-foreground">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs md:text-sm font-medium text-muted-foreground">
                           Current Balance
                         </p>
-                        <p className="text-2xl font-bold text-blue-400" data-testid="text-current-balance">
+                        <p className="text-xl md:text-2xl font-bold text-blue-400 truncate" data-testid="text-current-balance">
                           ${formatCurrency(metrics?.currentBalance || 0)}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Remaining budget available
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                          Remaining budget
                         </p>
                       </div>
                     </div>
@@ -286,22 +287,22 @@ export default function Dashboard() {
                 </Card>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6 mb-6">
                 <Card className="border-border bg-card" data-testid="card-projects-behind">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-orange-900/30 rounded-lg">
-                        <AlertTriangle className="w-6 h-6 text-orange-400" />
+                  <CardContent className="p-4 md:pt-6">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 md:p-3 bg-orange-900/30 rounded-lg shrink-0">
+                        <AlertTriangle className="w-5 h-5 md:w-6 md:h-6 text-orange-400" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Projects Behind Schedule
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs md:text-sm font-medium text-muted-foreground truncate">
+                          Projects Behind
                         </p>
-                        <p className="text-3xl font-bold text-orange-400" data-testid="text-projects-behind">
+                        <p className="text-2xl md:text-3xl font-bold text-orange-400" data-testid="text-projects-behind">
                           {metrics?.projectsBehindSchedule || 0}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Requiring immediate attention
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                          Needs attention
                         </p>
                       </div>
                     </div>
@@ -309,24 +310,24 @@ export default function Dashboard() {
                 </Card>
 
                 <Card className="border-border bg-card" data-testid="card-safety-issues">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-red-900/30 rounded-lg">
-                        <AlertTriangle className="w-6 h-6 text-red-400" />
+                  <CardContent className="p-4 md:pt-6">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 md:p-3 bg-red-900/30 rounded-lg shrink-0">
+                        <AlertTriangle className="w-5 h-5 md:w-6 md:h-6 text-red-400" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Critical Safety Issues
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs md:text-sm font-medium text-muted-foreground truncate">
+                          Safety Issues
                         </p>
-                        <p className="text-3xl font-bold text-red-400" data-testid="text-safety-issues-total">
+                        <p className="text-2xl md:text-3xl font-bold text-red-400" data-testid="text-safety-issues-total">
                           {metrics?.criticalSafetyIssues.total || 0}
                         </p>
-                        <div className="flex gap-3 text-xs mt-2">
+                        <div className="flex flex-col gap-0.5 text-xs mt-1">
                           <span className="text-red-400" data-testid="text-safety-high">
                             High: {metrics?.criticalSafetyIssues.high || 0}
                           </span>
                           <span className="text-orange-400" data-testid="text-safety-medium">
-                            Medium: {metrics?.criticalSafetyIssues.medium || 0}
+                            Med: {metrics?.criticalSafetyIssues.medium || 0}
                           </span>
                           <span className="text-yellow-400" data-testid="text-safety-low">
                             Low: {metrics?.criticalSafetyIssues.low || 0}
@@ -338,19 +339,19 @@ export default function Dashboard() {
                 </Card>
 
                 <Card className="border-border bg-card" data-testid="card-incident-reports">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-purple-900/30 rounded-lg">
-                        <AlertTriangle className="w-6 h-6 text-purple-400" />
+                  <CardContent className="p-4 md:pt-6">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 md:p-3 bg-purple-900/30 rounded-lg shrink-0">
+                        <AlertTriangle className="w-5 h-5 md:w-6 md:h-6 text-purple-400" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Open Incident Reports
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs md:text-sm font-medium text-muted-foreground truncate">
+                          Incidents
                         </p>
-                        <p className="text-3xl font-bold text-purple-400" data-testid="text-incident-reports-total">
+                        <p className="text-2xl md:text-3xl font-bold text-purple-400" data-testid="text-incident-reports-total">
                           {metrics?.openIncidentReports?.total || 0}
                         </p>
-                        <div className="flex gap-3 text-xs mt-2">
+                        <div className="flex flex-col gap-0.5 text-xs mt-1">
                           <span className="text-red-400" data-testid="text-incidents-severe">
                             Severe: {metrics?.openIncidentReports?.severe || 0}
                           </span>
@@ -367,19 +368,19 @@ export default function Dashboard() {
                 </Card>
 
                 <Card className="border-border bg-card" data-testid="card-open-grievances">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-cyan-900/30 rounded-lg">
-                        <MessageSquare className="w-6 h-6 text-cyan-400" />
+                  <CardContent className="p-4 md:pt-6">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 md:p-3 bg-cyan-900/30 rounded-lg shrink-0">
+                        <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-cyan-400" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Open Grievances
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs md:text-sm font-medium text-muted-foreground truncate">
+                          Grievances
                         </p>
-                        <p className="text-3xl font-bold text-cyan-400" data-testid="text-grievances-total">
+                        <p className="text-2xl md:text-3xl font-bold text-cyan-400" data-testid="text-grievances-total">
                           {metrics?.openGrievances?.total || 0}
                         </p>
-                        <div className="flex gap-3 text-xs mt-2">
+                        <div className="flex flex-col gap-0.5 text-xs mt-1">
                           <span className="text-blue-400" data-testid="text-grievances-registered">
                             Registered: {metrics?.openGrievances?.registered || 0}
                           </span>
@@ -396,20 +397,20 @@ export default function Dashboard() {
                 </Card>
 
                 <Card className="border-border bg-card" data-testid="card-upcoming-milestones">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-muted rounded-lg">
-                        <Calendar className="w-6 h-6 text-muted-foreground" />
+                  <CardContent className="p-4 md:pt-6">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 md:p-3 bg-muted rounded-lg shrink-0">
+                        <Calendar className="w-5 h-5 md:w-6 md:h-6 text-muted-foreground" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Upcoming Milestones (30 Days)
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs md:text-sm font-medium text-muted-foreground truncate">
+                          Milestones (30d)
                         </p>
-                        <p className="text-3xl font-bold text-foreground" data-testid="text-upcoming-milestones">
+                        <p className="text-2xl md:text-3xl font-bold text-foreground" data-testid="text-upcoming-milestones">
                           {metrics?.upcomingMilestones || 0}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Key deadlines approaching
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                          Upcoming deadlines
                         </p>
                       </div>
                     </div>
