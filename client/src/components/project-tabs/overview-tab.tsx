@@ -11,10 +11,9 @@ import {
   MapPin, 
   DollarSign, 
   Calendar, 
-  FileText, 
+  FileText,
   TrendingUp,
   User,
-  Building2,
   Phone,
   Mail,
   MapPinned,
@@ -340,24 +339,8 @@ export default function OverviewTab({ project }: OverviewTabProps) {
 
 
         {/* Fixed Dashboard Layout */}
-        {/* Top Row: Project Details */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-orange-950/20 flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Project ID</p>
-                  <p className="text-lg font-semibold" data-testid="text-project-id">
-                    {project.projectNumber || "N/A"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+        {/* Top Row: Location and Dates */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -374,25 +357,6 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-green-950/20 flex items-center justify-center">
-                  <Building2 className="h-5 w-5 text-green-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Project Type</p>
-                  <p className="text-lg font-semibold" data-testid="text-project-type">
-                    {project.projectType}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Second Row: Dates and Balance */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -424,25 +388,9 @@ export default function OverviewTab({ project }: OverviewTabProps) {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-950/20 flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Balance</p>
-                  <p className="text-lg font-semibold" data-testid="text-balance">
-                    {formatCurrency(balance)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Third Row: Financial Summary */}
+        {/* Financial Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
