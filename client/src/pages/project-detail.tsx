@@ -11,7 +11,6 @@ import RoadModal from "@/components/road-modal";
 import ProgressModal from "@/components/progress-modal";
 import OverviewTab from "@/components/project-tabs/overview-tab";
 import ProgressTab from "@/components/project-tabs/progress-tab";
-import BudgetTab from "@/components/project-tabs/budget-tab";
 import TeamTab from "@/components/project-tabs/team-tab";
 import WorkPlanTab from "@/components/project-tabs/work-plan-tab";
 import { DocumentsTab } from "@/components/project-tabs/documents-tab";
@@ -37,7 +36,7 @@ export default function ProjectDetail() {
   // Get initial tab from URL hash
   const getInitialTab = () => {
     const hash = window.location.hash.slice(1);
-    const validTabs = ["overview", "workplan", "progress", "budget", "incidents", "grievances", "pre-construction", "team", "documents", "site-logs"];
+    const validTabs = ["overview", "workplan", "progress", "incidents", "grievances", "pre-construction", "team", "documents", "site-logs"];
     return validTabs.includes(hash) ? hash : "overview";
   };
   
@@ -47,7 +46,7 @@ export default function ProjectDetail() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
-      const validTabs = ["overview", "workplan", "progress", "budget", "incidents", "grievances", "pre-construction", "team", "documents", "site-logs"];
+      const validTabs = ["overview", "workplan", "progress", "incidents", "grievances", "pre-construction", "team", "documents", "site-logs"];
       if (validTabs.includes(hash)) {
         setActiveTab(hash);
       }
@@ -221,9 +220,6 @@ export default function ProjectDetail() {
                 <TabsTrigger value="progress" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-progress">
                   Progress
                 </TabsTrigger>
-                <TabsTrigger value="budget" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-budget">
-                  Budget
-                </TabsTrigger>
                 <TabsTrigger value="incidents" className="text-xs md:text-sm px-2 md:px-3" data-testid="tab-incidents">
                   Incidents
                 </TabsTrigger>
@@ -261,10 +257,6 @@ export default function ProjectDetail() {
                 onAddProgress={handleAddProgress}
                 onResetProgress={handleResetProgress}
               />
-            </TabsContent>
-
-            <TabsContent value="budget" data-testid="tab-content-budget">
-              <BudgetTab project={project} />
             </TabsContent>
 
             <TabsContent value="incidents" data-testid="tab-content-incidents">
