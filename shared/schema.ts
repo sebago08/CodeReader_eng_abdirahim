@@ -1026,18 +1026,12 @@ export type DocumentType =
 // Dashboard metrics type
 export type DashboardMetrics = {
   // Financial metrics
-  financialTotal: number; // Total budget for all active projects
-  amountSpent: number; // Total expenditure across all projects
-  currentBalance: number; // Remaining funds available
+  financialTotal: number; // Total contracts amount for all active projects
+  amountSpent: number; // Total IPCs paid (from payment certificates)
+  currentBalance: number; // financialTotal - amountSpent
   
   // Status metrics
   projectsBehindSchedule: number;
-  criticalSafetyIssues: {
-    total: number;
-    high: number;
-    medium: number;
-    low: number;
-  };
   openIncidentReports: {
     total: number;
     severe: number;
@@ -1051,6 +1045,35 @@ export type DashboardMetrics = {
     escalated: number;
   };
   upcomingMilestones: number; // Milestones due in next 30 days
+  
+  // Detailed lists for modals
+  delayedProjects: {
+    id: string;
+    name: string;
+    timeLapse: number; // percentage of time elapsed
+    boqProgress: number; // percentage of BOQ progress
+  }[];
+  
+  incidentsList: {
+    id: string;
+    projectId: string;
+    projectName: string;
+    title: string;
+    classification: string;
+    status: string;
+    dateOccurred: string;
+  }[];
+  
+  grievancesList: {
+    id: string;
+    projectId: string;
+    projectName: string;
+    title: string;
+    category: string;
+    status: string;
+    priority: string;
+    dateReceived: string;
+  }[];
   
   // Active projects summary
   activeProjects: {
