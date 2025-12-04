@@ -44,11 +44,23 @@ interface OverviewTabProps {
 
 type DetailModalType = 'milestones' | 'actionPoints' | 'incidents' | 'grievances' | null;
 
+interface ActionPointAlert {
+  id: string;
+  description: string;
+  assignee?: string;
+  priority?: string;
+  status?: string;
+  dueDate?: string;
+  daysOverdue: number;
+  createdAt?: string;
+}
+
 export default function OverviewTab({ project }: OverviewTabProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [showClientInfo, setShowClientInfo] = useState(false);
   const [detailModal, setDetailModal] = useState<DetailModalType>(null);
   const [selectedGrievance, setSelectedGrievance] = useState<Grievance | null>(null);
+  const [selectedActionPoint, setSelectedActionPoint] = useState<ActionPointAlert | null>(null);
 
   // Fetch payment certificates for financial progress
   const { data: certificates = [] } = useQuery<PaymentCertificate[]>({
@@ -799,48 +811,163 @@ export default function OverviewTab({ project }: OverviewTabProps) {
       </Dialog>
 
       {/* Action Points Detail Modal */}
-      <Dialog open={detailModal === 'actionPoints'} onOpenChange={(open) => !open && setDetailModal(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              Overdue Action Points
-            </DialogTitle>
-            <DialogDescription>Action items that have passed their deadline</DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="max-h-[400px]">
-            <div className="space-y-2 pr-4">
-              {alerts?.actionPoints && alerts.actionPoints.length > 0 ? (
-                alerts.actionPoints.map((ap: any) => (
-                  <div key={ap.id} className="p-3 border rounded-lg bg-red-950/20">
-                    <p className="font-medium text-sm">{ap.description}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex items-center gap-2">
-                        {ap.assignee && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <User className="h-3 w-3" /> {ap.assignee}
-                          </span>
-                        )}
-                        {ap.priority && (
-                          <Badge 
-                            variant={ap.priority === 'high' ? 'destructive' : ap.priority === 'medium' ? 'secondary' : 'outline'}
-                            className="text-xs"
-                          >
-                            {ap.priority}
-                          </Badge>
-                        )}
-                      </div>
-                      <span className="text-xs text-red-400 font-medium">
-                        {ap.daysOverdue} days overdue
-                      </span>
-                    </div>
+      <Dialog 
+        open={detailModal === 'actionPoints'} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setDetailModal(null);
+            setSelectedActionPoint(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          {selectedActionPoint ? (
+            <>
+              {/* Action Point Detail View */}
+              <DialogHeader>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setSelectedActionPoint(null)}
+                    className="h-8 px-2"
+                    data-testid="back-to-action-points-list"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-1" />
+                    Back
+                  </Button>
+                </div>
+                <DialogTitle className="flex items-center gap-2 mt-2">
+                  <Target className="h-5 w-5" />
+                  Action Point Details
+                </DialogTitle>
+                <DialogDescription className="flex items-center gap-2 flex-wrap">
+                  {selectedActionPoint.priority && (
+                    <Badge 
+                      variant={selectedActionPoint.priority === 'high' ? 'destructive' : selectedActionPoint.priority === 'medium' ? 'secondary' : 'outline'}
+                    >
+                      {selectedActionPoint.priority} priority
+                    </Badge>
+                  )}
+                  <Badge variant="destructive" className="bg-red-600">
+                    {selectedActionPoint.daysOverdue} days overdue
+                  </Badge>
+                </DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="max-h-[60vh]">
+                <div className="space-y-6 pr-4">
+                  {/* Description */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Description</h4>
+                    <p className="text-foreground">{selectedActionPoint.description}</p>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-8">No overdue action points</p>
-              )}
-            </div>
-          </ScrollArea>
+
+                  <Separator />
+
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {selectedActionPoint.assignee && (
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                          <User className="h-3 w-3" /> Assigned To
+                        </h4>
+                        <p className="text-sm text-foreground">{selectedActionPoint.assignee}</p>
+                      </div>
+                    )}
+
+                    {selectedActionPoint.dueDate && (
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                          <Calendar className="h-3 w-3" /> Due Date
+                        </h4>
+                        <p className="text-sm text-foreground">
+                          {new Date(selectedActionPoint.dueDate).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> Status
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-red-400 border-red-400">
+                          Overdue
+                        </Badge>
+                        <span className="text-sm text-red-400">{selectedActionPoint.daysOverdue} days past deadline</span>
+                      </div>
+                    </div>
+
+                    {selectedActionPoint.createdAt && (
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Created</h4>
+                        <p className="text-sm text-foreground">
+                          {new Date(selectedActionPoint.createdAt).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </ScrollArea>
+            </>
+          ) : (
+            <>
+              {/* Action Points List View */}
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  Overdue Action Points
+                </DialogTitle>
+                <DialogDescription>Action items that have passed their deadline</DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="max-h-[400px]">
+                <div className="space-y-2 pr-4">
+                  {alerts?.actionPoints && alerts.actionPoints.length > 0 ? (
+                    alerts.actionPoints.map((ap: any) => (
+                      <div 
+                        key={ap.id} 
+                        className="p-3 border rounded-lg bg-red-950/20 cursor-pointer hover:bg-red-950/40 transition-colors"
+                        onClick={() => setSelectedActionPoint(ap)}
+                        data-testid={`action-point-item-${ap.id}`}
+                      >
+                        <p className="font-medium text-sm">{ap.description}</p>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-2">
+                            {ap.assignee && (
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <User className="h-3 w-3" /> {ap.assignee}
+                              </span>
+                            )}
+                            {ap.priority && (
+                              <Badge 
+                                variant={ap.priority === 'high' ? 'destructive' : ap.priority === 'medium' ? 'secondary' : 'outline'}
+                                className="text-xs"
+                              >
+                                {ap.priority}
+                              </Badge>
+                            )}
+                          </div>
+                          <span className="text-xs text-red-400 font-medium">
+                            {ap.daysOverdue} days overdue
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">No overdue action points</p>
+                  )}
+                </div>
+              </ScrollArea>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
