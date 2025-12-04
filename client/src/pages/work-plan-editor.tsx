@@ -39,7 +39,30 @@ export default function WorkPlanEditor() {
 
   useEffect(() => {
     if (activities.length > 0) {
-      setLocalActivities(activities);
+      setLocalActivities(prev => {
+        // If no previous local state, just use server data
+        if (prev.length === 0) {
+          return activities;
+        }
+        
+        // Merge: keep local edits for existing items, add new items from server
+        // Also remove items that were deleted (not in server response anymore)
+        const localEditsMap = new Map(prev.map(a => [a.id, a]));
+        const serverIdsSet = new Set(activities.map(a => a.id));
+        
+        // Start with server activities, but preserve local edits for existing items
+        const merged = activities.map(serverActivity => {
+          const localVersion = localEditsMap.get(serverActivity.id);
+          if (localVersion) {
+            // Keep local edits (name, duration, dates) for existing items
+            return localVersion;
+          }
+          // New item from server (just added)
+          return serverActivity;
+        });
+        
+        return merged;
+      });
       
       // Auto-focus on newly added item
       if (pendingFocusId) {
