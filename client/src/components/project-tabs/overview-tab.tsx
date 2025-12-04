@@ -22,10 +22,11 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  MessageSquare,
 } from "lucide-react";
 import ProjectModal from "@/components/project-modal";
 import { queryClient } from "@/lib/queryClient";
-import type { ProjectWithRoads, ProjectAlerts, IncidentReport } from "@shared/schema";
+import type { ProjectWithRoads, ProjectAlerts, IncidentReport, Grievance } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import type { PaymentCertificate } from "@shared/schema";
 import { Link } from "wouter";
@@ -61,6 +62,18 @@ export default function OverviewTab({ project }: OverviewTabProps) {
   const severeCount = openIncidents.filter(i => i.classification === 'severe').length;
   const seriousCount = openIncidents.filter(i => i.classification === 'serious').length;
   const indicativeCount = openIncidents.filter(i => i.classification === 'indicative').length;
+
+  // Fetch grievances for project
+  const { data: grievances = [] } = useQuery<Grievance[]>({
+    queryKey: ['/api/projects', project.id, 'grievances'],
+    enabled: !!project.id,
+  });
+
+  // Calculate open grievance counts
+  const openGrievances = grievances.filter(g => g.status !== 'closed');
+  const registeredCount = openGrievances.filter(g => g.status === 'registered').length;
+  const investigatingCount = openGrievances.filter(g => g.status === 'under_investigation').length;
+  const escalatedCount = openGrievances.filter(g => g.status === 'escalated').length;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -527,7 +540,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
         </Card>
 
         {/* Alert Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Milestones */}
           <Card>
             <CardHeader>
@@ -601,6 +614,37 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                     )}
                     {indicativeCount > 0 && (
                       <span className="text-yellow-600 dark:text-yellow-400">Indicative: {indicativeCount}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Open Grievances */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Open Grievances
+              </CardTitle>
+              <CardDescription>Community complaints (GRM)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {openGrievances.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No open grievances</p>
+              ) : (
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold">{openGrievances.length}</div>
+                  <div className="flex gap-3 text-xs">
+                    {registeredCount > 0 && (
+                      <span className="text-blue-600 dark:text-blue-400">Registered: {registeredCount}</span>
+                    )}
+                    {investigatingCount > 0 && (
+                      <span className="text-orange-600 dark:text-orange-400">Investigating: {investigatingCount}</span>
+                    )}
+                    {escalatedCount > 0 && (
+                      <span className="text-red-600 dark:text-red-400">Escalated: {escalatedCount}</span>
                     )}
                   </div>
                 </div>
