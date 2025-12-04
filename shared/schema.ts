@@ -1062,6 +1062,11 @@ export type DashboardMetrics = {
     classification: string;
     status: string;
     dateOccurred: string;
+    // Additional details for modal view
+    location?: string;
+    description?: string;
+    reportedBy?: string;
+    immediateActions?: string;
   }[];
   
   grievancesList: {
@@ -1073,6 +1078,12 @@ export type DashboardMetrics = {
     status: string;
     priority: string;
     dateReceived: string;
+    // Additional details for modal view
+    description?: string;
+    complainantName?: string;
+    isAnonymous?: boolean;
+    location?: string;
+    source?: string;
   }[];
   
   // Active projects summary

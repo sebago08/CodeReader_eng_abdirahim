@@ -2259,7 +2259,7 @@ export class DatabaseStorage implements IStorage {
     // Build project name lookup
     const projectNameMap = new Map(userProjects.map(p => [p.id, p.name]));
     
-    // Build incidents list for modal
+    // Build incidents list for modal with full details
     const incidentsList = allIncidentReports.map(ir => ({
       id: ir.id,
       projectId: ir.projectId,
@@ -2268,9 +2268,13 @@ export class DatabaseStorage implements IStorage {
       classification: ir.classification,
       status: ir.status,
       dateOccurred: ir.incidentDateTime ? ir.incidentDateTime.toISOString() : '',
+      location: ir.incidentLocation || undefined,
+      description: ir.incidentDescription || undefined,
+      reportedBy: ir.reportedBy || undefined,
+      immediateActions: ir.immediateActions || undefined,
     }));
     
-    // Build grievances list for modal
+    // Build grievances list for modal with full details
     const grievancesList = allOpenGrievances.map(g => ({
       id: g.id,
       projectId: g.projectId,
@@ -2280,6 +2284,11 @@ export class DatabaseStorage implements IStorage {
       status: g.status,
       priority: g.priority || 'medium',
       dateReceived: g.dateReceived ? g.dateReceived.toISOString() : '',
+      description: g.description || undefined,
+      complainantName: g.complainantName || undefined,
+      isAnonymous: g.isAnonymous || false,
+      location: g.location || undefined,
+      source: g.source || undefined,
     }));
     
     return {
