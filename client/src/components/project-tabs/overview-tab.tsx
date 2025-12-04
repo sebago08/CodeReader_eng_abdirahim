@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Edit, 
   MapPin, 
@@ -23,6 +25,7 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
+  X,
 } from "lucide-react";
 import ProjectModal from "@/components/project-modal";
 import { queryClient } from "@/lib/queryClient";
@@ -35,9 +38,12 @@ interface OverviewTabProps {
   project: ProjectWithRoads;
 }
 
+type DetailModalType = 'milestones' | 'actionPoints' | 'incidents' | 'grievances' | null;
+
 export default function OverviewTab({ project }: OverviewTabProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [showClientInfo, setShowClientInfo] = useState(false);
+  const [detailModal, setDetailModal] = useState<DetailModalType>(null);
 
   // Fetch payment certificates for financial progress
   const { data: certificates = [] } = useQuery<PaymentCertificate[]>({
@@ -542,7 +548,11 @@ export default function OverviewTab({ project }: OverviewTabProps) {
         {/* Alert Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Milestones */}
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50"
+            onClick={() => setDetailModal('milestones')}
+            data-testid="card-milestones"
+          >
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Clock className="h-4 w-4" />
@@ -571,7 +581,11 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           </Card>
 
           {/* Overdue Action Points */}
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50"
+            onClick={() => setDetailModal('actionPoints')}
+            data-testid="card-action-points"
+          >
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
@@ -591,7 +605,11 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           </Card>
 
           {/* Open Incidents */}
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50"
+            onClick={() => setDetailModal('incidents')}
+            data-testid="card-incidents"
+          >
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
@@ -622,7 +640,11 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           </Card>
 
           {/* Open Grievances */}
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50"
+            onClick={() => setDetailModal('grievances')}
+            data-testid="card-grievances"
+          >
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
@@ -767,6 +789,228 @@ export default function OverviewTab({ project }: OverviewTabProps) {
           }}
         />
       )}
+
+      {/* Milestones Detail Modal */}
+      <Dialog open={detailModal === 'milestones'} onOpenChange={(open) => !open && setDetailModal(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Milestones
+            </DialogTitle>
+            <DialogDescription>Upcoming and overdue milestones for this project</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[400px]">
+            <div className="space-y-4 pr-4">
+              {alerts?.milestones.overdue && alerts.milestones.overdue.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm text-red-600 dark:text-red-400 mb-2">Overdue</h4>
+                  <div className="space-y-2">
+                    {alerts.milestones.overdue.map((m: any) => (
+                      <div key={m.id} className="p-3 border rounded-lg bg-red-50 dark:bg-red-950/20">
+                        <p className="font-medium text-sm">{m.activityName}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs text-muted-foreground">Due: {formatDate(m.dueDate)}</span>
+                          <Badge variant="destructive" className="text-xs">{m.daysOverdue} days overdue</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {alerts?.milestones.upcoming && alerts.milestones.upcoming.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm text-orange-600 dark:text-orange-400 mb-2">Upcoming (Next 7 Days)</h4>
+                  <div className="space-y-2">
+                    {alerts.milestones.upcoming.map((m: any) => (
+                      <div key={m.id} className="p-3 border rounded-lg bg-orange-50 dark:bg-orange-950/20">
+                        <p className="font-medium text-sm">{m.activityName}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs text-muted-foreground">Due: {formatDate(m.dueDate)}</span>
+                          <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
+                            {m.daysUntil === 0 ? 'Due today' : `${m.daysUntil} days left`}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(!alerts || (alerts.milestones.upcoming.length === 0 && alerts.milestones.overdue.length === 0)) && (
+                <p className="text-sm text-muted-foreground text-center py-8">No milestones to display</p>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Action Points Detail Modal */}
+      <Dialog open={detailModal === 'actionPoints'} onOpenChange={(open) => !open && setDetailModal(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Overdue Action Points
+            </DialogTitle>
+            <DialogDescription>Action items that have passed their deadline</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[400px]">
+            <div className="space-y-2 pr-4">
+              {alerts?.actionPoints && alerts.actionPoints.length > 0 ? (
+                alerts.actionPoints.map((ap: any) => (
+                  <div key={ap.id} className="p-3 border rounded-lg bg-red-50 dark:bg-red-950/20">
+                    <p className="font-medium text-sm">{ap.description}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-2">
+                        {ap.assignee && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <User className="h-3 w-3" /> {ap.assignee}
+                          </span>
+                        )}
+                        {ap.priority && (
+                          <Badge 
+                            variant={ap.priority === 'high' ? 'destructive' : ap.priority === 'medium' ? 'secondary' : 'outline'}
+                            className="text-xs"
+                          >
+                            {ap.priority}
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+                        {ap.daysOverdue} days overdue
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">No overdue action points</p>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Incidents Detail Modal */}
+      <Dialog open={detailModal === 'incidents'} onOpenChange={(open) => !open && setDetailModal(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Open Incidents
+            </DialogTitle>
+            <DialogDescription>World Bank ESF compliance incident reports</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[400px]">
+            <div className="space-y-2 pr-4">
+              {openIncidents.length > 0 ? (
+                openIncidents.map((incident) => (
+                  <div 
+                    key={incident.id} 
+                    className={`p-3 border rounded-lg ${
+                      incident.classification === 'severe' 
+                        ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
+                        : incident.classification === 'serious'
+                        ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800'
+                        : 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{incident.incidentTitle}</p>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{incident.incidentDescription}</p>
+                      </div>
+                      <Badge 
+                        variant={incident.classification === 'severe' ? 'destructive' : 'secondary'}
+                        className={`text-xs ml-2 ${
+                          incident.classification === 'serious' ? 'bg-orange-500 hover:bg-orange-600' : ''
+                        }`}
+                      >
+                        {incident.classification}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-muted-foreground">
+                        {incident.incidentDateTime ? formatDate(new Date(incident.incidentDateTime).toISOString()) : 'Date not set'}
+                      </span>
+                      <Badge variant="outline" className="text-xs">
+                        {incident.status?.replace(/_/g, ' ')}
+                      </Badge>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">No open incidents</p>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Grievances Detail Modal */}
+      <Dialog open={detailModal === 'grievances'} onOpenChange={(open) => !open && setDetailModal(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Open Grievances
+            </DialogTitle>
+            <DialogDescription>Community complaints under the Grievance Redress Mechanism</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[400px]">
+            <div className="space-y-2 pr-4">
+              {openGrievances.length > 0 ? (
+                openGrievances.map((grievance) => (
+                  <div 
+                    key={grievance.id} 
+                    className={`p-3 border rounded-lg ${
+                      grievance.priority === 'urgent' 
+                        ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
+                        : grievance.priority === 'high'
+                        ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800'
+                        : 'bg-gray-50 dark:bg-gray-950/20'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm">{grievance.grievanceNumber}</p>
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {grievance.category?.replace(/_/g, ' ')}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{grievance.description}</p>
+                      </div>
+                      <Badge 
+                        variant={grievance.priority === 'urgent' ? 'destructive' : grievance.priority === 'high' ? 'secondary' : 'outline'}
+                        className="text-xs ml-2"
+                      >
+                        {grievance.priority}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-muted-foreground">
+                        {grievance.isAnonymous ? 'Anonymous' : grievance.complainantName || 'Unknown'}
+                      </span>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${
+                          grievance.status === 'escalated' ? 'border-red-300 text-red-600' :
+                          grievance.status === 'under_investigation' ? 'border-orange-300 text-orange-600' :
+                          'border-blue-300 text-blue-600'
+                        }`}
+                      >
+                        {grievance.status?.replace(/_/g, ' ')}
+                      </Badge>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">No open grievances</p>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
