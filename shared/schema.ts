@@ -370,6 +370,70 @@ export const actionPoints = pgTable("action_points", {
   index("action_points_status_idx").on(table.status),
 ]);
 
+// Incident Reports table (World Bank compliant)
+export const incidentReports = pgTable("incident_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull(),
+  
+  // Location info
+  country: varchar("country"),
+  state: varchar("state"),
+  incidentLocation: text("incident_location"), // Specific location where incident occurred
+  
+  // Personnel involved
+  projectEngineer: varchar("project_engineer"),
+  projectManager: varchar("project_manager"),
+  safeguardsOfficer: varchar("safeguards_officer"), // Environmental and Social Safeguards Officer
+  reportedBy: varchar("reported_by"),
+  
+  // Incident classification
+  classification: varchar("classification").notNull().default("indicative"), // "indicative", "serious", "severe"
+  
+  // Date/time details
+  incidentDateTime: timestamp("incident_date_time").notNull(),
+  discoveredDateTime: timestamp("discovered_date_time"),
+  discoveryMethod: text("discovery_method"), // How did we find out about it?
+  
+  // Incident details
+  incidentTitle: varchar("incident_title").notNull(),
+  incidentDescription: text("incident_description").notNull(), // What is the incident?
+  whatHappened: text("what_happened"), // What actually happened? To what or to whom?
+  
+  // Fact verification
+  factsAreUncontested: boolean("facts_are_uncontested").default(true), // Are basic facts clear?
+  conflictingVersions: text("conflicting_versions"), // What are those versions?
+  
+  // Context and conditions
+  conditions: text("conditions"), // Conditions or circumstances under which incident occurred
+  
+  // Status flags
+  isOngoing: boolean("is_ongoing").default(false), // Is incident still ongoing?
+  isContained: boolean("is_contained").default(false), // Is it contained?
+  involvesLossOfLife: boolean("involves_loss_of_life").default(false),
+  involvesSevereHarm: boolean("involves_severe_harm").default(false),
+  
+  // Response and measures
+  measuresImplemented: text("measures_implemented"), // What measures have been or are being implemented?
+  
+  // Government notification
+  agenciesInformed: text("agencies_informed"), // Has anyone in the PIU or other government agencies been informed?
+  agenciesResponse: text("agencies_response"), // What has response been to date?
+  
+  // Workflow status
+  status: varchar("status").notNull().default("draft"), // "draft", "submitted", "under_review", "closed"
+  
+  // Optional link to action point for follow-up
+  linkedActionPointId: varchar("linked_action_point_id"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("incident_reports_project_idx").on(table.projectId),
+  index("incident_reports_classification_idx").on(table.classification),
+  index("incident_reports_status_idx").on(table.status),
+  index("incident_reports_date_idx").on(table.incidentDateTime),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
@@ -383,6 +447,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   roads: many(roads),
   activities: many(activities),
   safetyIncidents: many(safetyIncidents),
+  incidentReports: many(incidentReports),
   clientPersonnel: many(clientPersonnel),
   contractorPersonnel: many(contractorPersonnel),
   contractorEquipment: many(contractorEquipment),
@@ -426,6 +491,17 @@ export const safetyIncidentsRelations = relations(safetyIncidents, ({ one }) => 
   project: one(projects, {
     fields: [safetyIncidents.projectId],
     references: [projects.id],
+  }),
+}));
+
+export const incidentReportsRelations = relations(incidentReports, ({ one }) => ({
+  project: one(projects, {
+    fields: [incidentReports.projectId],
+    references: [projects.id],
+  }),
+  linkedActionPoint: one(actionPoints, {
+    fields: [incidentReports.linkedActionPointId],
+    references: [actionPoints.id],
   }),
 }));
 
@@ -621,6 +697,19 @@ export const insertSafetyIncidentSchema = createInsertSchema(safetyIncidents).om
   updatedAt: true,
 });
 
+// Incident report schema (World Bank compliant)
+export const insertIncidentReportSchema = createInsertSchema(incidentReports).omit({
+  id: true,
+  projectId: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  classification: z.enum(["indicative", "serious", "severe"]).default("indicative"),
+  status: z.enum(["draft", "submitted", "under_review", "closed"]).default("draft"),
+  incidentDateTime: z.coerce.date(),
+  discoveredDateTime: z.coerce.date().optional().nullable(),
+});
+
 // User schemas and types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -753,6 +842,8 @@ export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type SafetyIncident = typeof safetyIncidents.$inferSelect;
 export type InsertSafetyIncident = z.infer<typeof insertSafetyIncidentSchema>;
+export type IncidentReport = typeof incidentReports.$inferSelect;
+export type InsertIncidentReport = z.infer<typeof insertIncidentReportSchema>;
 export type ProjectMember = typeof projectMembers.$inferSelect;
 export type InsertProjectMember = z.infer<typeof insertProjectMemberSchema>;
 export type ProjectInvitation = typeof projectInvitations.$inferSelect;
@@ -835,6 +926,12 @@ export type DashboardMetrics = {
     high: number;
     medium: number;
     low: number;
+  };
+  openIncidentReports: {
+    total: number;
+    severe: number;
+    serious: number;
+    indicative: number;
   };
   upcomingMilestones: number; // Milestones due in next 30 days
   

@@ -286,7 +286,7 @@ export default function Dashboard() {
                 </Card>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                 <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800" data-testid="card-projects-behind">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
@@ -330,6 +330,35 @@ export default function Dashboard() {
                           </span>
                           <span className="text-yellow-600 dark:text-yellow-400" data-testid="text-safety-low">
                             Low: {metrics?.criticalSafetyIssues.low || 0}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800" data-testid="card-incident-reports">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <AlertTriangle className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Open Incident Reports
+                        </p>
+                        <p className="text-3xl font-bold text-purple-600 dark:text-purple-400" data-testid="text-incident-reports-total">
+                          {metrics?.openIncidentReports?.total || 0}
+                        </p>
+                        <div className="flex gap-3 text-xs mt-2">
+                          <span className="text-red-600 dark:text-red-400" data-testid="text-incidents-severe">
+                            Severe: {metrics?.openIncidentReports?.severe || 0}
+                          </span>
+                          <span className="text-orange-600 dark:text-orange-400" data-testid="text-incidents-serious">
+                            Serious: {metrics?.openIncidentReports?.serious || 0}
+                          </span>
+                          <span className="text-yellow-600 dark:text-yellow-400" data-testid="text-incidents-indicative">
+                            Indicative: {metrics?.openIncidentReports?.indicative || 0}
                           </span>
                         </div>
                       </div>
