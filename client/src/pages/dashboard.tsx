@@ -38,21 +38,27 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
-import { DollarSign, Wallet, PiggyBank, AlertTriangle, TrendingUp, Calendar, LogOut, Plus, MoreVertical, Copy, Trash2, MessageSquare, Clock, FileWarning } from "lucide-react";
+import { DollarSign, Wallet, PiggyBank, AlertTriangle, TrendingUp, Calendar, LogOut, Plus, MoreVertical, Copy, Trash2, MessageSquare, Clock, FileWarning, ArrowLeft, MapPin, User, FileText } from "lucide-react";
 import type { DashboardMetrics } from "@shared/schema";
 import ProjectModal from "@/components/project-modal";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
 
 type ModalType = 'delayed' | 'incidents' | 'grievances' | null;
+
+type IncidentItem = DashboardMetrics['incidentsList'][number];
+type GrievanceItem = DashboardMetrics['grievancesList'][number];
 
 export default function Dashboard() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [selectedIncident, setSelectedIncident] = useState<IncidentItem | null>(null);
+  const [selectedGrievance, setSelectedGrievance] = useState<GrievanceItem | null>(null);
   const { logoutMutation, user } = useAuth();
   const { toast } = useToast();
 
@@ -638,83 +644,286 @@ export default function Dashboard() {
       </Dialog>
 
       {/* Incidents Modal */}
-      <Dialog open={activeModal === 'incidents'} onOpenChange={(open) => !open && setActiveModal(null)}>
+      <Dialog open={activeModal === 'incidents'} onOpenChange={(open) => {
+        if (!open) {
+          setActiveModal(null);
+          setSelectedIncident(null);
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
+              {selectedIncident && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0 mr-1"
+                  onClick={() => setSelectedIncident(null)}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
               <FileWarning className="h-5 w-5 text-purple-400" />
-              Open Incidents
+              {selectedIncident ? 'Incident Details' : 'Open Incidents'}
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[400px]">
-            {(!metrics?.incidentsList || metrics.incidentsList.length === 0) ? (
-              <p className="text-muted-foreground text-center py-4">No open incidents</p>
-            ) : (
-              <div className="space-y-3">
-                {metrics.incidentsList.map((incident) => (
-                  <Link key={incident.id} href={`/projects/${incident.projectId}`}>
-                    <div className="p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors">
-                      <p className="font-medium text-foreground">{incident.title}</p>
-                      <p className="text-xs text-muted-foreground">{incident.projectName}</p>
-                      <div className="flex gap-2 mt-1">
-                        <Badge 
-                          variant="outline" 
-                          className={
-                            incident.classification === 'severe' ? 'text-red-400 border-red-400' :
-                            incident.classification === 'serious' ? 'text-orange-400 border-orange-400' :
-                            'text-yellow-400 border-yellow-400'
-                          }
-                        >
-                          {incident.classification}
-                        </Badge>
-                      </div>
+            {selectedIncident ? (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-foreground text-lg">{selectedIncident.title}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedIncident.projectName}</p>
+                </div>
+                
+                <div className="flex gap-2 flex-wrap">
+                  <Badge 
+                    variant="outline" 
+                    className={
+                      selectedIncident.classification === 'severe' ? 'text-red-400 border-red-400' :
+                      selectedIncident.classification === 'serious' ? 'text-orange-400 border-orange-400' :
+                      'text-yellow-400 border-yellow-400'
+                    }
+                  >
+                    {selectedIncident.classification}
+                  </Badge>
+                  <Badge variant="outline" className="text-blue-400 border-blue-400">
+                    {selectedIncident.status}
+                  </Badge>
+                </div>
+                
+                <Separator />
+                
+                {selectedIncident.dateOccurred && (
+                  <div className="flex items-start gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Date Occurred</p>
+                      <p className="text-sm text-foreground">
+                        {format(new Date(selectedIncident.dateOccurred), 'PPp')}
+                      </p>
                     </div>
-                  </Link>
-                ))}
+                  </div>
+                )}
+                
+                {selectedIncident.location && (
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Location</p>
+                      <p className="text-sm text-foreground">{selectedIncident.location}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {selectedIncident.reportedBy && (
+                  <div className="flex items-start gap-2">
+                    <User className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Reported By</p>
+                      <p className="text-sm text-foreground">{selectedIncident.reportedBy}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {selectedIncident.description && (
+                  <div className="flex items-start gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Description</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{selectedIncident.description}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {selectedIncident.immediateActions && (
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-orange-400 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Immediate Actions</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{selectedIncident.immediateActions}</p>
+                    </div>
+                  </div>
+                )}
               </div>
+            ) : (
+              <>
+                {(!metrics?.incidentsList || metrics.incidentsList.length === 0) ? (
+                  <p className="text-muted-foreground text-center py-4">No open incidents</p>
+                ) : (
+                  <div className="space-y-3">
+                    {metrics.incidentsList.map((incident) => (
+                      <div 
+                        key={incident.id} 
+                        className="p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                        onClick={() => setSelectedIncident(incident)}
+                      >
+                        <p className="font-medium text-foreground">{incident.title}</p>
+                        <p className="text-xs text-muted-foreground">{incident.projectName}</p>
+                        <div className="flex gap-2 mt-1">
+                          <Badge 
+                            variant="outline" 
+                            className={
+                              incident.classification === 'severe' ? 'text-red-400 border-red-400' :
+                              incident.classification === 'serious' ? 'text-orange-400 border-orange-400' :
+                              'text-yellow-400 border-yellow-400'
+                            }
+                          >
+                            {incident.classification}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </ScrollArea>
         </DialogContent>
       </Dialog>
 
       {/* Grievances Modal */}
-      <Dialog open={activeModal === 'grievances'} onOpenChange={(open) => !open && setActiveModal(null)}>
+      <Dialog open={activeModal === 'grievances'} onOpenChange={(open) => {
+        if (!open) {
+          setActiveModal(null);
+          setSelectedGrievance(null);
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
+              {selectedGrievance && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0 mr-1"
+                  onClick={() => setSelectedGrievance(null)}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
               <MessageSquare className="h-5 w-5 text-cyan-400" />
-              Open Grievances
+              {selectedGrievance ? 'Grievance Details' : 'Open Grievances'}
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[400px]">
-            {(!metrics?.grievancesList || metrics.grievancesList.length === 0) ? (
-              <p className="text-muted-foreground text-center py-4">No open grievances</p>
-            ) : (
-              <div className="space-y-3">
-                {metrics.grievancesList.map((grievance) => (
-                  <Link key={grievance.id} href={`/projects/${grievance.projectId}`}>
-                    <div className="p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors">
-                      <p className="font-medium text-foreground">{grievance.title}</p>
-                      <p className="text-xs text-muted-foreground">{grievance.projectName}</p>
-                      <div className="flex gap-2 mt-1">
-                        <Badge variant="outline" className="text-cyan-400 border-cyan-400">
-                          {grievance.category}
-                        </Badge>
-                        <Badge 
-                          variant="outline" 
-                          className={
-                            grievance.priority === 'urgent' ? 'text-red-400 border-red-400' :
-                            grievance.priority === 'high' ? 'text-orange-400 border-orange-400' :
-                            'text-muted-foreground border-muted-foreground'
-                          }
-                        >
-                          {grievance.priority}
-                        </Badge>
-                      </div>
+            {selectedGrievance ? (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-foreground text-lg">{selectedGrievance.title}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedGrievance.projectName}</p>
+                </div>
+                
+                <div className="flex gap-2 flex-wrap">
+                  <Badge variant="outline" className="text-cyan-400 border-cyan-400">
+                    {selectedGrievance.category}
+                  </Badge>
+                  <Badge 
+                    variant="outline" 
+                    className={
+                      selectedGrievance.priority === 'urgent' ? 'text-red-400 border-red-400' :
+                      selectedGrievance.priority === 'high' ? 'text-orange-400 border-orange-400' :
+                      'text-muted-foreground border-muted-foreground'
+                    }
+                  >
+                    {selectedGrievance.priority}
+                  </Badge>
+                  <Badge variant="outline" className="text-blue-400 border-blue-400">
+                    {selectedGrievance.status}
+                  </Badge>
+                </div>
+                
+                <Separator />
+                
+                {selectedGrievance.dateReceived && (
+                  <div className="flex items-start gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Date Received</p>
+                      <p className="text-sm text-foreground">
+                        {format(new Date(selectedGrievance.dateReceived), 'PPp')}
+                      </p>
                     </div>
-                  </Link>
-                ))}
+                  </div>
+                )}
+                
+                {selectedGrievance.source && (
+                  <div className="flex items-start gap-2">
+                    <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Source</p>
+                      <p className="text-sm text-foreground capitalize">{selectedGrievance.source.replace(/_/g, ' ')}</p>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex items-start gap-2">
+                  <User className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Complainant</p>
+                    <p className="text-sm text-foreground">
+                      {selectedGrievance.isAnonymous ? (
+                        <span className="italic text-muted-foreground">Anonymous</span>
+                      ) : (
+                        selectedGrievance.complainantName || 'Not provided'
+                      )}
+                    </p>
+                  </div>
+                </div>
+                
+                {selectedGrievance.location && (
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Location</p>
+                      <p className="text-sm text-foreground">{selectedGrievance.location}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {selectedGrievance.description && (
+                  <div className="flex items-start gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Description</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{selectedGrievance.description}</p>
+                    </div>
+                  </div>
+                )}
               </div>
+            ) : (
+              <>
+                {(!metrics?.grievancesList || metrics.grievancesList.length === 0) ? (
+                  <p className="text-muted-foreground text-center py-4">No open grievances</p>
+                ) : (
+                  <div className="space-y-3">
+                    {metrics.grievancesList.map((grievance) => (
+                      <div 
+                        key={grievance.id} 
+                        className="p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                        onClick={() => setSelectedGrievance(grievance)}
+                      >
+                        <p className="font-medium text-foreground">{grievance.title}</p>
+                        <p className="text-xs text-muted-foreground">{grievance.projectName}</p>
+                        <div className="flex gap-2 mt-1">
+                          <Badge variant="outline" className="text-cyan-400 border-cyan-400">
+                            {grievance.category}
+                          </Badge>
+                          <Badge 
+                            variant="outline" 
+                            className={
+                              grievance.priority === 'urgent' ? 'text-red-400 border-red-400' :
+                              grievance.priority === 'high' ? 'text-orange-400 border-orange-400' :
+                              'text-muted-foreground border-muted-foreground'
+                            }
+                          >
+                            {grievance.priority}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </ScrollArea>
         </DialogContent>
