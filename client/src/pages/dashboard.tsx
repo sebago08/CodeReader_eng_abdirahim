@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
-import { DollarSign, Wallet, PiggyBank, AlertTriangle, TrendingUp, Calendar, LogOut, Plus, MoreVertical, Copy, Trash2 } from "lucide-react";
+import { DollarSign, Wallet, PiggyBank, AlertTriangle, TrendingUp, Calendar, LogOut, Plus, MoreVertical, Copy, Trash2, MessageSquare } from "lucide-react";
 import type { DashboardMetrics } from "@shared/schema";
 import ProjectModal from "@/components/project-modal";
 import { format } from "date-fns";
@@ -366,6 +366,35 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
+                <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800" data-testid="card-open-grievances">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg">
+                        <MessageSquare className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Open Grievances
+                        </p>
+                        <p className="text-3xl font-bold text-cyan-600 dark:text-cyan-400" data-testid="text-grievances-total">
+                          {metrics?.openGrievances?.total || 0}
+                        </p>
+                        <div className="flex gap-3 text-xs mt-2">
+                          <span className="text-blue-600 dark:text-blue-400" data-testid="text-grievances-registered">
+                            Registered: {metrics?.openGrievances?.registered || 0}
+                          </span>
+                          <span className="text-yellow-600 dark:text-yellow-400" data-testid="text-grievances-investigating">
+                            Investigating: {metrics?.openGrievances?.underInvestigation || 0}
+                          </span>
+                          <span className="text-red-600 dark:text-red-400" data-testid="text-grievances-escalated">
+                            Escalated: {metrics?.openGrievances?.escalated || 0}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="border-gray-200 dark:border-gray-700 dark:bg-gray-800" data-testid="card-upcoming-milestones">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
@@ -428,6 +457,9 @@ export default function Dashboard() {
                             <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
                               Due Date
                             </TableHead>
+                            <TableHead className="text-gray-700 dark:text-gray-300 font-semibold">
+                              Grievances
+                            </TableHead>
                             <TableHead className="text-gray-700 dark:text-gray-300 font-semibold"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -488,6 +520,18 @@ export default function Dashboard() {
                               </TableCell>
                               <TableCell className="text-gray-600 dark:text-gray-400">
                                 {project.dueDate ? format(new Date(project.dueDate), 'MMM dd, yyyy') : '-'}
+                              </TableCell>
+                              <TableCell>
+                                {project.openGrievances && project.openGrievances > 0 ? (
+                                  <Badge 
+                                    className="bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-100 border-cyan-200"
+                                    data-testid={`badge-grievances-${project.id}`}
+                                  >
+                                    {project.openGrievances}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-gray-400 text-sm" data-testid={`text-grievances-${project.id}`}>0</span>
+                                )}
                               </TableCell>
                               <TableCell>
                                 <DropdownMenu>

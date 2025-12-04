@@ -19,6 +19,7 @@ import { DocumentsTab } from "@/components/project-tabs/documents-tab";
 import { SiteLogsTab } from "@/components/tabs/site-logs-tab";
 import PreConstructionTab from "@/components/project-tabs/pre-construction-tab";
 import IncidentsTab from "@/components/project-tabs/incidents-tab";
+import GrievancesTab from "@/components/project-tabs/grievances-tab";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ProjectWithRoads, ProjectDocument } from "@shared/schema";
 
@@ -37,7 +38,7 @@ export default function ProjectDetail() {
   // Get initial tab from URL hash
   const getInitialTab = () => {
     const hash = window.location.hash.slice(1);
-    const validTabs = ["overview", "workplan", "progress", "budget", "safety", "incidents", "pre-construction", "team", "documents", "site-logs"];
+    const validTabs = ["overview", "workplan", "progress", "budget", "safety", "incidents", "grievances", "pre-construction", "team", "documents", "site-logs"];
     return validTabs.includes(hash) ? hash : "overview";
   };
   
@@ -47,7 +48,7 @@ export default function ProjectDetail() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
-      const validTabs = ["overview", "workplan", "progress", "budget", "safety", "incidents", "pre-construction", "team", "documents", "site-logs"];
+      const validTabs = ["overview", "workplan", "progress", "budget", "safety", "incidents", "grievances", "pre-construction", "team", "documents", "site-logs"];
       if (validTabs.includes(hash)) {
         setActiveTab(hash);
       }
@@ -228,6 +229,9 @@ export default function ProjectDetail() {
               <TabsTrigger value="incidents" data-testid="tab-incidents">
                 Incidents
               </TabsTrigger>
+              <TabsTrigger value="grievances" data-testid="tab-grievances">
+                Grievances
+              </TabsTrigger>
               <TabsTrigger value="pre-construction" data-testid="tab-pre-construction">
                 Pre-construction
               </TabsTrigger>
@@ -270,6 +274,10 @@ export default function ProjectDetail() {
 
             <TabsContent value="incidents" data-testid="tab-content-incidents">
               {projectId && <IncidentsTab projectId={projectId} project={project} />}
+            </TabsContent>
+
+            <TabsContent value="grievances" data-testid="tab-content-grievances">
+              {projectId && <GrievancesTab projectId={projectId} project={project} />}
             </TabsContent>
 
             <TabsContent value="pre-construction" data-testid="tab-content-pre-construction">

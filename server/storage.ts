@@ -7,6 +7,7 @@ import {
   activities,
   safetyIncidents,
   incidentReports,
+  grievances,
   projectMembers,
   projectInvitations,
   clientPersonnel,
@@ -37,6 +38,8 @@ import {
   type InsertSafetyIncident,
   type IncidentReport,
   type InsertIncidentReport,
+  type Grievance,
+  type InsertGrievance,
   type ProjectWithRoads,
   type ProjectMember,
   type InsertProjectMember,
@@ -230,6 +233,14 @@ export interface IStorage {
   updateIncidentReport(id: string, report: Partial<InsertIncidentReport>): Promise<IncidentReport>;
   deleteIncidentReport(id: string): Promise<void>;
   getCriticalIncidents(userId: string): Promise<IncidentReport[]>;
+  
+  // Grievance operations
+  getGrievances(projectId: string): Promise<Grievance[]>;
+  getGrievance(id: string): Promise<Grievance | undefined>;
+  createGrievance(projectId: string, grievance: InsertGrievance): Promise<Grievance>;
+  updateGrievance(id: string, grievance: Partial<InsertGrievance>): Promise<Grievance>;
+  deleteGrievance(id: string): Promise<void>;
+  getOpenGrievances(userId: string): Promise<Grievance[]>;
   
   // Dashboard operations
   getDashboardMetrics(userId: string): Promise<import("@shared/schema").DashboardMetrics>;
@@ -682,6 +693,14 @@ export class MemStorage implements IStorage {
   async deleteIncidentReport(): Promise<void> { throw new Error('Not supported in MemStorage'); }
   async getCriticalIncidents(_userId: string): Promise<IncidentReport[]> { return []; }
   
+  // Grievance stubs
+  async getGrievances(): Promise<Grievance[]> { return []; }
+  async getGrievance(): Promise<Grievance | undefined> { return undefined; }
+  async createGrievance(): Promise<Grievance> { throw new Error('Not supported in MemStorage'); }
+  async updateGrievance(): Promise<Grievance> { throw new Error('Not supported in MemStorage'); }
+  async deleteGrievance(): Promise<void> { throw new Error('Not supported in MemStorage'); }
+  async getOpenGrievances(_userId: string): Promise<Grievance[]> { return []; }
+  
   // Progress tracker stubs
   async getProgressTrackers(): Promise<ProgressTracker[]> { return []; }
   async getProgressTracker(): Promise<ProgressTrackerWithItems | undefined> { return undefined; }
@@ -699,6 +718,7 @@ export class MemStorage implements IStorage {
       projectsBehindSchedule: 0,
       criticalSafetyIssues: { total: 0, high: 0, medium: 0, low: 0 },
       openIncidentReports: { total: 0, severe: 0, serious: 0, indicative: 0 },
+      openGrievances: { total: 0, registered: 0, underInvestigation: 0, escalated: 0 },
       upcomingMilestones: 0,
       activeProjects: [],
     };
@@ -1909,6 +1929,82 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(incidentReports.incidentDateTime));
   }
   
+  // Grievance operations
+  async getGrievances(projectId: string): Promise<Grievance[]> {
+    return await db.select()
+      .from(grievances)
+      .where(eq(grievances.projectId, projectId))
+      .orderBy(desc(grievances.dateReceived));
+  }
+  
+  async getGrievance(id: string): Promise<Grievance | undefined> {
+    const [grievance] = await db.select()
+      .from(grievances)
+      .where(eq(grievances.id, id));
+    return grievance;
+  }
+  
+  async createGrievance(projectId: string, grievance: InsertGrievance): Promise<Grievance> {
+    // Auto-generate grievance number
+    const count = await db.select({ count: sql`count(*)` })
+      .from(grievances)
+      .where(eq(grievances.projectId, projectId));
+    const grievanceNumber = `GRV-${projectId.substring(0, 4).toUpperCase()}-${String(Number(count[0].count) + 1).padStart(4, '0')}`;
+    
+    const [created] = await db.insert(grievances)
+      .values({
+        ...grievance,
+        projectId,
+        grievanceNumber,
+        dateReceived: grievance.dateReceived ?? new Date(),
+      })
+      .returning();
+    return created;
+  }
+  
+  async updateGrievance(id: string, grievance: Partial<InsertGrievance>): Promise<Grievance> {
+    const updateData: Record<string, any> = {
+      ...grievance,
+      updatedAt: new Date(),
+    };
+    
+    const [updated] = await db.update(grievances)
+      .set(updateData)
+      .where(eq(grievances.id, id))
+      .returning();
+    return updated;
+  }
+  
+  async deleteGrievance(id: string): Promise<void> {
+    await db.delete(grievances)
+      .where(eq(grievances.id, id));
+  }
+  
+  async getOpenGrievances(userId: string): Promise<Grievance[]> {
+    // Get user's projects first
+    const userProjects = await db.select().from(projects).where(eq(projects.userId, userId));
+    const projectIds = userProjects.map(p => p.id);
+    
+    if (projectIds.length === 0) {
+      return [];
+    }
+    
+    return await db.select()
+      .from(grievances)
+      .where(
+        and(
+          inArray(grievances.projectId, projectIds),
+          or(
+            eq(grievances.status, 'registered'),
+            eq(grievances.status, 'acknowledged'),
+            eq(grievances.status, 'under_investigation'),
+            eq(grievances.status, 'escalated')
+          )
+        )
+      )
+      .orderBy(desc(grievances.dateReceived));
+  }
+  
   // Dashboard operations
   async getDashboardMetrics(userId: string): Promise<import("@shared/schema").DashboardMetrics> {
     const today = new Date();
@@ -1933,6 +2029,7 @@ export class DatabaseStorage implements IStorage {
         projectsBehindSchedule: 0,
         criticalSafetyIssues: { total: 0, high: 0, medium: 0, low: 0 },
         openIncidentReports: { total: 0, severe: 0, serious: 0, indicative: 0 },
+        openGrievances: { total: 0, registered: 0, underInvestigation: 0, escalated: 0 },
         upcomingMilestones: 0,
         activeProjects: [],
       };
@@ -1985,6 +2082,25 @@ export class DatabaseStorage implements IStorage {
     const severeIncidents = allIncidentReports.filter(ir => ir.classification === 'severe').length;
     const seriousIncidents = allIncidentReports.filter(ir => ir.classification === 'serious').length;
     const indicativeIncidents = allIncidentReports.filter(ir => ir.classification === 'indicative').length;
+    
+    // 3c. Open Grievances (not yet resolved or closed)
+    const allOpenGrievances = await db.select()
+      .from(grievances)
+      .where(
+        and(
+          inArray(grievances.projectId, projectIds),
+          or(
+            eq(grievances.status, 'registered'),
+            eq(grievances.status, 'acknowledged'),
+            eq(grievances.status, 'under_investigation'),
+            eq(grievances.status, 'escalated')
+          )
+        )
+      );
+    
+    const registeredGrievances = allOpenGrievances.filter(g => g.status === 'registered' || g.status === 'acknowledged').length;
+    const underInvestigationGrievances = allOpenGrievances.filter(g => g.status === 'under_investigation').length;
+    const escalatedGrievances = allOpenGrievances.filter(g => g.status === 'escalated').length;
     
     // 4. Upcoming Milestones (next 30 days)
     const upcomingMiles = await db.select()
@@ -2118,6 +2234,8 @@ export class DatabaseStorage implements IStorage {
           }
         }
         
+        const projectGrievances = allOpenGrievances.filter(g => g.projectId === project.id).length;
+        
         return {
           id: project.id,
           name: project.name,
@@ -2126,6 +2244,7 @@ export class DatabaseStorage implements IStorage {
           timeProgress: Math.round(timeProgress),
           physicalProgress: Math.round(physicalProgress),
           dueDate: project.endDate || null,
+          openGrievances: projectGrievances,
         };
       });
     }
@@ -2146,6 +2265,12 @@ export class DatabaseStorage implements IStorage {
         severe: severeIncidents,
         serious: seriousIncidents,
         indicative: indicativeIncidents,
+      },
+      openGrievances: {
+        total: allOpenGrievances.length,
+        registered: registeredGrievances,
+        underInvestigation: underInvestigationGrievances,
+        escalated: escalatedGrievances,
       },
       upcomingMilestones: upcomingMilestonesCount,
       activeProjects: activeProjectsWithRoads,
