@@ -350,7 +350,7 @@ export function WorkPlanList({ projectId, projectName, onCreateClick, onEditClic
 
       {/* View Work Plan Modal */}
       <Dialog open={!!selectedWorkPlan} onOpenChange={(open) => !open && setSelectedWorkPlan(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh]">
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <Eye className="h-5 w-5 text-blue-400" />
@@ -360,51 +360,30 @@ export function WorkPlanList({ projectId, projectName, onCreateClick, onEditClic
               Work plan details and activities
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh] pr-4">
+          <ScrollArea className="max-h-[70vh]">
             {selectedWorkPlan && (
-              <div className="space-y-6">
-                {/* Status and Meta Info */}
-                <div className="flex flex-wrap gap-3">
+              <div className="space-y-6 pr-4">
+                {/* Header Info Row */}
+                <div className="flex flex-wrap items-center gap-4">
                   <Badge className={getStatusColor(selectedWorkPlan.status)}>
                     {selectedWorkPlan.status}
                   </Badge>
-                </div>
-
-                <Separator />
-
-                {/* Details Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex items-start gap-2">
-                    <User className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Owner</p>
-                      <p className="text-sm text-foreground">
-                        {selectedWorkPlan.owner 
-                          ? `${selectedWorkPlan.owner.firstName || ''} ${selectedWorkPlan.owner.lastName || ''}`.trim() || 'Unassigned'
-                          : 'Unassigned'}
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <User className="h-4 w-4" />
+                    <span>
+                      {selectedWorkPlan.owner 
+                        ? `${selectedWorkPlan.owner.firstName || ''} ${selectedWorkPlan.owner.lastName || ''}`.trim() || 'Unassigned'
+                        : 'Unassigned'}
+                    </span>
                   </div>
-                  
-                  <div className="flex items-start gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Last Updated</p>
-                      <p className="text-sm text-foreground">
-                        {getTimeAgo(selectedWorkPlan.updatedAt)}
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>Updated: {getTimeAgo(selectedWorkPlan.updatedAt)}</span>
                   </div>
-
                   {selectedWorkPlan.createdAt && (
-                    <div className="flex items-start gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Created</p>
-                        <p className="text-sm text-foreground">
-                          {format(new Date(selectedWorkPlan.createdAt), 'PPP')}
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      <span>Created: {format(new Date(selectedWorkPlan.createdAt), 'MMM d, yyyy')}</span>
                     </div>
                   )}
                 </div>
@@ -424,7 +403,7 @@ export function WorkPlanList({ projectId, projectName, onCreateClick, onEditClic
                 {/* Activities Section */}
                 <Separator />
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-4">
                     <Target className="h-4 w-4 text-muted-foreground" />
                     <p className="text-sm font-medium text-foreground">Activities ({activities.length})</p>
                   </div>
@@ -432,44 +411,60 @@ export function WorkPlanList({ projectId, projectName, onCreateClick, onEditClic
                   {activities.length === 0 ? (
                     <p className="text-sm text-muted-foreground italic">No activities defined yet.</p>
                   ) : (
-                    <div className="space-y-2">
-                      {activities.slice(0, 10).map((activity) => (
-                        <div 
-                          key={activity.id}
-                          className="p-3 rounded-lg bg-muted/50 border"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground truncate">
-                                {activity.activityName}
-                              </p>
-                              {activity.itemType === 'section' && (
-                                <p className="text-xs text-muted-foreground">
-                                  Section header
-                                </p>
-                              )}
-                            </div>
-                            <div className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                              {activity.duration && <span>{activity.duration} days</span>}
-                            </div>
-                          </div>
-                          {(activity.startDate || activity.endDate) && (
-                            <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                              {activity.startDate && (
-                                <span>Start: {format(new Date(activity.startDate), 'MMM d, yyyy')}</span>
-                              )}
-                              {activity.endDate && (
-                                <span>End: {format(new Date(activity.endDate), 'MMM d, yyyy')}</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                      {activities.length > 10 && (
-                        <p className="text-xs text-muted-foreground text-center pt-2">
-                          ... and {activities.length - 10} more activities
-                        </p>
-                      )}
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[600px]">
+                          <thead className="bg-muted/50">
+                            <tr className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                              <th className="px-4 py-3 w-8">#</th>
+                              <th className="px-4 py-3">Activity Name</th>
+                              <th className="px-4 py-3">Type</th>
+                              <th className="px-4 py-3">Start Date</th>
+                              <th className="px-4 py-3">End Date</th>
+                              <th className="px-4 py-3 text-right">Duration</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-background divide-y divide-border">
+                            {activities.map((activity, index) => (
+                              <tr 
+                                key={activity.id} 
+                                className={`hover:bg-muted/50 ${activity.itemType === 'section' ? 'bg-muted/30 font-medium' : ''}`}
+                              >
+                                <td className="px-4 py-3 text-sm text-muted-foreground">
+                                  {index + 1}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`text-sm ${activity.itemType === 'section' ? 'text-foreground font-semibold' : 'text-foreground'}`}>
+                                    {activity.activityName}
+                                  </span>
+                                  {activity.isMilestone && (
+                                    <Badge variant="outline" className="ml-2 text-xs text-amber-400 border-amber-400">
+                                      Milestone
+                                    </Badge>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${activity.itemType === 'section' ? 'text-purple-400 border-purple-400' : 'text-blue-400 border-blue-400'}`}
+                                  >
+                                    {activity.itemType === 'section' ? 'Section' : 'Activity'}
+                                  </Badge>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">
+                                  {activity.startDate ? format(new Date(activity.startDate), 'MMM d, yyyy') : '-'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">
+                                  {activity.endDate ? format(new Date(activity.endDate), 'MMM d, yyyy') : '-'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-muted-foreground text-right whitespace-nowrap">
+                                  {activity.duration ? `${activity.duration} days` : '-'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   )}
                 </div>
