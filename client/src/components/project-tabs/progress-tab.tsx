@@ -222,7 +222,7 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
       {/* Nested Sub-Tabs */}
       <Tabs defaultValue="progress-tracking" className="w-full">
         <TabsList 
-          className={`grid w-full mb-6 ${project.projectType === "Road" ? "grid-cols-5" : "grid-cols-4"}`} 
+          className={`grid w-full mb-6 ${project.projectType === "Road" ? "grid-cols-4" : "grid-cols-3"}`} 
           data-testid="progress-subtabs"
         >
           <TabsTrigger value="progress-tracking" data-testid="tab-progress-tracking">
@@ -233,9 +233,6 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
           </TabsTrigger>
           <TabsTrigger value="financial" data-testid="tab-financial">
             Financial
-          </TabsTrigger>
-          <TabsTrigger value="updates" data-testid="tab-updates">
-            Updates
           </TabsTrigger>
           {project.projectType === "Road" && (
             <TabsTrigger value="road-tracker" data-testid="tab-road-tracker">
@@ -519,21 +516,6 @@ export default function ProgressTab({ project, onEditRoad, onAddRoad, onAddProgr
                   </Table>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Updates Sub-Tab */}
-        <TabsContent value="updates" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle data-testid="heading-updates">Updates</CardTitle>
-              <CardDescription>Project updates and notes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <p>Updates feature coming soon.</p>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
