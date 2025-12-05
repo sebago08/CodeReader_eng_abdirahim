@@ -392,8 +392,8 @@ export default function OverviewTab({ project }: OverviewTabProps) {
 
 
         {/* Fixed Dashboard Layout */}
-        {/* Top Row: Contractor and Project Info (2 cards) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Top Row: Contractor, Project Info, and Pre-Commencement Checklist (3 cards) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Contractor Card - Clickable */}
           <Card 
             className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50 group"
@@ -431,6 +431,33 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                   <p className="text-sm text-muted-foreground group-hover:text-primary transition-colors">Project Info</p>
                   <p className="text-lg font-semibold" data-testid="text-project-type">
                     {project.projectType || 'General'}
+                  </p>
+                  <p className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">Click for details</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Pre-Commencement Checklist Card - Clickable */}
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50 group"
+            onClick={() => setDetailModal('preCommencement')}
+            data-testid="card-pre-commencement"
+          >
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-orange-950/20 flex items-center justify-center">
+                  <ListTodo className="h-5 w-5 text-orange-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-muted-foreground group-hover:text-primary transition-colors">Pre-Commencement</p>
+                  <p className="text-lg font-semibold" data-testid="text-pre-commencement-status">
+                    {overduePreCommencement > 0 
+                      ? <span className="text-red-400">{overduePreCommencement} overdue</span>
+                      : pendingItems.length > 0 
+                        ? <span className="text-orange-400">{pendingItems.length} pending</span>
+                        : <span className="text-green-400">All submitted</span>
+                    }
                   </p>
                   <p className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">Click for details</p>
                 </div>
@@ -687,43 +714,6 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             </CardContent>
           </Card>
 
-          {/* Pre-Commencement Checklist */}
-          <Card 
-            className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50"
-            onClick={() => setDetailModal('preCommencement')}
-            data-testid="card-pre-commencement"
-          >
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <ListTodo className="h-4 w-4" />
-                Pre-Commencement Checklist
-              </CardTitle>
-              <CardDescription>Pending submissions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {preCommencementItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No checklist items</p>
-              ) : (
-                <div className="space-y-2">
-                  {overduePreCommencement > 0 && (
-                    <div className="text-sm text-red-400 font-medium">
-                      {overduePreCommencement} overdue
-                    </div>
-                  )}
-                  {pendingItems.length > 0 && (
-                    <div className="text-sm text-orange-400 font-medium">
-                      {pendingItems.length} pending
-                    </div>
-                  )}
-                  {submittedItems.length > 0 && (
-                    <div className="text-sm text-green-400 font-medium">
-                      {submittedItems.length} submitted
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         {/* Client and Contractor Information - Collapsible */}
