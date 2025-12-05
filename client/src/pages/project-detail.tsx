@@ -56,11 +56,10 @@ export default function ProjectDetail() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  const { data: projects, isLoading } = useQuery<ProjectWithRoads[]>({
-    queryKey: ["/api/projects"],
+  const { data: project, isLoading } = useQuery<ProjectWithRoads>({
+    queryKey: ["/api/projects", projectId],
+    enabled: !!projectId,
   });
-
-  const project = projects?.find(p => p.id === projectId);
 
   const handleAddRoad = (project: ProjectWithRoads) => {
     setEditingProject(project);
@@ -92,7 +91,7 @@ export default function ProjectDetail() {
         title: "Success",
         description: "Layer progress has been reset successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId] });
     } catch (error) {
       toast({
         title: "Error",
