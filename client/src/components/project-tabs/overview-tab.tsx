@@ -102,19 +102,6 @@ export default function OverviewTab({ project }: OverviewTabProps) {
   const investigatingCount = openGrievances.filter(g => g.status === 'under_investigation').length;
   const escalatedCount = openGrievances.filter(g => g.status === 'escalated').length;
 
-  // Calculate overdue pre-commencement items
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const overduePreCommencement = preCommencementItems.filter(item => {
-    if (item.status !== 'pending' || !item.deadline) return false;
-    const deadlineDate = new Date(item.deadline);
-    deadlineDate.setHours(0, 0, 0, 0);
-    return deadlineDate < today;
-  }).length;
-
-  const submittedItems = preCommencementItems.filter(item => item.status === 'submitted');
-  const pendingItems = preCommencementItems.filter(item => item.status === 'pending');
-
   // Fetch work plan activities for BOQ summary (non-Road projects)
   const { data: workPlanActivities = [] } = useQuery<any[]>({
     queryKey: [`/api/projects/${project.id}/activities`],
@@ -138,6 +125,19 @@ export default function OverviewTab({ project }: OverviewTabProps) {
     queryKey: [`/api/projects/${project.id}/pre-commencement`],
     enabled: !!project.id,
   });
+
+  // Calculate overdue pre-commencement items
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const overduePreCommencement = preCommencementItems.filter(item => {
+    if (item.status !== 'pending' || !item.deadline) return false;
+    const deadlineDate = new Date(item.deadline);
+    deadlineDate.setHours(0, 0, 0, 0);
+    return deadlineDate < today;
+  }).length;
+
+  const submittedItems = preCommencementItems.filter(item => item.status === 'submitted');
+  const pendingItems = preCommencementItems.filter(item => item.status === 'pending');
 
   const getStatusColor = (status: string) => {
     switch (status) {
