@@ -33,7 +33,32 @@ The frontend employs TanStack Query for server state management and React Hook F
 - **File Storage**: Abstracted file management.
 
 **Authentication & Authorization:**
-The system uses Passport Local authentication with session-based cookies. Users register with username, email, and password. Frontend hooks manage session state. Backend uses Passport.js with LocalStrategy for email authentication. Sessions are stored server-side with `express-session`. All users are auto-approved. Role-based access control is implemented via `isAuthenticated` middleware for protected API endpoints, ensuring data isolation and appropriate access levels, with additional privileges for admin users.
+The system uses Passport Local authentication with session-based cookies. Users register with username, email, and password. Frontend hooks manage session state. Backend uses Passport.js with LocalStrategy for email authentication. Sessions are stored server-side with `express-session`.
+
+**User Approval System:**
+- New users register but are NOT automatically approved (isApproved = false by default)
+- Users must wait for Super Admin approval before they can log in
+- When unapproved users try to login, they receive a clear message about pending approval
+
+**Role Hierarchy:**
+- **Regular Users**: Can access their own projects and collaborate on shared projects
+- **Admin**: Can view all users in the admin dashboard
+- **Super Admin**: Full user management capabilities - approve/deactivate users, promote/demote admins, delete accounts
+
+**Bootstrap Process:**
+To create the first Super Admin:
+1. Register a new user account
+2. Navigate to `/bootstrap`
+3. Enter the username and bootstrap secret (default: `constructtrack-admin-2024`)
+4. Check "Make Super Admin" and submit
+
+**Security Notes:**
+- Bootstrap can only create a super admin if none exists; subsequent attempts are rejected
+- All admin endpoints prevent self-modification (can't deactivate/demote/delete yourself)
+- The last super admin cannot be deactivated, demoted, or deleted
+- Set `BOOTSTRAP_SECRET` environment variable in production to use a custom secret
+
+Role-based access control is implemented via `isAuthenticated`, `isAdmin`, and `isSuperAdmin` middleware for protected API endpoints, ensuring data isolation and appropriate access levels.
 
 ## System Design Choices
 

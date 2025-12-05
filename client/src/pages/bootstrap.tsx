@@ -3,12 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Shield } from "lucide-react";
+import { Loader2, Shield, Crown } from "lucide-react";
 
 export default function Bootstrap() {
-  const [username, setUsername] = useState("sebago08");
+  const [username, setUsername] = useState("");
   const [secret, setSecret] = useState("");
+  const [makeSuperAdmin, setMakeSuperAdmin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -20,7 +22,7 @@ export default function Bootstrap() {
       const response = await fetch("/api/bootstrap/promote-admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, secret }),
+        body: JSON.stringify({ username, secret, makeSuperAdmin }),
       });
 
       const data = await response.json();
@@ -31,10 +33,11 @@ export default function Bootstrap() {
 
       toast({
         title: "Success!",
-        description: `User ${username} has been promoted to admin. You can now login.`,
+        description: data.message,
       });
 
       setSecret("");
+      setUsername("");
     } catch (error: any) {
       toast({
         title: "Error",
@@ -51,11 +54,11 @@ export default function Bootstrap() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6" />
+            <Shield className="h-6 w-6 text-orange-500" />
             <CardTitle className="text-2xl">Admin Bootstrap</CardTitle>
           </div>
           <CardDescription>
-            Promote an existing user to admin. This should only be used once to create the first admin account.
+            Promote an existing user to admin or super admin. This should only be used once to create the first admin account.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -67,10 +70,13 @@ export default function Bootstrap() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
+                placeholder="Enter username of registered user"
                 required
                 data-testid="input-username"
               />
+              <p className="text-xs text-muted-foreground">
+                User must already be registered in the system
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -89,6 +95,24 @@ export default function Bootstrap() {
               </p>
             </div>
 
+            <div className="flex items-center space-x-2 p-3 bg-purple-50 dark:bg-purple-950 rounded-lg border border-purple-200 dark:border-purple-800">
+              <Checkbox
+                id="superAdmin"
+                checked={makeSuperAdmin}
+                onCheckedChange={(checked) => setMakeSuperAdmin(checked === true)}
+                data-testid="checkbox-super-admin"
+              />
+              <div className="flex items-center gap-2">
+                <Crown className="h-4 w-4 text-purple-600" />
+                <Label htmlFor="superAdmin" className="text-sm font-medium cursor-pointer">
+                  Make Super Admin
+                </Label>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Super Admins can approve users, manage roles, and delete accounts
+            </p>
+
             <Button
               type="submit"
               className="w-full"
@@ -101,7 +125,10 @@ export default function Bootstrap() {
                   Promoting...
                 </>
               ) : (
-                "Promote to Admin"
+                <>
+                  {makeSuperAdmin && <Crown className="mr-2 h-4 w-4" />}
+                  {makeSuperAdmin ? "Promote to Super Admin" : "Promote to Admin"}
+                </>
               )}
             </Button>
           </form>

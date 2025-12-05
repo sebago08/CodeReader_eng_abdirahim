@@ -93,8 +93,11 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   approveUser(userId: string): Promise<User>;
+  deactivateUser(userId: string): Promise<User>;
   rejectUser(userId: string): Promise<void>;
-  promoteToAdmin(username: string): Promise<User>;
+  promoteToAdmin(userId: string): Promise<User>;
+  demoteFromAdmin(userId: string): Promise<User>;
+  updateUserRole(userId: string, updates: { isAdmin?: boolean; isSuperAdmin?: boolean; isApproved?: boolean }): Promise<User>;
   
   // Project operations
   getProjects(userId: string): Promise<ProjectWithRoads[]>;
@@ -297,11 +300,12 @@ export class MemStorage implements IStorage {
       id,
       authId: userData.authId || null,
       username: userData.username,
-      password: userData.password,
+      password: userData.password || null,
       email: userData.email,
       firstName: userData.firstName || null,
       lastName: userData.lastName || null,
       isAdmin: userData.isAdmin ?? false,
+      isSuperAdmin: userData.isSuperAdmin ?? false,
       isApproved: userData.isApproved ?? false,
       createdAt: now,
       updatedAt: now,
@@ -332,8 +336,21 @@ export class MemStorage implements IStorage {
     this.users.delete(userId);
   }
 
-  async promoteToAdmin(username: string): Promise<User> {
-    const user = Array.from(this.users.values()).find(u => u.username === username);
+  async deactivateUser(userId: string): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) throw new Error('User not found');
+    
+    const updatedUser: User = {
+      ...user,
+      isApproved: false,
+      updatedAt: new Date(),
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+
+  async promoteToAdmin(userId: string): Promise<User> {
+    const user = this.users.get(userId);
     if (!user) throw new Error('User not found');
     
     const updatedUser: User = {
@@ -343,6 +360,32 @@ export class MemStorage implements IStorage {
       updatedAt: new Date(),
     };
     this.users.set(user.id, updatedUser);
+    return updatedUser;
+  }
+
+  async demoteFromAdmin(userId: string): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) throw new Error('User not found');
+    
+    const updatedUser: User = {
+      ...user,
+      isAdmin: false,
+      updatedAt: new Date(),
+    };
+    this.users.set(user.id, updatedUser);
+    return updatedUser;
+  }
+
+  async updateUserRole(userId: string, updates: { isAdmin?: boolean; isSuperAdmin?: boolean; isApproved?: boolean }): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) throw new Error('User not found');
+    
+    const updatedUser: User = {
+      ...user,
+      ...updates,
+      updatedAt: new Date(),
+    };
+    this.users.set(userId, updatedUser);
     return updatedUser;
   }
 
@@ -799,11 +842,41 @@ export class DatabaseStorage implements IStorage {
     await db.delete(users).where(eq(users.id, userId));
   }
 
-  async promoteToAdmin(username: string): Promise<User> {
+  async deactivateUser(userId: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ isApproved: false, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!updatedUser) throw new Error('User not found');
+    return updatedUser;
+  }
+
+  async promoteToAdmin(userId: string): Promise<User> {
     const [updatedUser] = await db
       .update(users)
       .set({ isAdmin: true, isApproved: true, updatedAt: new Date() })
-      .where(eq(users.username, username))
+      .where(eq(users.id, userId))
+      .returning();
+    if (!updatedUser) throw new Error('User not found');
+    return updatedUser;
+  }
+
+  async demoteFromAdmin(userId: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ isAdmin: false, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!updatedUser) throw new Error('User not found');
+    return updatedUser;
+  }
+
+  async updateUserRole(userId: string, updates: { isAdmin?: boolean; isSuperAdmin?: boolean; isApproved?: boolean }): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, userId))
       .returning();
     if (!updatedUser) throw new Error('User not found');
     return updatedUser;

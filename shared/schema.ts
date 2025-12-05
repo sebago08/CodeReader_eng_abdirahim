@@ -37,7 +37,8 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   isAdmin: boolean("is_admin").default(false).notNull(),
-  isApproved: boolean("is_approved").default(true).notNull(),
+  isSuperAdmin: boolean("is_super_admin").default(false).notNull(), // Super admin can manage all users
+  isApproved: boolean("is_approved").default(false).notNull(), // New users must be approved by admin
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

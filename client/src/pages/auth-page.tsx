@@ -1,4 +1,5 @@
 // Passport Local Auth implementation
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Redirect } from "wouter";
-import { Loader2, Building2 } from "lucide-react";
+import { Loader2, Building2, Clock, CheckCircle } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email address"),
@@ -29,6 +30,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -54,7 +56,13 @@ export default function AuthPage() {
   };
 
   const handleRegister = (data: RegisterFormData) => {
-    registerMutation.mutate(data);
+    registerMutation.mutate(data, {
+      onSuccess: (result: any) => {
+        if (result?.pendingApproval) {
+          setPendingApproval(true);
+        }
+      }
+    });
   };
 
   // Redirect if already logged in
@@ -66,6 +74,46 @@ export default function AuthPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-border" data-testid="loading-spinner" />
+      </div>
+    );
+  }
+
+  // Show pending approval screen
+  if (pendingApproval) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8 bg-background">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <Clock className="h-8 w-8 text-amber-500" />
+            </div>
+            <CardTitle className="text-2xl">Account Pending Approval</CardTitle>
+            <CardDescription className="text-base mt-2">
+              Your account has been created successfully. An administrator will review and approve your access shortly.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-muted rounded-lg p-4">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                What happens next?
+              </h4>
+              <ul className="text-sm text-muted-foreground space-y-1 ml-6">
+                <li>An administrator will review your registration</li>
+                <li>You'll receive access once approved</li>
+                <li>You can then sign in with your credentials</li>
+              </ul>
+            </div>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => setPendingApproval(false)}
+              data-testid="button-back-to-login"
+            >
+              Back to Sign In
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
