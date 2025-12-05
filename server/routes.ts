@@ -665,65 +665,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Bootstrap endpoint to create first super admin (protected by secret key)
-  // This should only be used once to create the first super admin
-  app.post('/api/bootstrap/promote-admin', async (req: any, res) => {
-    try {
-      const { username, secret, makeSuperAdmin } = req.body;
-      
-      // Check if secret matches
-      const BOOTSTRAP_SECRET = process.env.BOOTSTRAP_SECRET || 'constructtrack-admin-2024';
-      
-      if (secret !== BOOTSTRAP_SECRET) {
-        return res.status(403).json({ message: "Invalid secret" });
-      }
-      
-      if (!username) {
-        return res.status(400).json({ message: "Username is required" });
-      }
-      
-      // Check if any super admin already exists (for security)
-      const allUsers = await storage.getAllUsers();
-      const existingSuperAdmins = allUsers.filter(u => u.isSuperAdmin);
-      
-      if (makeSuperAdmin && existingSuperAdmins.length > 0) {
-        return res.status(400).json({ 
-          message: "A Super Admin already exists. Use the admin dashboard to manage users." 
-        });
-      }
-      
-      // First, find the user by username
-      const existingUser = await storage.getUserByUsername(username);
-      if (!existingUser) {
-        return res.status(404).json({ message: "User not found. Please register first." });
-      }
-      
-      // Update user to be super admin (if requested) or just admin
-      const updates = {
-        isAdmin: true,
-        isSuperAdmin: makeSuperAdmin === true,
-        isApproved: true,
-      };
-      
-      const user = await storage.updateUserRole(existingUser.id, updates);
-      
-      console.log(`Bootstrap: User ${username} promoted to ${makeSuperAdmin ? 'Super Admin' : 'Admin'}`);
-      
-      res.json({ 
-        message: makeSuperAdmin ? "User promoted to Super Admin successfully" : "User promoted to Admin successfully", 
-        user: { 
-          username: user.username, 
-          isAdmin: user.isAdmin,
-          isSuperAdmin: user.isSuperAdmin,
-          isApproved: user.isApproved
-        } 
-      });
-    } catch (error: any) {
-      console.error("Error promoting user to admin:", error);
-      res.status(500).json({ message: error.message || "Failed to promote user" });
-    }
-  });
-
   // Team collaboration routes
   // Get project members
   app.get('/api/projects/:projectId/members', isAuthenticated, async (req: any, res) => {
