@@ -373,47 +373,8 @@ export default function OverviewTab({ project }: OverviewTabProps) {
 
 
         {/* Fixed Dashboard Layout */}
-        {/* Top Row: Location, Timeline, Contractor, Project Info */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Location Card */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-purple-950/20 flex items-center justify-center">
-                  <MapPin className="h-5 w-5 text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Location</p>
-                  <p className="text-lg font-semibold" data-testid="text-project-location">
-                    {project.location}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Timeline Card - Combined Start, Duration, End */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-orange-950/20 flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-orange-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-muted-foreground">Timeline</p>
-                  <div className="flex items-center gap-1 text-sm font-semibold flex-wrap">
-                    <span data-testid="text-start-date">{formatDate(project.startDate)}</span>
-                    <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                    <span data-testid="text-end-date">{formatDate(project.endDate)}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {project.duration ? `${project.duration} months` : 'Duration not set'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+        {/* Top Row: Contractor and Project Info (2 cards) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Contractor Card - Clickable */}
           <Card 
             className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50 group"
@@ -2107,6 +2068,40 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                 </div>
               </div>
 
+              {/* Timeline Section */}
+              <div className="bg-muted/30 rounded-lg p-4">
+                <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  Timeline
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Start Date</p>
+                    <p className="font-medium" data-testid="text-start-date">{formatDate(project.startDate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">End Date</p>
+                    <p className="font-medium" data-testid="text-end-date">{formatDate(project.endDate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Duration</p>
+                    <p className="font-medium">{project.duration ? `${project.duration} months` : 'Not set'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Location Section */}
+              <div className="bg-muted/30 rounded-lg p-4">
+                <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  Location
+                </h4>
+                <p className="font-medium" data-testid="text-project-location">{project.location || 'Not specified'}</p>
+                {project.projectLocation && (
+                  <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{project.projectLocation}</p>
+                )}
+              </div>
+
               {/* Executive Summary */}
               {project.executiveSummary && (
                 <div>
@@ -2116,19 +2111,6 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                   </h4>
                   <div className="bg-muted/20 rounded-lg p-4 text-sm whitespace-pre-wrap">
                     {project.executiveSummary}
-                  </div>
-                </div>
-              )}
-
-              {/* Project Location Details */}
-              {project.projectLocation && (
-                <div>
-                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                    <MapPinned className="h-4 w-4 text-muted-foreground" />
-                    Location Details
-                  </h4>
-                  <div className="bg-muted/20 rounded-lg p-4 text-sm whitespace-pre-wrap">
-                    {project.projectLocation}
                   </div>
                 </div>
               )}
@@ -2159,12 +2141,12 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                 </div>
               )}
 
-              {/* Empty State */}
-              {!project.executiveSummary && !project.projectLocation && !project.scopeOfWork && !project.description && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p className="font-medium">No additional project details</p>
-                  <p className="text-sm mt-1">Add scope, summary, and location in Edit Project</p>
+              {/* Empty State - Only show if no optional narrative sections */}
+              {!project.executiveSummary && !project.scopeOfWork && !project.description && (
+                <div className="text-center py-4 text-muted-foreground border-t pt-6">
+                  <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No additional narrative details</p>
+                  <p className="text-xs mt-1">Add scope, summary, or description in Edit Project</p>
                 </div>
               )}
             </div>
