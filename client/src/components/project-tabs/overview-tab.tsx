@@ -46,7 +46,7 @@ interface OverviewTabProps {
   project: ProjectWithRoads;
 }
 
-type DetailModalType = 'milestones' | 'actionPoints' | 'incidents' | 'grievances' | 'roadProgress' | 'physicalProgress' | null;
+type DetailModalType = 'milestones' | 'actionPoints' | 'incidents' | 'grievances' | 'roadProgress' | 'physicalProgress' | 'financialProgress' | null;
 
 interface ActionPointAlert {
   id: string;
@@ -489,9 +489,13 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                 </div>
               </div>
 
-              {/* Right side: Financial Progress Chart */}
-              <div className="flex items-center justify-center flex-shrink-0">
-                <div className="relative">
+              {/* Right side: Financial Progress Chart - Clickable for IPC details */}
+              <div 
+                className="flex flex-col items-center justify-center flex-shrink-0 cursor-pointer group"
+                onClick={() => setDetailModal('financialProgress')}
+                data-testid="clickable-financial-progress"
+              >
+                <div className="relative group-hover:scale-105 transition-transform">
                   <svg className="w-28 h-28 transform -rotate-90">
                     <circle
                       cx="56"
@@ -511,17 +515,18 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                       fill="none"
                       strokeDasharray={`${2 * Math.PI * 48}`}
                       strokeDashoffset={`${2 * Math.PI * 48 * (1 - financialProgress / 100)}`}
-                      className="text-blue-400 transition-all duration-300"
+                      className="text-blue-400 transition-all duration-300 group-hover:text-blue-300"
                       strokeLinecap="round"
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="text-xl font-bold">{financialProgress}%</div>
-                      <div className="text-xs text-muted-foreground">Financial</div>
+                      <div className="text-xl font-bold group-hover:text-primary transition-colors">{financialProgress}%</div>
+                      <div className="text-xs text-muted-foreground group-hover:text-primary/80 transition-colors">Financial</div>
                     </div>
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Click for IPCs</p>
               </div>
             </div>
           </CardContent>
@@ -1730,6 +1735,138 @@ export default function OverviewTab({ project }: OverviewTabProps) {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Financial Progress Modal - IPC Table */}
+      <Dialog 
+        open={detailModal === 'financialProgress'} 
+        onOpenChange={(open) => !open && setDetailModal(null)}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5" />
+              Payment Certificates (IPCs)
+            </DialogTitle>
+            <DialogDescription>
+              Financial progress breakdown - Contract Value: ${Number(project.contractAmount || 0).toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-muted-foreground">Total Paid</p>
+                <p className="text-lg font-bold text-green-400">
+                  ${certificates.reduce((sum, cert) => sum + Number(cert.amountPaid || 0), 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-muted-foreground">In Process</p>
+                <p className="text-lg font-bold text-yellow-400">
+                  ${certificates.reduce((sum, cert) => sum + Number(cert.inProcessAmount || 0), 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-muted-foreground">Pending</p>
+                <p className="text-lg font-bold text-orange-400">
+                  ${certificates.reduce((sum, cert) => sum + Number(cert.pendingAmount || 0), 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-muted-foreground">Balance</p>
+                <p className="text-lg font-bold text-blue-400">
+                  ${(Number(project.contractAmount || 0) - certificates.reduce((sum, cert) => sum + Number(cert.amountPaid || 0), 0)).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            {/* IPC Table */}
+            <ScrollArea className="max-h-[50vh]">
+              {certificates.length > 0 ? (
+                <table className="w-full text-sm" data-testid="ipc-table">
+                  <thead className="sticky top-0 bg-background border-b">
+                    <tr>
+                      <th className="text-left p-3 font-medium">IPC No.</th>
+                      <th className="text-right p-3 font-medium">Submitted</th>
+                      <th className="text-right p-3 font-medium">In Process</th>
+                      <th className="text-right p-3 font-medium">Paid</th>
+                      <th className="text-center p-3 font-medium">Status</th>
+                      <th className="text-center p-3 font-medium">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {certificates.map((cert, index) => (
+                      <tr 
+                        key={cert.id} 
+                        className="hover:bg-muted/30 transition-colors"
+                        data-testid={`ipc-row-${index}`}
+                      >
+                        <td className="p-3 font-medium">{cert.certificateNo}</td>
+                        <td className="p-3 text-right text-orange-400">
+                          ${Number(cert.pendingAmount || 0).toLocaleString()}
+                        </td>
+                        <td className="p-3 text-right text-yellow-400">
+                          ${Number(cert.inProcessAmount || 0).toLocaleString()}
+                        </td>
+                        <td className="p-3 text-right text-green-400">
+                          ${Number(cert.amountPaid || 0).toLocaleString()}
+                        </td>
+                        <td className="p-3 text-center">
+                          <Badge 
+                            variant="outline"
+                            className={`text-xs ${
+                              cert.paymentStatus === 'Paid' ? 'border-green-400 text-green-400' :
+                              cert.paymentStatus === 'In Process' ? 'border-yellow-400 text-yellow-400' :
+                              'border-orange-400 text-orange-400'
+                            }`}
+                          >
+                            {cert.paymentStatus}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-center text-muted-foreground">
+                          {cert.dateCertified ? new Date(cert.dateCertified).toLocaleDateString() : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  {/* Table Footer with Totals */}
+                  <tfoot className="border-t-2 bg-muted/30 font-medium">
+                    <tr>
+                      <td className="p-3">Total</td>
+                      <td className="p-3 text-right text-orange-400">
+                        ${certificates.reduce((sum, cert) => sum + Number(cert.pendingAmount || 0), 0).toLocaleString()}
+                      </td>
+                      <td className="p-3 text-right text-yellow-400">
+                        ${certificates.reduce((sum, cert) => sum + Number(cert.inProcessAmount || 0), 0).toLocaleString()}
+                      </td>
+                      <td className="p-3 text-right text-green-400">
+                        ${certificates.reduce((sum, cert) => sum + Number(cert.amountPaid || 0), 0).toLocaleString()}
+                      </td>
+                      <td className="p-3" colSpan={2}></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Briefcase className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p className="font-medium">No Payment Certificates</p>
+                  <p className="text-sm mt-1">IPCs will appear here once created in the Financial tab</p>
+                </div>
+              )}
+            </ScrollArea>
+
+            {/* Progress Bar */}
+            <div className="pt-2 border-t">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-muted-foreground">Financial Progress</span>
+                <span className="font-medium">{financialProgress}%</span>
+              </div>
+              <Progress value={financialProgress} className="h-2" />
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>
