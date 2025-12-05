@@ -37,7 +37,7 @@ The system uses Passport Local authentication with session-based cookies. Users 
 
 **User Approval System:**
 - New users register but are NOT automatically approved (isApproved = false by default)
-- Users must wait for Super Admin approval before they can log in
+- Users must wait for admin approval before they can log in
 - When unapproved users try to login, they receive a clear message about pending approval
 
 **Role Hierarchy:**
@@ -45,18 +45,23 @@ The system uses Passport Local authentication with session-based cookies. Users 
 - **Admin**: Can view all users in the admin dashboard
 - **Super Admin**: Full user management capabilities - approve/deactivate users, promote/demote admins, delete accounts
 
-**Bootstrap Process:**
-To create the first Super Admin:
-1. Register a new user account
-2. Navigate to `/bootstrap`
-3. Enter the username and bootstrap secret (default: `constructtrack-admin-2024`)
-4. Check "Make Super Admin" and submit
+**Managing Users via Supabase Dashboard:**
+User approvals and role management can be done directly in the Supabase database:
+1. Log in to your Supabase dashboard at https://supabase.com
+2. Navigate to your project > Table Editor > users table
+3. To approve a user: Set `is_approved` to `true`
+4. To make someone an admin: Set `is_admin` to `true`
+5. To make someone a super admin: Set both `is_admin` and `is_super_admin` to `true`
+
+**User Table Fields:**
+- `is_approved`: Controls whether user can log in (false = pending approval)
+- `is_admin`: Grants access to admin dashboard
+- `is_super_admin`: Grants full user management capabilities
 
 **Security Notes:**
-- Bootstrap can only create a super admin if none exists; subsequent attempts are rejected
 - All admin endpoints prevent self-modification (can't deactivate/demote/delete yourself)
-- The last super admin cannot be deactivated, demoted, or deleted
-- Set `BOOTSTRAP_SECRET` environment variable in production to use a custom secret
+- The last super admin cannot be deactivated, demoted, or deleted through the API
+- When modifying roles directly in Supabase, ensure at least one super admin remains active
 
 Role-based access control is implemented via `isAuthenticated`, `isAdmin`, and `isSuperAdmin` middleware for protected API endpoints, ensuring data isolation and appropriate access levels.
 
