@@ -40,8 +40,19 @@ const isAdmin: RequestHandler = (req: any, res, next) => {
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-  if (!req.user.isAdmin) {
+  if (!req.user.isAdmin && !req.user.isSuperAdmin) {
     return res.status(403).json({ message: "Forbidden - Admin access required" });
+  }
+  next();
+};
+
+// Middleware to check if user is super admin (for user management)
+const isSuperAdmin: RequestHandler = (req: any, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!req.user.isSuperAdmin) {
+    return res.status(403).json({ message: "Forbidden - Super Admin access required" });
   }
   next();
 };
@@ -75,6 +86,7 @@ export function registerRoutes(app: Express): Server {
         lastName: 'User',
         password: null,
         isAdmin: true,
+        isSuperAdmin: true,
         isApproved: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -96,6 +108,176 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching dashboard metrics:", error);
       res.status(500).json({ message: "Failed to fetch dashboard metrics" });
+    }
+  });
+
+  // =====================
+  // ADMIN USER MANAGEMENT ROUTES
+  // =====================
+  
+  // Get all users (super admin only)
+  app.get('/api/admin/users', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Remove passwords from response for security
+      const safeUsers = users.map(({ password, ...user }) => user);
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Approve a user (super admin only)
+  app.post('/api/admin/users/:id/approve', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Prevent approving yourself
+      if (id === req.user.id) {
+        return res.status(400).json({ message: "Cannot modify your own approval status" });
+      }
+      
+      const user = await storage.approveUser(id);
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error approving user:", error);
+      res.status(500).json({ message: "Failed to approve user" });
+    }
+  });
+
+  // Deactivate a user (super admin only)
+  app.post('/api/admin/users/:id/deactivate', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Prevent deactivating yourself
+      if (id === req.user.id) {
+        return res.status(400).json({ message: "Cannot deactivate your own account" });
+      }
+      
+      // Check if this is the last super admin
+      const targetUser = await storage.getUser(id);
+      if (targetUser?.isSuperAdmin) {
+        const allUsers = await storage.getAllUsers();
+        const superAdminCount = allUsers.filter(u => u.isSuperAdmin).length;
+        if (superAdminCount <= 1) {
+          return res.status(400).json({ message: "Cannot deactivate the last Super Admin. Promote another user first." });
+        }
+      }
+      
+      const user = await storage.deactivateUser(id);
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error deactivating user:", error);
+      res.status(500).json({ message: "Failed to deactivate user" });
+    }
+  });
+
+  // Promote user to admin (super admin only)
+  app.post('/api/admin/users/:id/promote', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const user = await storage.promoteToAdmin(id);
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error promoting user:", error);
+      res.status(500).json({ message: "Failed to promote user" });
+    }
+  });
+
+  // Demote user from admin (super admin only)
+  app.post('/api/admin/users/:id/demote', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Prevent demoting yourself
+      if (id === req.user.id) {
+        return res.status(400).json({ message: "Cannot demote your own admin status" });
+      }
+      
+      // Check if this is the last super admin
+      const targetUser = await storage.getUser(id);
+      if (targetUser?.isSuperAdmin) {
+        const allUsers = await storage.getAllUsers();
+        const superAdminCount = allUsers.filter(u => u.isSuperAdmin).length;
+        if (superAdminCount <= 1) {
+          return res.status(400).json({ message: "Cannot demote the last Super Admin. Promote another user first." });
+        }
+      }
+      
+      const user = await storage.demoteFromAdmin(id);
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error demoting user:", error);
+      res.status(500).json({ message: "Failed to demote user" });
+    }
+  });
+
+  // Update user role (super admin only) - flexible update
+  app.patch('/api/admin/users/:id/role', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { isAdmin, isSuperAdmin: makeSuperAdmin, isApproved } = req.body;
+      
+      // Prevent modifying yourself
+      if (id === req.user.id) {
+        return res.status(400).json({ message: "Cannot modify your own role" });
+      }
+      
+      // Check if trying to remove super admin status from the last super admin
+      const targetUser = await storage.getUser(id);
+      if (targetUser?.isSuperAdmin && makeSuperAdmin === false) {
+        const allUsers = await storage.getAllUsers();
+        const superAdminCount = allUsers.filter(u => u.isSuperAdmin).length;
+        if (superAdminCount <= 1) {
+          return res.status(400).json({ message: "Cannot remove Super Admin status from the last Super Admin." });
+        }
+      }
+      
+      const updates: { isAdmin?: boolean; isSuperAdmin?: boolean; isApproved?: boolean } = {};
+      if (isAdmin !== undefined) updates.isAdmin = isAdmin;
+      if (makeSuperAdmin !== undefined) updates.isSuperAdmin = makeSuperAdmin;
+      if (isApproved !== undefined) updates.isApproved = isApproved;
+      
+      const user = await storage.updateUserRole(id, updates);
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
+  // Delete user (super admin only)
+  app.delete('/api/admin/users/:id', isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Prevent deleting yourself
+      if (id === req.user.id) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
+      // Check if this is the last super admin
+      const targetUser = await storage.getUser(id);
+      if (targetUser?.isSuperAdmin) {
+        const allUsers = await storage.getAllUsers();
+        const superAdminCount = allUsers.filter(u => u.isSuperAdmin).length;
+        if (superAdminCount <= 1) {
+          return res.status(400).json({ message: "Cannot delete the last Super Admin. Promote another user first." });
+        }
+      }
+      
+      await storage.rejectUser(id);
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
     }
   });
 
@@ -483,10 +665,11 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Bootstrap endpoint to create first admin (protected by secret key)
+  // Bootstrap endpoint to create first super admin (protected by secret key)
+  // This should only be used once to create the first super admin
   app.post('/api/bootstrap/promote-admin', async (req: any, res) => {
     try {
-      const { username, secret } = req.body;
+      const { username, secret, makeSuperAdmin } = req.body;
       
       // Check if secret matches
       const BOOTSTRAP_SECRET = process.env.BOOTSTRAP_SECRET || 'constructtrack-admin-2024';
@@ -499,44 +682,45 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Username is required" });
       }
       
-      const user = await storage.promoteToAdmin(username);
-      res.json({ message: "User promoted to admin successfully", user: { username: user.username, isAdmin: user.isAdmin } });
+      // Check if any super admin already exists (for security)
+      const allUsers = await storage.getAllUsers();
+      const existingSuperAdmins = allUsers.filter(u => u.isSuperAdmin);
+      
+      if (makeSuperAdmin && existingSuperAdmins.length > 0) {
+        return res.status(400).json({ 
+          message: "A Super Admin already exists. Use the admin dashboard to manage users." 
+        });
+      }
+      
+      // First, find the user by username
+      const existingUser = await storage.getUserByUsername(username);
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found. Please register first." });
+      }
+      
+      // Update user to be super admin (if requested) or just admin
+      const updates = {
+        isAdmin: true,
+        isSuperAdmin: makeSuperAdmin === true,
+        isApproved: true,
+      };
+      
+      const user = await storage.updateUserRole(existingUser.id, updates);
+      
+      console.log(`Bootstrap: User ${username} promoted to ${makeSuperAdmin ? 'Super Admin' : 'Admin'}`);
+      
+      res.json({ 
+        message: makeSuperAdmin ? "User promoted to Super Admin successfully" : "User promoted to Admin successfully", 
+        user: { 
+          username: user.username, 
+          isAdmin: user.isAdmin,
+          isSuperAdmin: user.isSuperAdmin,
+          isApproved: user.isApproved
+        } 
+      });
     } catch (error: any) {
       console.error("Error promoting user to admin:", error);
       res.status(500).json({ message: error.message || "Failed to promote user" });
-    }
-  });
-
-  // Admin routes
-  app.get('/api/admin/users', isAdmin, async (req: any, res) => {
-    try {
-      const users = await storage.getAllUsers();
-      res.json(users);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      res.status(500).json({ message: "Failed to fetch users" });
-    }
-  });
-
-  app.post('/api/admin/users/:id/approve', isAdmin, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const user = await storage.approveUser(id);
-      res.json(user);
-    } catch (error) {
-      console.error("Error approving user:", error);
-      res.status(500).json({ message: "Failed to approve user" });
-    }
-  });
-
-  app.delete('/api/admin/users/:id', isAdmin, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      await storage.rejectUser(id);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error rejecting user:", error);
-      res.status(500).json({ message: "Failed to reject user" });
     }
   });
 

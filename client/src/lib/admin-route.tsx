@@ -31,7 +31,7 @@ export function AdminRoute({
     );
   }
 
-  if (!user.isAdmin) {
+  if (!user.isAdmin && !user.isSuperAdmin) {
     return (
       <Route path={path}>
         <div className="flex items-center justify-center min-h-screen flex-col space-y-4">

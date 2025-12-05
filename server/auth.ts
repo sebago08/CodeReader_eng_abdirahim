@@ -95,6 +95,11 @@ export function setupAuth(app: Express) {
         return res.status(400).send("Username already exists");
       }
 
+      const existingEmail = await storage.getUserByEmail(email);
+      if (existingEmail) {
+        return res.status(400).send("Email already exists");
+      }
+
       const user = await storage.createUser({
         username,
         password: await hashPassword(password),
@@ -102,12 +107,14 @@ export function setupAuth(app: Express) {
         firstName,
         lastName,
         isAdmin: false,
-        isApproved: true,
+        isSuperAdmin: false,
+        isApproved: false, // New users require admin approval
       });
 
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.status(201).json(user);
+      // Don't auto-login - user needs to be approved first
+      res.status(201).json({ 
+        message: "Registration successful. Please wait for an administrator to approve your account.",
+        pendingApproval: true 
       });
     } catch (error) {
       next(error);
@@ -119,9 +126,18 @@ export function setupAuth(app: Express) {
       if (err) return next(err);
       if (!user) {
         return res.status(401).json({ 
-          message: info?.message || "Invalid username or password" 
+          message: info?.message || "Invalid email or password" 
         });
       }
+      
+      // Check if user is approved
+      if (!user.isApproved) {
+        return res.status(403).json({ 
+          message: "Your account is pending approval. Please contact an administrator.",
+          pendingApproval: true
+        });
+      }
+      
       req.login(user, (err) => {
         if (err) {
           console.error("Login error:", err);
@@ -185,7 +201,16 @@ export const supabaseAuthMiddleware: RequestHandler = async (req: any, res, next
         username: email.split('@')[0], // Generate username from email
         password: null, // OAuth users don't have passwords
         isAdmin: false,
-        isApproved: true, // Auto-approve all users
+        isSuperAdmin: false,
+        isApproved: false, // New users require admin approval
+      });
+    }
+
+    // Check if user is approved
+    if (!user.isApproved) {
+      return res.status(403).json({ 
+        message: "Your account is pending approval. Please contact an administrator.",
+        pendingApproval: true
       });
     }
 
@@ -200,8 +225,46 @@ export const supabaseAuthMiddleware: RequestHandler = async (req: any, res, next
 
 // Admin middleware for Supabase Auth
 export const supabaseAdminMiddleware: RequestHandler = async (req: any, res, next) => {
-  if (!req.user?.isAdmin) {
+  if (!req.user?.isAdmin && !req.user?.isSuperAdmin) {
     return res.status(403).json({ message: "Forbidden - Admin access required" });
+  }
+  next();
+};
+
+// Super Admin middleware - for user management operations
+export const superAdminMiddleware: RequestHandler = async (req: any, res, next) => {
+  if (!req.user?.isSuperAdmin) {
+    return res.status(403).json({ message: "Forbidden - Super Admin access required" });
+  }
+  next();
+};
+
+// Check if authenticated user can access (for session-based auth)
+export const isAuthenticated: RequestHandler = (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  next();
+};
+
+// Check if authenticated user is admin
+export const isAdmin: RequestHandler = (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!req.user?.isAdmin && !req.user?.isSuperAdmin) {
+    return res.status(403).json({ message: "Forbidden - Admin access required" });
+  }
+  next();
+};
+
+// Check if authenticated user is super admin
+export const isSuperAdmin: RequestHandler = (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!req.user?.isSuperAdmin) {
+    return res.status(403).json({ message: "Forbidden - Super Admin access required" });
   }
   next();
 };

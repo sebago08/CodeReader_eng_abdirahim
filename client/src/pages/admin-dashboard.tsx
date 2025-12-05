@@ -8,16 +8,48 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { CheckCircle2, XCircle, LogOut, Shield } from "lucide-react";
+import { 
+  CheckCircle2, 
+  XCircle, 
+  LogOut, 
+  Shield, 
+  UserX, 
+  UserCheck, 
+  Crown,
+  ChevronDown,
+  Trash2,
+  UserCog
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
   const { logoutMutation, user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
   });
+
+  const isSuperAdmin = currentUser?.isSuperAdmin;
 
   const handleApprove = async (userId: string) => {
     try {
@@ -36,24 +68,81 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleReject = async (userId: string) => {
-    if (!confirm("Are you sure you want to reject this user? This will delete their account.")) {
-      return;
-    }
-    
+  const handleDeactivate = async (userId: string) => {
     try {
-      await apiRequest("DELETE", `/api/admin/users/${userId}`);
+      await apiRequest("POST", `/api/admin/users/${userId}/deactivate`);
       toast({
         title: "Success",
-        description: "User rejected and deleted successfully",
+        description: "User deactivated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to reject user",
+        description: "Failed to deactivate user",
         variant: "destructive",
       });
+    }
+  };
+
+  const handlePromote = async (userId: string) => {
+    try {
+      await apiRequest("POST", `/api/admin/users/${userId}/promote`);
+      toast({
+        title: "Success",
+        description: "User promoted to admin successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to promote user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDemote = async (userId: string) => {
+    try {
+      await apiRequest("POST", `/api/admin/users/${userId}/demote`);
+      toast({
+        title: "Success",
+        description: "User demoted from admin successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to demote user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const confirmDelete = (user: User) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!userToDelete) return;
+    
+    try {
+      await apiRequest("DELETE", `/api/admin/users/${userToDelete.id}`);
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
     }
   };
 
@@ -64,11 +153,13 @@ export default function AdminDashboard() {
   const filteredUsers = users?.filter(user => {
     if (activeTab === "pending") return !user.isApproved;
     if (activeTab === "approved") return user.isApproved;
+    if (activeTab === "admins") return user.isAdmin || user.isSuperAdmin;
     return true;
   }) || [];
 
   const pendingCount = users?.filter(u => !u.isApproved).length || 0;
   const approvedCount = users?.filter(u => u.isApproved).length || 0;
+  const adminCount = users?.filter(u => u.isAdmin || u.isSuperAdmin).length || 0;
 
   if (isLoading) {
     return (
@@ -87,13 +178,18 @@ export default function AdminDashboard() {
             <Shield className="h-8 w-8 text-orange-500" />
             <div>
               <h1 className="text-2xl font-bold text-card-foreground">Admin Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Manage user approvals</p>
+              <p className="text-sm text-muted-foreground">
+                {isSuperAdmin ? "Super Admin - Full user management" : "Manage user approvals"}
+              </p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <div className="text-sm font-medium text-card-foreground">{currentUser?.username}</div>
-              <Badge variant="secondary" className="text-xs">Admin</Badge>
+              <Badge variant={isSuperAdmin ? "default" : "secondary"} className={isSuperAdmin ? "bg-purple-600" : ""}>
+                {isSuperAdmin && <Crown className="w-3 h-3 mr-1" />}
+                {isSuperAdmin ? "Super Admin" : "Admin"}
+              </Badge>
             </div>
             <Button
               onClick={handleLogout}
@@ -110,7 +206,7 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
@@ -129,10 +225,18 @@ export default function AdminDashboard() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Approved Users</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Active Users</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-green-600">{approvedCount}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Administrators</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-purple-600">{adminCount}</div>
             </CardContent>
           </Card>
         </div>
@@ -151,7 +255,10 @@ export default function AdminDashboard() {
                   Pending ({pendingCount})
                 </TabsTrigger>
                 <TabsTrigger value="approved" data-testid="tab-approved-users">
-                  Approved ({approvedCount})
+                  Active ({approvedCount})
+                </TabsTrigger>
+                <TabsTrigger value="admins" data-testid="tab-admin-users">
+                  Admins ({adminCount})
                 </TabsTrigger>
               </TabsList>
 
@@ -171,16 +278,22 @@ export default function AdminDashboard() {
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-2">
                             <h3 className="font-semibold text-card-foreground">{user.username}</h3>
-                            {user.isAdmin && (
+                            {user.isSuperAdmin && (
+                              <Badge className="bg-purple-600">
+                                <Crown className="w-3 h-3 mr-1" />
+                                Super Admin
+                              </Badge>
+                            )}
+                            {user.isAdmin && !user.isSuperAdmin && (
                               <Badge variant="destructive">Admin</Badge>
                             )}
                             {user.isApproved ? (
                               <Badge variant="default" className="bg-green-600">
                                 <CheckCircle2 className="w-3 h-3 mr-1" />
-                                Approved
+                                Active
                               </Badge>
                             ) : (
-                              <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                              <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                                 Pending
                               </Badge>
                             )}
@@ -197,33 +310,81 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         </div>
-                        {!user.isApproved && !user.isAdmin && (
-                          <div className="flex space-x-2">
-                            <Button
-                              onClick={() => handleApprove(user.id)}
-                              variant="default"
-                              size="sm"
-                              className="bg-green-600 hover:bg-green-700"
-                              data-testid={`button-approve-${user.id}`}
-                            >
-                              <CheckCircle2 className="w-4 h-4 mr-2" />
-                              Approve
-                            </Button>
-                            <Button
-                              onClick={() => handleReject(user.id)}
-                              variant="destructive"
-                              size="sm"
-                              data-testid={`button-reject-${user.id}`}
-                            >
-                              <XCircle className="w-4 h-4 mr-2" />
-                              Reject
-                            </Button>
+                        
+                        {/* Actions - Only show for non-super-admin users and not for self */}
+                        {user.id !== currentUser?.id && !user.isSuperAdmin && isSuperAdmin && (
+                          <div className="flex items-center space-x-2">
+                            {!user.isApproved ? (
+                              <>
+                                <Button
+                                  onClick={() => handleApprove(user.id)}
+                                  variant="default"
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700"
+                                  data-testid={`button-approve-${user.id}`}
+                                >
+                                  <UserCheck className="w-4 h-4 mr-2" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  onClick={() => confirmDelete(user)}
+                                  variant="destructive"
+                                  size="sm"
+                                  data-testid={`button-reject-${user.id}`}
+                                >
+                                  <XCircle className="w-4 h-4 mr-2" />
+                                  Reject
+                                </Button>
+                              </>
+                            ) : (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <UserCog className="w-4 h-4 mr-2" />
+                                    Manage
+                                    <ChevronDown className="w-4 h-4 ml-2" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {!user.isAdmin ? (
+                                    <DropdownMenuItem onClick={() => handlePromote(user.id)}>
+                                      <Crown className="w-4 h-4 mr-2" />
+                                      Promote to Admin
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem onClick={() => handleDemote(user.id)}>
+                                      <UserX className="w-4 h-4 mr-2" />
+                                      Demote from Admin
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => handleDeactivate(user.id)}>
+                                    <UserX className="w-4 h-4 mr-2" />
+                                    Deactivate Account
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    onClick={() => confirmDelete(user)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete User
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
                           </div>
                         )}
-                        {user.isApproved && (
-                          <div className="text-sm text-green-600 font-medium">
-                            ✓ Approved
-                          </div>
+
+                        {/* Show current user indicator */}
+                        {user.id === currentUser?.id && (
+                          <Badge variant="outline">You</Badge>
+                        )}
+
+                        {/* Show status for super admins */}
+                        {user.isSuperAdmin && user.id !== currentUser?.id && (
+                          <Badge variant="outline" className="text-purple-600">
+                            Protected
+                          </Badge>
                         )}
                       </div>
                     ))}
@@ -233,7 +394,41 @@ export default function AdminDashboard() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Info card for non-super admins */}
+        {!isSuperAdmin && (
+          <Card className="mt-4 border-orange-200 bg-orange-50 dark:bg-orange-950 dark:border-orange-800">
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground">
+                <strong>Note:</strong> As a regular admin, you can view users but cannot make changes. 
+                Contact a Super Admin to manage user roles and approvals.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the user "{userToDelete?.username}"? 
+              This action cannot be undone and will permanently remove all their data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

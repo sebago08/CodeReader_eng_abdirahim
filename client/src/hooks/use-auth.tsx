@@ -113,15 +113,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(errorText || 'Registration failed');
       }
 
-      const userData = await res.json();
-      setUser(userData);
-      return userData;
+      const data = await res.json();
+      
+      // Check if this is a pending approval response
+      if (data.pendingApproval) {
+        // Don't set user - they need to be approved first
+        return { pendingApproval: true, message: data.message } as any;
+      }
+      
+      // For approved users (shouldn't happen with new flow)
+      setUser(data);
+      return data;
     },
-    onSuccess: () => {
-      toast({
-        title: "Registration successful",
-        description: "Welcome to ConstructTrack! You're now logged in.",
-      });
+    onSuccess: (data: any) => {
+      if (data?.pendingApproval) {
+        toast({
+          title: "Registration successful",
+          description: "Your account has been created. Please wait for an administrator to approve your access.",
+          duration: 10000,
+        });
+      } else {
+        toast({
+          title: "Registration successful",
+          description: "Welcome to ConstructTrack! You're now logged in.",
+        });
+      }
     },
     onError: (error: Error) => {
       console.error('Registration error:', error);
