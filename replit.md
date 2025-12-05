@@ -37,11 +37,11 @@ The system uses Passport Local authentication with session-based cookies. Users 
 
 ## System Design Choices
 
-The application uses a PostgreSQL database with a normalized schema for all core entities including users, projects, work plans, progress trackers, incident reports, and grievances. The architecture supports both development (Replit's PostgreSQL, in-memory mock storage) and production (Supabase PostgreSQL, Supabase Storage) environments through environment-based configuration and an abstraction layer for storage services.
+The application uses a PostgreSQL database with a normalized schema for all core entities including users, projects, work plans, progress trackers, incident reports, and grievances. **Supabase PostgreSQL is now the primary database** for better scalability and production readiness. The system falls back to Replit's PostgreSQL if Supabase is not configured. Configuration is managed through environment variables (SUPABASE_DATABASE_URL takes priority over DATABASE_URL).
 
 # External Dependencies
 
--   **PostgreSQL**: Primary database (Replit's built-in PostgreSQL for development, Supabase PostgreSQL for production).
--   **Supabase**: Provides PostgreSQL database (production) and file storage (production).
+-   **Supabase**: Primary PostgreSQL database for scalability and production use, also provides file storage.
+-   **PostgreSQL**: Database layer (Supabase PostgreSQL primary, Replit PostgreSQL fallback).
 -   **Passport.js**: Authentication library using LocalStrategy for email/password login with session management.
 -   **Vercel**: Production hosting platform.
