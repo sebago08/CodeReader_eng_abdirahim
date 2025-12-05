@@ -23,10 +23,14 @@ export default function SegmentedProgress({
   }
   // Filter progress based on carriageway side and validate numeric chainages
   const filteredProgress = progress.filter(prog => {
-    // Check carriageway side
-    const sideMatch = carriagewaySide === 'both' 
-      ? prog.carriagewaySide === 'both' || !prog.carriagewaySide
-      : prog.carriagewaySide === carriagewaySide;
+    // Normalize carriageway sides to lowercase for comparison
+    const progSide = prog.carriagewaySide?.toLowerCase() || 'both';
+    const filterSide = carriagewaySide.toLowerCase();
+    
+    // Check carriageway side (case-insensitive)
+    const sideMatch = filterSide === 'both' 
+      ? progSide === 'both' || !prog.carriagewaySide
+      : progSide === filterSide || progSide === 'both';
     
     // Ensure start and end chainages are valid finite numbers
     const validChainages = Number.isFinite(+prog.startChainage) && Number.isFinite(+prog.endChainage);
