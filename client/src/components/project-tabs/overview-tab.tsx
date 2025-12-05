@@ -37,7 +37,7 @@ import {
 import SegmentedProgress from "@/components/segmented-progress";
 import ProjectModal from "@/components/project-modal";
 import { queryClient } from "@/lib/queryClient";
-import type { ProjectWithRoads, ProjectAlerts, IncidentReport, Grievance, PaymentCertificate, ContractorPersonnel, ContractorEquipment } from "@shared/schema";
+import type { ProjectWithRoads, ProjectAlerts, IncidentReport, Grievance, PaymentCertificate, ContractorPersonnel, ContractorEquipment, PreCommencementItem } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 
@@ -45,7 +45,7 @@ interface OverviewTabProps {
   project: ProjectWithRoads;
 }
 
-type DetailModalType = 'milestones' | 'actionPoints' | 'incidents' | 'grievances' | 'roadProgress' | 'physicalProgress' | 'financialProgress' | 'contractor' | 'projectInfo' | null;
+type DetailModalType = 'milestones' | 'actionPoints' | 'incidents' | 'grievances' | 'roadProgress' | 'physicalProgress' | 'financialProgress' | 'contractor' | 'projectInfo' | 'preCommencement' | null;
 
 interface ActionPointAlert {
   id: string;
@@ -102,6 +102,19 @@ export default function OverviewTab({ project }: OverviewTabProps) {
   const investigatingCount = openGrievances.filter(g => g.status === 'under_investigation').length;
   const escalatedCount = openGrievances.filter(g => g.status === 'escalated').length;
 
+  // Calculate overdue pre-commencement items
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const overduePreCommencement = preCommencementItems.filter(item => {
+    if (item.status !== 'pending' || !item.deadline) return false;
+    const deadlineDate = new Date(item.deadline);
+    deadlineDate.setHours(0, 0, 0, 0);
+    return deadlineDate < today;
+  }).length;
+
+  const submittedItems = preCommencementItems.filter(item => item.status === 'submitted');
+  const pendingItems = preCommencementItems.filter(item => item.status === 'pending');
+
   // Fetch work plan activities for BOQ summary (non-Road projects)
   const { data: workPlanActivities = [] } = useQuery<any[]>({
     queryKey: [`/api/projects/${project.id}/activities`],
@@ -118,6 +131,12 @@ export default function OverviewTab({ project }: OverviewTabProps) {
   const { data: contractorEquipment = [] } = useQuery<ContractorEquipment[]>({
     queryKey: [`/api/projects/${project.id}/contractor-equipment`],
     enabled: !!project.id && detailModal === 'contractor',
+  });
+
+  // Fetch pre-commencement items
+  const { data: preCommencementItems = [] } = useQuery<PreCommencementItem[]>({
+    queryKey: [`/api/projects/${project.id}/pre-commencement`],
+    enabled: !!project.id,
   });
 
   const getStatusColor = (status: string) => {
@@ -663,6 +682,44 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                       <span className="text-red-400">Escalated: {escalatedCount}</span>
                     )}
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Pre-Commencement Checklist */}
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50"
+            onClick={() => setDetailModal('preCommencement')}
+            data-testid="card-pre-commencement"
+          >
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <ListTodo className="h-4 w-4" />
+                Pre-Commencement Checklist
+              </CardTitle>
+              <CardDescription>Pending submissions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {preCommencementItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No checklist items</p>
+              ) : (
+                <div className="space-y-2">
+                  {overduePreCommencement > 0 && (
+                    <div className="text-sm text-red-400 font-medium">
+                      {overduePreCommencement} overdue
+                    </div>
+                  )}
+                  {pendingItems.length > 0 && (
+                    <div className="text-sm text-orange-400 font-medium">
+                      {pendingItems.length} pending
+                    </div>
+                  )}
+                  {submittedItems.length > 0 && (
+                    <div className="text-sm text-green-400 font-medium">
+                      {submittedItems.length} submitted
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -1425,6 +1482,91 @@ export default function OverviewTab({ project }: OverviewTabProps) {
               </ScrollArea>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Pre-Commencement Checklist Modal */}
+      <Dialog open={detailModal === 'preCommencement'} onOpenChange={(open) => !open && setDetailModal(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ListTodo className="h-5 w-5" />
+              Pre-Commencement Checklist
+            </DialogTitle>
+            <DialogDescription>View submitted and pending items with deadlines</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[500px]">
+            <div className="space-y-4 pr-4">
+              {preCommencementItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No checklist items</p>
+              ) : (
+                <>
+                  {submittedItems.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-sm text-green-400 mb-3">Submitted</h4>
+                      <div className="space-y-2">
+                        {submittedItems.map((item) => (
+                          <div key={item.id} className="p-3 border rounded-lg bg-green-950/20">
+                            <div className="flex justify-between items-start gap-2">
+                              <div className="flex-1">
+                                <p className="font-medium text-sm">{item.itemName}</p>
+                                {item.dateSubmitted && (
+                                  <p className="text-xs text-muted-foreground mt-1">Submitted: {formatDate(item.dateSubmitted)}</p>
+                                )}
+                              </div>
+                              {item.deadline && (
+                                <Badge variant="outline" className="text-xs whitespace-nowrap">
+                                  Due: {formatDate(item.deadline)}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {pendingItems.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-sm text-orange-400 mb-3">Pending</h4>
+                      <div className="space-y-2">
+                        {pendingItems.map((item) => {
+                          const isOverdue = item.deadline && new Date(item.deadline) < new Date();
+                          return (
+                            <div 
+                              key={item.id} 
+                              className={`p-3 border rounded-lg ${
+                                isOverdue 
+                                  ? 'bg-red-950/20 border-red-800' 
+                                  : 'bg-orange-950/20 border-orange-800'
+                              }`}
+                            >
+                              <div className="flex justify-between items-start gap-2">
+                                <div className="flex-1">
+                                  <p className="font-medium text-sm">{item.itemName}</p>
+                                  {item.responsibleParty && (
+                                    <p className="text-xs text-muted-foreground mt-1">Responsible: {item.responsibleParty}</p>
+                                  )}
+                                </div>
+                                {item.deadline && (
+                                  <Badge 
+                                    variant={isOverdue ? 'destructive' : 'secondary'}
+                                    className="text-xs whitespace-nowrap"
+                                  >
+                                    Due: {formatDate(item.deadline)}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
