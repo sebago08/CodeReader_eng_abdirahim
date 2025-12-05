@@ -37,16 +37,15 @@ import {
 import SegmentedProgress from "@/components/segmented-progress";
 import ProjectModal from "@/components/project-modal";
 import { queryClient } from "@/lib/queryClient";
-import type { ProjectWithRoads, ProjectAlerts, IncidentReport, Grievance } from "@shared/schema";
+import type { ProjectWithRoads, ProjectAlerts, IncidentReport, Grievance, PaymentCertificate, ContractorPersonnel, ContractorEquipment } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
-import type { PaymentCertificate } from "@shared/schema";
 import { Link } from "wouter";
 
 interface OverviewTabProps {
   project: ProjectWithRoads;
 }
 
-type DetailModalType = 'milestones' | 'actionPoints' | 'incidents' | 'grievances' | 'roadProgress' | 'physicalProgress' | 'financialProgress' | null;
+type DetailModalType = 'milestones' | 'actionPoints' | 'incidents' | 'grievances' | 'roadProgress' | 'physicalProgress' | 'financialProgress' | 'contractor' | 'projectInfo' | null;
 
 interface ActionPointAlert {
   id: string;
@@ -107,6 +106,18 @@ export default function OverviewTab({ project }: OverviewTabProps) {
   const { data: workPlanActivities = [] } = useQuery<any[]>({
     queryKey: [`/api/projects/${project.id}/activities`],
     enabled: !!project.id && project.projectType !== 'Road',
+  });
+
+  // Fetch contractor personnel for contractor modal
+  const { data: contractorPersonnel = [] } = useQuery<ContractorPersonnel[]>({
+    queryKey: [`/api/projects/${project.id}/contractor-personnel`],
+    enabled: !!project.id && detailModal === 'contractor',
+  });
+
+  // Fetch contractor equipment for contractor modal
+  const { data: contractorEquipment = [] } = useQuery<ContractorEquipment[]>({
+    queryKey: [`/api/projects/${project.id}/contractor-equipment`],
+    enabled: !!project.id && detailModal === 'contractor',
   });
 
   const getStatusColor = (status: string) => {
@@ -362,8 +373,9 @@ export default function OverviewTab({ project }: OverviewTabProps) {
 
 
         {/* Fixed Dashboard Layout */}
-        {/* Top Row: Location and Dates */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Top Row: Location, Timeline, Contractor, Project Info */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Location Card */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -380,33 +392,67 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             </CardContent>
           </Card>
 
+          {/* Timeline Card - Combined Start, Duration, End */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-orange-950/20 flex items-center justify-center">
                   <Calendar className="h-5 w-5 text-orange-400" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Start Date</p>
-                  <p className="text-lg font-semibold" data-testid="text-start-date">
-                    {formatDate(project.startDate)}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-muted-foreground">Timeline</p>
+                  <div className="flex items-center gap-1 text-sm font-semibold flex-wrap">
+                    <span data-testid="text-start-date">{formatDate(project.startDate)}</span>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                    <span data-testid="text-end-date">{formatDate(project.endDate)}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {project.duration ? `${project.duration} months` : 'Duration not set'}
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Contractor Card - Clickable */}
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50 group"
+            onClick={() => setDetailModal('contractor')}
+            data-testid="card-contractor"
+          >
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-red-950/20 flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-red-400" />
+                <div className="h-10 w-10 rounded-lg bg-blue-950/20 flex items-center justify-center">
+                  <Briefcase className="h-5 w-5 text-blue-400" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">End Date</p>
-                  <p className="text-lg font-semibold" data-testid="text-end-date">
-                    {formatDate(project.endDate)}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-muted-foreground group-hover:text-primary transition-colors">Contractor</p>
+                  <p className="text-lg font-semibold truncate" data-testid="text-contractor-name">
+                    {project.contractorName || 'Not assigned'}
                   </p>
+                  <p className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">Click for details</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Project Info Card - Clickable */}
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50 group"
+            onClick={() => setDetailModal('projectInfo')}
+            data-testid="card-project-info"
+          >
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-green-950/20 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-green-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-muted-foreground group-hover:text-primary transition-colors">Project Info</p>
+                  <p className="text-lg font-semibold" data-testid="text-project-type">
+                    {project.projectType || 'General'}
+                  </p>
+                  <p className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">Click for details</p>
                 </div>
               </div>
             </CardContent>
@@ -1867,6 +1913,262 @@ export default function OverviewTab({ project }: OverviewTabProps) {
               <Progress value={financialProgress} className="h-2" />
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Contractor Details Modal */}
+      <Dialog 
+        open={detailModal === 'contractor'} 
+        onOpenChange={(open) => !open && setDetailModal(null)}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5" />
+              Contractor Details
+            </DialogTitle>
+            <DialogDescription>
+              {project.contractorName || 'Contractor information'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[70vh]">
+            <div className="space-y-6 pr-4">
+              {/* Contractor Info Card */}
+              <div className="bg-muted/30 rounded-lg p-4">
+                <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  Contact Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Company Name</p>
+                    <p className="font-medium">{project.contractorName || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Contact Person</p>
+                    <p className="font-medium">{project.contractorContactPerson || 'Not specified'}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Email</p>
+                      <p className="font-medium">{project.contractorEmail || 'Not specified'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Phone</p>
+                      <p className="font-medium">{project.contractorPhone || 'Not specified'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contractor Personnel Table */}
+              <div>
+                <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                  <UserCircle className="h-4 w-4 text-muted-foreground" />
+                  Personnel ({contractorPersonnel.length})
+                </h4>
+                {contractorPersonnel.length > 0 ? (
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="text-left p-3 font-medium">Name</th>
+                          <th className="text-left p-3 font-medium">Designation</th>
+                          <th className="text-left p-3 font-medium">Qualification</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {contractorPersonnel.map((person) => (
+                          <tr key={person.id} className="hover:bg-muted/30">
+                            <td className="p-3">{person.name}</td>
+                            <td className="p-3 text-muted-foreground">{person.designation || '-'}</td>
+                            <td className="p-3 text-muted-foreground">{person.qualification || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 border rounded-lg text-muted-foreground">
+                    <UserCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No personnel records</p>
+                    <p className="text-xs">Add personnel in Edit Project</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Contractor Equipment Table */}
+              <div>
+                <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                  Equipment ({contractorEquipment.length})
+                </h4>
+                {contractorEquipment.length > 0 ? (
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="text-left p-3 font-medium">Equipment</th>
+                          <th className="text-left p-3 font-medium">Type</th>
+                          <th className="text-center p-3 font-medium">Qty</th>
+                          <th className="text-left p-3 font-medium">Condition</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {contractorEquipment.map((equipment) => (
+                          <tr key={equipment.id} className="hover:bg-muted/30">
+                            <td className="p-3">{equipment.equipmentName}</td>
+                            <td className="p-3 text-muted-foreground">{equipment.type || '-'}</td>
+                            <td className="p-3 text-center">{equipment.quantity || 1}</td>
+                            <td className="p-3">
+                              <Badge 
+                                variant="outline"
+                                className={`text-xs ${
+                                  equipment.condition === 'Excellent' ? 'border-green-400 text-green-400' :
+                                  equipment.condition === 'Good' ? 'border-blue-400 text-blue-400' :
+                                  equipment.condition === 'Fair' ? 'border-yellow-400 text-yellow-400' :
+                                  'border-red-400 text-red-400'
+                                }`}
+                              >
+                                {equipment.condition || 'Unknown'}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 border rounded-lg text-muted-foreground">
+                    <Layers className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No equipment records</p>
+                    <p className="text-xs">Add equipment in Edit Project</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Project Info Modal */}
+      <Dialog 
+        open={detailModal === 'projectInfo'} 
+        onOpenChange={(open) => !open && setDetailModal(null)}
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Project Information
+            </DialogTitle>
+            <DialogDescription>
+              {project.projectNumber ? `Project #${project.projectNumber}` : project.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[70vh]">
+            <div className="space-y-6 pr-4">
+              {/* Basic Info */}
+              <div className="bg-muted/30 rounded-lg p-4">
+                <h4 className="font-medium text-sm mb-3">Basic Details</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Project Type</p>
+                    <p className="font-medium">{project.projectType || 'General'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Project Number</p>
+                    <p className="font-medium">{project.projectNumber || 'Not assigned'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <Badge className={`${getStatusColor(project.status)} text-white text-xs`}>
+                      {project.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Duration</p>
+                    <p className="font-medium">{project.duration ? `${project.duration} months` : 'Not set'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Defects Liability</p>
+                    <p className="font-medium">{project.defectsLiabilityPeriod ? `${project.defectsLiabilityPeriod} months` : 'Not set'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Client</p>
+                    <p className="font-medium">{project.client}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Executive Summary */}
+              {project.executiveSummary && (
+                <div>
+                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                    Executive Summary
+                  </h4>
+                  <div className="bg-muted/20 rounded-lg p-4 text-sm whitespace-pre-wrap">
+                    {project.executiveSummary}
+                  </div>
+                </div>
+              )}
+
+              {/* Project Location Details */}
+              {project.projectLocation && (
+                <div>
+                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                    <MapPinned className="h-4 w-4 text-muted-foreground" />
+                    Location Details
+                  </h4>
+                  <div className="bg-muted/20 rounded-lg p-4 text-sm whitespace-pre-wrap">
+                    {project.projectLocation}
+                  </div>
+                </div>
+              )}
+
+              {/* Scope of Work */}
+              {project.scopeOfWork && (
+                <div>
+                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                    <ListTodo className="h-4 w-4 text-muted-foreground" />
+                    Scope of Work
+                  </h4>
+                  <div className="bg-muted/20 rounded-lg p-4 text-sm whitespace-pre-wrap">
+                    {project.scopeOfWork}
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              {project.description && (
+                <div>
+                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    Description
+                  </h4>
+                  <div className="bg-muted/20 rounded-lg p-4 text-sm whitespace-pre-wrap">
+                    {project.description}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!project.executiveSummary && !project.projectLocation && !project.scopeOfWork && !project.description && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p className="font-medium">No additional project details</p>
+                  <p className="text-sm mt-1">Add scope, summary, and location in Edit Project</p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </>
