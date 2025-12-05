@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -183,11 +184,28 @@ export function DailyLogDialog({ open, onClose, projectId, log }: DailyLogDialog
 
           <div>
             <Label htmlFor="weather">Weather</Label>
-            <Input
-              id="weather"
-              placeholder="e.g., Sunny, Rainy, Cloudy"
-              {...form.register("weather")}
-              data-testid="input-log-weather"
+            <Controller
+              name="weather"
+              control={form.control}
+              render={({ field }) => (
+                <Select value={field.value || ""} onValueChange={field.onChange}>
+                  <SelectTrigger id="weather" data-testid="select-log-weather">
+                    <SelectValue placeholder="Select weather condition" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sunny">Sunny</SelectItem>
+                    <SelectItem value="cloudy">Cloudy</SelectItem>
+                    <SelectItem value="partly-cloudy">Partly Cloudy</SelectItem>
+                    <SelectItem value="overcast">Overcast</SelectItem>
+                    <SelectItem value="rainy">Rainy</SelectItem>
+                    <SelectItem value="drizzle">Drizzle</SelectItem>
+                    <SelectItem value="thunderstorm">Thunderstorm</SelectItem>
+                    <SelectItem value="foggy">Foggy</SelectItem>
+                    <SelectItem value="windy">Windy</SelectItem>
+                    <SelectItem value="snowy">Snowy</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             />
           </div>
 
