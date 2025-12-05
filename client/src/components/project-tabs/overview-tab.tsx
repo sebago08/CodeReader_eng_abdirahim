@@ -458,13 +458,18 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             <div className="flex items-center gap-6">
               {/* Left side: Progress bars */}
               <div className="space-y-4 max-w-md flex-1">
-                {/* Physical Progress */}
-                <div>
+                {/* Physical Progress - Clickable for details */}
+                <div 
+                  className="cursor-pointer p-2 -m-2 rounded-lg hover:bg-muted/50 transition-colors group"
+                  onClick={() => setDetailModal('physicalProgress')}
+                  data-testid="clickable-physical-progress"
+                >
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Physical Progress</span>
+                    <span className="text-sm font-medium group-hover:text-primary transition-colors">Physical Progress</span>
                     <span className="text-sm font-semibold">{physicalProgress}%</span>
                   </div>
                   <Progress value={physicalProgress} className="h-2" data-testid="progress-physical" />
+                  <p className="text-xs text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Click for details</p>
                 </div>
 
                 {/* Time Progress */}
@@ -644,52 +649,6 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             </CardContent>
           </Card>
         </div>
-
-        {/* Road Progress Card - Only for Road projects */}
-        {project.projectType === "Road" && project.roads && project.roads.length > 0 && (
-          <Card 
-            className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50"
-            onClick={() => setDetailModal('roadProgress')}
-            data-testid="card-road-progress"
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Route className="h-5 w-5" />
-                Road Construction Progress
-              </CardTitle>
-              <CardDescription>View detailed layer progress for each road</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{project.roads.length} road{project.roads.length > 1 ? 's' : ''}</span>
-                  <span className="text-sm font-medium text-blue-400">Click to view details</span>
-                </div>
-                <div className="space-y-2">
-                  {project.roads.slice(0, 3).map((road) => {
-                    const progress = calculateRoadProgress(road);
-                    return (
-                      <div key={road.id} className="flex items-center justify-between text-sm">
-                        <span className="truncate max-w-[200px]">{road.name}</span>
-                        <div className="flex items-center gap-2">
-                          <Progress value={progress} className="w-20 h-2" />
-                          <span className={`text-xs font-medium ${progress >= 100 ? 'text-green-400' : progress >= 50 ? 'text-yellow-400' : 'text-muted-foreground'}`}>
-                            {progress}%
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {project.roads.length > 3 && (
-                    <p className="text-xs text-muted-foreground text-center pt-1">
-                      +{project.roads.length - 3} more roads
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Client and Contractor Information - Collapsible */}
         <Card>
