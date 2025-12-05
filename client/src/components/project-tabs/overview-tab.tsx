@@ -32,6 +32,7 @@ import {
   XCircle,
   Layers,
   Route,
+  ListTodo,
 } from "lucide-react";
 import SegmentedProgress from "@/components/segmented-progress";
 import ProjectModal from "@/components/project-modal";
@@ -45,7 +46,7 @@ interface OverviewTabProps {
   project: ProjectWithRoads;
 }
 
-type DetailModalType = 'milestones' | 'actionPoints' | 'incidents' | 'grievances' | 'roadProgress' | null;
+type DetailModalType = 'milestones' | 'actionPoints' | 'incidents' | 'grievances' | 'roadProgress' | 'physicalProgress' | null;
 
 interface ActionPointAlert {
   id: string;
@@ -101,6 +102,12 @@ export default function OverviewTab({ project }: OverviewTabProps) {
   const registeredCount = openGrievances.filter(g => g.status === 'registered').length;
   const investigatingCount = openGrievances.filter(g => g.status === 'under_investigation').length;
   const escalatedCount = openGrievances.filter(g => g.status === 'escalated').length;
+
+  // Fetch work plan activities for BOQ summary (non-Road projects)
+  const { data: workPlanActivities = [] } = useQuery<any[]>({
+    queryKey: [`/api/projects/${project.id}/activities`],
+    enabled: !!project.id && project.projectType !== 'Road',
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -1409,9 +1416,9 @@ export default function OverviewTab({ project }: OverviewTabProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Road Progress Modal */}
+      {/* Physical Progress Modal - Shows Road progress for Road projects, BOQ summary for others */}
       <Dialog 
-        open={detailModal === 'roadProgress'} 
+        open={detailModal === 'physicalProgress' || detailModal === 'roadProgress'} 
         onOpenChange={(open) => {
           if (!open) {
             setDetailModal(null);
@@ -1420,7 +1427,8 @@ export default function OverviewTab({ project }: OverviewTabProps) {
         }}
       >
         <DialogContent className="max-w-4xl max-h-[90vh]">
-          {selectedRoad ? (
+          {project.projectType === "Road" && project.roads && project.roads.length > 0 ? (
+            selectedRoad ? (
             <>
               {/* Road Detail View - Layer Progress */}
               <DialogHeader>
@@ -1624,6 +1632,102 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                   )}
                 </div>
               </ScrollArea>
+            </>
+          )) : (
+            <>
+              {/* BOQ Activities Summary for non-Road projects */}
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Physical Progress Details
+                </DialogTitle>
+                <DialogDescription>
+                  BOQ activities progress summary - view Progress tab for full details
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                {/* Overall Progress Summary */}
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Overall Physical Progress</p>
+                    <p className="text-3xl font-bold">{physicalProgress}%</p>
+                  </div>
+                  <div className="w-32 h-32">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle
+                        cx="64"
+                        cy="64"
+                        r="56"
+                        stroke="currentColor"
+                        strokeWidth="12"
+                        fill="none"
+                        className="text-muted"
+                      />
+                      <circle
+                        cx="64"
+                        cy="64"
+                        r="56"
+                        stroke="currentColor"
+                        strokeWidth="12"
+                        fill="none"
+                        strokeDasharray={`${2 * Math.PI * 56}`}
+                        strokeDashoffset={`${2 * Math.PI * 56 * (1 - physicalProgress / 100)}`}
+                        className="text-primary transition-all duration-300"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Top Activities Preview */}
+                <div>
+                  <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                    <ListTodo className="h-4 w-4 text-muted-foreground" />
+                    Recent Activities Progress
+                  </h4>
+                  {workPlanActivities.length > 0 ? (
+                    <ScrollArea className="max-h-[250px]">
+                      <div className="space-y-2 pr-4">
+                        {workPlanActivities.slice(0, 8).map((activity: any, index: number) => {
+                          const progress = activity.progress || 0;
+                          return (
+                            <div key={activity.id || index} className="p-3 border rounded-lg bg-muted/30">
+                              <div className="flex justify-between items-start mb-2">
+                                <span className="text-sm font-medium line-clamp-1 flex-1">{activity.name || activity.description}</span>
+                                <span className={`text-sm font-semibold ml-2 ${
+                                  progress >= 100 ? 'text-green-400' : 
+                                  progress >= 50 ? 'text-yellow-400' : 'text-muted-foreground'
+                                }`}>
+                                  {progress}%
+                                </span>
+                              </div>
+                              <Progress value={progress} className="h-1.5" />
+                            </div>
+                          );
+                        })}
+                        {workPlanActivities.length > 8 && (
+                          <p className="text-xs text-muted-foreground text-center py-2">
+                            +{workPlanActivities.length - 8} more activities
+                          </p>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No work plan activities defined</p>
+                      <p className="text-xs mt-1">Create a work plan to track progress</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Link to Progress Tab */}
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground text-center">
+                    For detailed BOQ tracking and quantities, visit the <span className="font-medium text-primary">Progress</span> tab
+                  </p>
+                </div>
+              </div>
             </>
           )}
         </DialogContent>
