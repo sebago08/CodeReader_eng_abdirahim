@@ -30,7 +30,10 @@ import {
   Target,
   CheckCircle2,
   XCircle,
+  Layers,
+  Route,
 } from "lucide-react";
+import SegmentedProgress from "@/components/segmented-progress";
 import ProjectModal from "@/components/project-modal";
 import { queryClient } from "@/lib/queryClient";
 import type { ProjectWithRoads, ProjectAlerts, IncidentReport, Grievance } from "@shared/schema";
@@ -42,7 +45,7 @@ interface OverviewTabProps {
   project: ProjectWithRoads;
 }
 
-type DetailModalType = 'milestones' | 'actionPoints' | 'incidents' | 'grievances' | null;
+type DetailModalType = 'milestones' | 'actionPoints' | 'incidents' | 'grievances' | 'roadProgress' | null;
 
 interface ActionPointAlert {
   id: string;
@@ -61,6 +64,7 @@ export default function OverviewTab({ project }: OverviewTabProps) {
   const [detailModal, setDetailModal] = useState<DetailModalType>(null);
   const [selectedGrievance, setSelectedGrievance] = useState<Grievance | null>(null);
   const [selectedActionPoint, setSelectedActionPoint] = useState<ActionPointAlert | null>(null);
+  const [selectedRoad, setSelectedRoad] = useState<any | null>(null);
 
   // Fetch payment certificates for financial progress
   const { data: certificates = [] } = useQuery<PaymentCertificate[]>({
@@ -640,6 +644,52 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             </CardContent>
           </Card>
         </div>
+
+        {/* Road Progress Card - Only for Road projects */}
+        {project.projectType === "Road" && project.roads && project.roads.length > 0 && (
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-shadow hover:border-primary/50"
+            onClick={() => setDetailModal('roadProgress')}
+            data-testid="card-road-progress"
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Route className="h-5 w-5" />
+                Road Construction Progress
+              </CardTitle>
+              <CardDescription>View detailed layer progress for each road</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">{project.roads.length} road{project.roads.length > 1 ? 's' : ''}</span>
+                  <span className="text-sm font-medium text-blue-400">Click to view details</span>
+                </div>
+                <div className="space-y-2">
+                  {project.roads.slice(0, 3).map((road) => {
+                    const progress = calculateRoadProgress(road);
+                    return (
+                      <div key={road.id} className="flex items-center justify-between text-sm">
+                        <span className="truncate max-w-[200px]">{road.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Progress value={progress} className="w-20 h-2" />
+                          <span className={`text-xs font-medium ${progress >= 100 ? 'text-green-400' : progress >= 50 ? 'text-yellow-400' : 'text-muted-foreground'}`}>
+                            {progress}%
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {project.roads.length > 3 && (
+                    <p className="text-xs text-muted-foreground text-center pt-1">
+                      +{project.roads.length - 3} more roads
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Client and Contractor Information - Collapsible */}
         <Card>
@@ -1392,6 +1442,226 @@ export default function OverviewTab({ project }: OverviewTabProps) {
                     ))
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-8">No open grievances</p>
+                  )}
+                </div>
+              </ScrollArea>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Road Progress Modal */}
+      <Dialog 
+        open={detailModal === 'roadProgress'} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setDetailModal(null);
+            setSelectedRoad(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          {selectedRoad ? (
+            <>
+              {/* Road Detail View - Layer Progress */}
+              <DialogHeader>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setSelectedRoad(null)}
+                    className="h-8 px-2"
+                    data-testid="back-to-roads-list"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-1" />
+                    Back
+                  </Button>
+                </div>
+                <DialogTitle className="flex items-center gap-2 mt-2">
+                  <Route className="h-5 w-5" />
+                  {selectedRoad.name}
+                </DialogTitle>
+                <DialogDescription className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline">{selectedRoad.length}km</Badge>
+                  <Badge variant="outline" className="capitalize">{selectedRoad.carriageway} carriageway</Badge>
+                  <Badge 
+                    variant="outline" 
+                    className={`${calculateRoadProgress(selectedRoad) >= 100 ? 'text-green-400 border-green-400' : calculateRoadProgress(selectedRoad) >= 50 ? 'text-yellow-400 border-yellow-400' : 'text-blue-400 border-blue-400'}`}
+                  >
+                    {calculateRoadProgress(selectedRoad)}% complete
+                  </Badge>
+                </DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="max-h-[60vh]">
+                <div className="space-y-4 pr-4">
+                  {selectedRoad.layers && selectedRoad.layers.length > 0 ? (
+                    selectedRoad.layers.map((layer: any) => {
+                      const roadLength = parseFloat(selectedRoad.length);
+                      const isDualCarriageway = selectedRoad.carriageway === 'dual';
+                      
+                      if (isDualCarriageway) {
+                        const lhsProgress = layer.progress?.filter((p: any) => p.carriagewaySide?.toLowerCase() === 'lhs').reduce((sum: number, prog: any) => {
+                          return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+                        }, 0) || 0;
+                        const rhsProgress = layer.progress?.filter((p: any) => p.carriagewaySide?.toLowerCase() === 'rhs').reduce((sum: number, prog: any) => {
+                          return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+                        }, 0) || 0;
+                        
+                        const lhsPercentage = Math.round((lhsProgress / roadLength) * 100);
+                        const rhsPercentage = Math.round((rhsProgress / roadLength) * 100);
+                        const averagePercentage = Math.round((lhsPercentage + rhsPercentage) / 2);
+                        
+                        return (
+                          <div key={layer.id} className="border rounded-lg p-4 space-y-3">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <Layers className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">{layer.name}</span>
+                                <span className={`text-sm font-semibold ${
+                                  averagePercentage >= 100 ? 'text-green-400' : 
+                                  averagePercentage >= 50 ? 'text-yellow-400' : 'text-muted-foreground'
+                                }`}>
+                                  ({averagePercentage}%)
+                                </span>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="bg-card p-3 rounded border-l-2 border-blue-500">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="text-xs text-muted-foreground font-medium">LHS</div>
+                                  <span className={`font-medium text-xs ${
+                                    lhsPercentage >= 100 ? 'text-green-400' : 
+                                    lhsPercentage >= 50 ? 'text-yellow-400' : 'text-muted-foreground'
+                                  }`}>
+                                    {lhsPercentage}%
+                                  </span>
+                                </div>
+                                <SegmentedProgress 
+                                  progress={layer.progress || []}
+                                  roadLength={roadLength}
+                                  carriagewaySide="lhs"
+                                  layerId={layer.id}
+                                />
+                              </div>
+                              <div className="bg-card p-3 rounded border-l-2 border-orange-500">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="text-xs text-muted-foreground font-medium">RHS</div>
+                                  <span className={`font-medium text-xs ${
+                                    rhsPercentage >= 100 ? 'text-green-400' : 
+                                    rhsPercentage >= 50 ? 'text-yellow-400' : 'text-muted-foreground'
+                                  }`}>
+                                    {rhsPercentage}%
+                                  </span>
+                                </div>
+                                <SegmentedProgress 
+                                  progress={layer.progress || []}
+                                  roadLength={roadLength}
+                                  carriagewaySide="rhs"
+                                  layerId={layer.id}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        const completedLength = layer.progress?.reduce((sum: number, prog: any) => {
+                          return sum + (Number(prog.endChainage) - Number(prog.startChainage));
+                        }, 0) || 0;
+                        const layerProgress = Math.round((completedLength / roadLength) * 100);
+                        
+                        return (
+                          <div key={layer.id} className="border rounded-lg p-4 space-y-3">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <Layers className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">{layer.name}</span>
+                                <span className={`text-sm font-semibold ${
+                                  layerProgress >= 100 ? 'text-green-400' : 
+                                  layerProgress >= 50 ? 'text-yellow-400' : 'text-muted-foreground'
+                                }`}>
+                                  ({layerProgress}%)
+                                </span>
+                              </div>
+                            </div>
+                            <div className="bg-card p-3 rounded">
+                              <SegmentedProgress 
+                                progress={layer.progress || []}
+                                roadLength={roadLength}
+                                carriagewaySide="both"
+                                layerId={layer.id}
+                              />
+                            </div>
+                          </div>
+                        );
+                      }
+                    })
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Layers className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No layers defined for this road</p>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </>
+          ) : (
+            <>
+              {/* Roads List View */}
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Route className="h-5 w-5" />
+                  Road Construction Progress
+                </DialogTitle>
+                <DialogDescription>Click on a road to view layer-by-layer progress</DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="max-h-[60vh]">
+                <div className="space-y-3 pr-4">
+                  {project.roads && project.roads.length > 0 ? (
+                    project.roads.map((road) => {
+                      const progress = calculateRoadProgress(road);
+                      return (
+                        <div 
+                          key={road.id} 
+                          onClick={() => setSelectedRoad(road)}
+                          className="p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md hover:border-primary/50 bg-muted/50"
+                          data-testid={`road-item-${road.id}`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <Route className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <p className="font-medium text-sm truncate">{road.name}</p>
+                              </div>
+                              <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                                <span>{road.length}km</span>
+                                <span className="capitalize">{road.carriageway} carriageway</span>
+                                <span>{road.layers?.length || 0} layers</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <div className="text-right">
+                                <div className={`text-lg font-bold ${
+                                  progress >= 100 ? 'text-green-400' : 
+                                  progress >= 50 ? 'text-yellow-400' : 'text-foreground'
+                                }`}>
+                                  {progress}%
+                                </div>
+                                <div className="text-xs text-muted-foreground">complete</div>
+                              </div>
+                              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </div>
+                          <div className="mt-3">
+                            <Progress value={progress} className="h-2" />
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Route className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No roads defined for this project</p>
+                    </div>
                   )}
                 </div>
               </ScrollArea>
