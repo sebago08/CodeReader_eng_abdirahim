@@ -96,6 +96,7 @@ export function RichTextEditor({
       <style>{`
         .ProseMirror {
           min-height: ${minHeight};
+          color: hsl(var(--foreground));
         }
         .ProseMirror p.is-editor-empty:first-child::before {
           color: hsl(var(--muted-foreground));
@@ -111,6 +112,7 @@ export function RichTextEditor({
         .ProseMirror ol {
           padding-left: 1.5rem;
           margin: 0.5rem 0;
+          color: hsl(var(--foreground));
         }
         .ProseMirror ul {
           list-style-type: disc;
@@ -120,9 +122,11 @@ export function RichTextEditor({
         }
         .ProseMirror li {
           margin: 0.25rem 0;
+          color: hsl(var(--foreground));
         }
         .ProseMirror p {
           margin: 0.5rem 0;
+          color: hsl(var(--foreground));
         }
         .ProseMirror p:first-child {
           margin-top: 0;
