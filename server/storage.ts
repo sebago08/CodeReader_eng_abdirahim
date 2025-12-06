@@ -98,6 +98,7 @@ export interface IStorage {
   promoteToAdmin(userId: string): Promise<User>;
   demoteFromAdmin(userId: string): Promise<User>;
   updateUserRole(userId: string, updates: { isAdmin?: boolean; isSuperAdmin?: boolean; isApproved?: boolean }): Promise<User>;
+  updateUserAuthId(userId: string, authId: string): Promise<User>;
   
   // Project operations
   getProjects(userId: string): Promise<ProjectWithRoads[]>;
@@ -383,6 +384,19 @@ export class MemStorage implements IStorage {
     const updatedUser: User = {
       ...user,
       ...updates,
+      updatedAt: new Date(),
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+
+  async updateUserAuthId(userId: string, authId: string): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) throw new Error('User not found');
+    
+    const updatedUser: User = {
+      ...user,
+      authId,
       updatedAt: new Date(),
     };
     this.users.set(userId, updatedUser);
@@ -876,6 +890,16 @@ export class DatabaseStorage implements IStorage {
     const [updatedUser] = await db
       .update(users)
       .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!updatedUser) throw new Error('User not found');
+    return updatedUser;
+  }
+
+  async updateUserAuthId(userId: string, authId: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ authId, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
     if (!updatedUser) throw new Error('User not found');

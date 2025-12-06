@@ -27,11 +27,12 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table
+// User storage table (profiles linked to Supabase Auth)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  authId: varchar("auth_id").unique(), // Supabase Auth user ID
   username: varchar("username").notNull().unique(),
-  password: varchar("password"), // Nullable for OAuth support
+  password: varchar("password"), // Nullable - not used with Supabase Auth
   email: varchar("email").notNull().unique(), // Primary identifier
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
