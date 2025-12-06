@@ -8,14 +8,8 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-// Check if Replit Auth is available (optional - only needed when using Replit OIDC)
-const isReplitAuthAvailable = !!(process.env.REPLIT_DOMAINS && process.env.REPL_ID);
-
 const getOidcConfig = memoize(
   async () => {
-    if (!isReplitAuthAvailable) {
-      throw new Error("Replit Auth not configured - REPLIT_DOMAINS and REPL_ID required");
-    }
     return await client.discovery(
       new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
       process.env.REPL_ID!
@@ -25,7 +19,7 @@ const getOidcConfig = memoize(
 );
 
 export function getSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000;
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
@@ -56,9 +50,7 @@ function updateUserSession(
   user.expires_at = user.claims?.exp;
 }
 
-async function upsertUser(
-  claims: any,
-) {
+async function upsertUser(claims: any) {
   await storage.upsertUser({
     id: claims["sub"],
     email: claims["email"],
@@ -69,12 +61,6 @@ async function upsertUser(
 }
 
 export async function setupAuth(app: Express) {
-  // Only set up Replit OIDC Auth if environment variables are available
-  if (!isReplitAuthAvailable) {
-    console.warn("Replit Auth not configured - REPLIT_DOMAINS and REPL_ID not available. Skipping OIDC setup.");
-    return;
-  }
-
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
@@ -92,30 +78,38 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
-    const strategy = new Strategy(
-      {
-        name: `replitauth:${domain}`,
-        config,
-        scope: "openid email profile offline_access",
-        callbackURL: `https://${domain}/api/callback`,
-      },
-      verify,
-    );
-    passport.use(strategy);
-  }
+  const registeredStrategies = new Set<string>();
+
+  const ensureStrategy = (domain: string) => {
+    const strategyName = `replitauth:${domain}`;
+    if (!registeredStrategies.has(strategyName)) {
+      const strategy = new Strategy(
+        {
+          name: strategyName,
+          config,
+          scope: "openid email profile offline_access",
+          callbackURL: `https://${domain}/api/callback`,
+        },
+        verify,
+      );
+      passport.use(strategy);
+      registeredStrategies.add(strategyName);
+    }
+  };
 
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
+    ensureStrategy(req.hostname);
     passport.authenticate(`replitauth:${req.hostname}`, {
+      prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
+    ensureStrategy(req.hostname);
     passport.authenticate(`replitauth:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
@@ -135,11 +129,6 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  // If Replit Auth is not configured, this middleware cannot be used
-  if (!isReplitAuthAvailable) {
-    return res.status(500).json({ message: "Replit Auth not configured" });
-  }
-
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
@@ -166,4 +155,70 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
+};
+
+export const isApproved: RequestHandler = async (req, res, next) => {
+  const sessionUser = req.user as any;
+  
+  if (!sessionUser?.claims?.sub) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const user = await storage.getUser(sessionUser.claims.sub);
+  
+  if (!user) {
+    return res.status(401).json({ message: "User not found" });
+  }
+
+  if (!user.isApproved) {
+    return res.status(403).json({ 
+      message: "Your account is pending approval from an administrator.",
+      pendingApproval: true 
+    });
+  }
+
+  (req as any).dbUser = user;
+  next();
+};
+
+export const isAdmin: RequestHandler = async (req, res, next) => {
+  const sessionUser = req.user as any;
+  
+  if (!sessionUser?.claims?.sub) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const user = await storage.getUser(sessionUser.claims.sub);
+  
+  if (!user) {
+    return res.status(401).json({ message: "User not found" });
+  }
+
+  if (!user.isAdmin && !user.isSuperAdmin) {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+
+  (req as any).dbUser = user;
+  next();
+};
+
+export const isSuperAdmin: RequestHandler = async (req, res, next) => {
+  const sessionUser = req.user as any;
+  
+  if (!sessionUser?.claims?.sub) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const user = await storage.getUser(sessionUser.claims.sub);
+  
+  if (!user) {
+    return res.status(401).json({ message: "User not found" });
+  }
+
+  if (!user.isSuperAdmin) {
+    return res.status(403).json({ message: "Super Admin access required" });
+  }
+
+  (req as any).dbUser = user;
+  next();
 };

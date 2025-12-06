@@ -23,7 +23,7 @@ import {
   dailyLogs,
   actionPoints,
   type User,
-  type InsertUser,
+  type UpsertUser,
   type Project,
   type InsertProject,
   type Road,
@@ -85,12 +85,10 @@ export interface IStorage {
   // Session store
   sessionStore: Store;
   
-  // User operations
+  // User operations (for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  getUserByAuthId(authId: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  upsertUser(user: UpsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   approveUser(userId: string): Promise<User>;
   deactivateUser(userId: string): Promise<User>;
@@ -98,7 +96,6 @@ export interface IStorage {
   promoteToAdmin(userId: string): Promise<User>;
   demoteFromAdmin(userId: string): Promise<User>;
   updateUserRole(userId: string, updates: { isAdmin?: boolean; isSuperAdmin?: boolean; isApproved?: boolean }): Promise<User>;
-  updateUserAuthId(userId: string, authId: string): Promise<User>;
   
   // Project operations
   getProjects(userId: string): Promise<ProjectWithRoads[]>;
@@ -272,47 +269,46 @@ export class MemStorage implements IStorage {
     });
   }
 
-  // User operations
+  // User operations (for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(u => u.username === username);
-  }
-
-  async getUserByAuthId(authId: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(u => u.authId === authId);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(u => u.email === email);
   }
 
-  async createUser(userData: InsertUser): Promise<User> {
+  async upsertUser(userData: UpsertUser): Promise<User> {
     const now = new Date();
-    const id = Math.random().toString(36).substr(2, 9);
+    const existing = this.users.get(userData.id);
     
-    if (!userData.username || !userData.email) {
-      throw new Error('Username and email are required');
+    if (existing) {
+      const updated: User = {
+        ...existing,
+        email: userData.email ?? existing.email,
+        firstName: userData.firstName ?? existing.firstName,
+        lastName: userData.lastName ?? existing.lastName,
+        profileImageUrl: userData.profileImageUrl ?? existing.profileImageUrl,
+        updatedAt: now,
+      };
+      this.users.set(userData.id, updated);
+      return updated;
     }
     
     const user: User = {
-      id,
-      authId: userData.authId || null,
-      username: userData.username,
-      password: userData.password || null,
-      email: userData.email,
+      id: userData.id,
+      email: userData.email || null,
       firstName: userData.firstName || null,
       lastName: userData.lastName || null,
-      isAdmin: userData.isAdmin ?? false,
-      isSuperAdmin: userData.isSuperAdmin ?? false,
-      isApproved: userData.isApproved ?? false,
+      profileImageUrl: userData.profileImageUrl || null,
+      isAdmin: false,
+      isSuperAdmin: false,
+      isApproved: false,
       createdAt: now,
       updatedAt: now,
     };
     
-    this.users.set(id, user);
+    this.users.set(userData.id, user);
     return user;
   }
 
@@ -384,19 +380,6 @@ export class MemStorage implements IStorage {
     const updatedUser: User = {
       ...user,
       ...updates,
-      updatedAt: new Date(),
-    };
-    this.users.set(userId, updatedUser);
-    return updatedUser;
-  }
-
-  async updateUserAuthId(userId: string, authId: string): Promise<User> {
-    const user = this.users.get(userId);
-    if (!user) throw new Error('User not found');
-    
-    const updatedUser: User = {
-      ...user,
-      authId,
       updatedAt: new Date(),
     };
     this.users.set(userId, updatedUser);
@@ -808,19 +791,9 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  // User operations
+  // User operations (for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
-  }
-
-  async getUserByAuthId(authId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.authId, authId));
     return user;
   }
 
@@ -829,10 +802,20 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(userData: InsertUser): Promise<User> {
+  async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
       .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          updatedAt: new Date(),
+        },
+      })
       .returning();
     return user;
   }
@@ -890,16 +873,6 @@ export class DatabaseStorage implements IStorage {
     const [updatedUser] = await db
       .update(users)
       .set({ ...updates, updatedAt: new Date() })
-      .where(eq(users.id, userId))
-      .returning();
-    if (!updatedUser) throw new Error('User not found');
-    return updatedUser;
-  }
-
-  async updateUserAuthId(userId: string, authId: string): Promise<User> {
-    const [updatedUser] = await db
-      .update(users)
-      .set({ authId, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
     if (!updatedUser) throw new Error('User not found');

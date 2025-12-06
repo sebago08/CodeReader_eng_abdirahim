@@ -27,21 +27,28 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table (profiles linked to Supabase Auth)
+// User storage table (profiles linked to Replit Auth)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  authId: varchar("auth_id").unique(), // Supabase Auth user ID
-  username: varchar("username").notNull().unique(),
-  password: varchar("password"), // Nullable - not used with Supabase Auth
-  email: varchar("email").notNull().unique(), // Primary identifier
+  email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
   isAdmin: boolean("is_admin").default(false).notNull(),
-  isSuperAdmin: boolean("is_super_admin").default(false).notNull(), // Super admin can manage all users
-  isApproved: boolean("is_approved").default(false).notNull(), // New users must be approved by admin
+  isSuperAdmin: boolean("is_super_admin").default(false).notNull(),
+  isApproved: boolean("is_approved").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// Type for upserting users from Replit Auth
+export type UpsertUser = {
+  id: string;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImageUrl?: string | null;
+};
 
 // Projects table
 export const projects = pgTable("projects", {
