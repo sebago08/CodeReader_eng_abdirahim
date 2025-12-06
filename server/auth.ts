@@ -30,6 +30,53 @@ export function setupAuth(app: Express) {
 
   app.use(session(sessionSettings));
 
+  app.post("/api/auth/link-profile", supabaseAuthMiddleware, async (req, res, next) => {
+    try {
+      const supabaseUser = (req as any).supabaseUser;
+
+      if (!supabaseUser?.email) {
+        return res.status(400).json({ message: "Email not found in auth token" });
+      }
+
+      let user = await storage.getUserByAuthId(supabaseUser.id);
+      
+      if (user) {
+        if (!user.isApproved) {
+          return res.status(200).json({
+            user,
+            pendingApproval: true,
+            message: "Your account is pending approval from an administrator.",
+          });
+        }
+        return res.status(200).json({ user });
+      }
+
+      user = await storage.getUserByEmail(supabaseUser.email);
+      
+      if (user) {
+        const updatedUser = await storage.updateUserAuthId(user.id, supabaseUser.id);
+        
+        if (!updatedUser.isApproved) {
+          return res.status(200).json({
+            user: updatedUser,
+            pendingApproval: true,
+            message: "Your account is pending approval from an administrator.",
+          });
+        }
+        
+        return res.status(200).json({ user: updatedUser });
+      }
+
+      return res.status(404).json({
+        message: "No account found. Please register first.",
+        needsRegistration: true,
+      });
+    } catch (error) {
+      console.error("Link profile error:", error);
+      next(error);
+    }
+  });
+
   app.post("/api/auth/create-profile", supabaseAuthMiddleware, async (req, res, next) => {
     try {
       const { username, firstName, lastName } = req.body;
