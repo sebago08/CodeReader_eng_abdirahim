@@ -1,4 +1,5 @@
-import { supabase, isSupabaseConfigured } from './supabase';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface StorageService {
   uploadFile(bucket: string, path: string, file: Buffer, contentType: string): Promise<{ url: string; error?: string }>;
@@ -7,166 +8,112 @@ export interface StorageService {
   listFiles(bucket: string, prefix?: string): Promise<{ files: string[]; error?: string }>;
 }
 
-class SupabaseStorageService implements StorageService {
-  private async ensureBucketExists(bucket: string) {
-    if (!supabase) {
-      return { error: 'Supabase not configured' };
-    }
-
-    // Check if bucket exists
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-    
-    if (listError) {
-      console.error('Error listing buckets:', listError);
-      return { error: listError.message };
-    }
-
-    const bucketExists = buckets?.some(b => b.name === bucket);
-    
-    if (!bucketExists) {
-      // Create the bucket with public access
-      const { error: createError } = await supabase.storage.createBucket(bucket, {
-        public: true,
-        fileSizeLimit: 5242880, // 5MB limit
-      });
-
-      if (createError) {
-        console.error(`Error creating bucket ${bucket}:`, createError);
-        return { error: createError.message };
-      }
-
-      console.log(`Created bucket: ${bucket}`);
-    }
-
-    return {};
-  }
-
-  async uploadFile(bucket: string, path: string, file: Buffer, contentType: string) {
-    if (!supabase) {
-      return { url: '', error: 'Supabase not configured' };
-    }
-
-    // Ensure bucket exists before uploading
-    const bucketCheck = await this.ensureBucketExists(bucket);
-    if (bucketCheck.error) {
-      return { url: '', error: bucketCheck.error };
-    }
-
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(path, file, {
-        contentType,
-        upsert: true,
-      });
-
-    if (error) {
-      console.error(`Upload error for ${bucket}/${path}:`, error);
-      return { url: '', error: error.message };
-    }
-
-    const url = this.getPublicUrl(bucket, path);
-    return { url };
-  }
-
-  async deleteFile(bucket: string, path: string) {
-    if (!supabase) {
-      return { error: 'Supabase not configured' };
-    }
-
-    const { error } = await supabase.storage
-      .from(bucket)
-      .remove([path]);
-
-    if (error) {
-      return { error: error.message };
-    }
-
-    return {};
-  }
-
-  getPublicUrl(bucket: string, path: string): string {
-    if (!supabase) {
-      return '';
-    }
-
-    const { data } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(path);
-
-    return data.publicUrl;
-  }
-
-  async listFiles(bucket: string, prefix?: string) {
-    if (!supabase) {
-      return { files: [], error: 'Supabase not configured' };
-    }
-
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .list(prefix || '');
-
-    if (error) {
-      return { files: [], error: error.message };
-    }
-
-    return { files: data?.map(f => f.name) || [] };
-  }
-}
-
-class MockStorageService implements StorageService {
+class LocalStorageService implements StorageService {
+  private baseDir: string;
   private storage = new Map<string, { buffer: Buffer; contentType: string }>();
 
-  async uploadFile(bucket: string, path: string, file: Buffer, contentType: string) {
-    const key = `${bucket}/${path}`;
-    this.storage.set(key, { buffer: file, contentType });
-    const url = `/api/storage/${bucket}/${path}`;
-    return { url };
+  constructor() {
+    this.baseDir = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(this.baseDir)) {
+      fs.mkdirSync(this.baseDir, { recursive: true });
+    }
   }
 
-  async deleteFile(bucket: string, path: string) {
-    const key = `${bucket}/${path}`;
-    this.storage.delete(key);
-    return {};
+  private ensureBucketDir(bucket: string) {
+    const bucketDir = path.join(this.baseDir, bucket);
+    if (!fs.existsSync(bucketDir)) {
+      fs.mkdirSync(bucketDir, { recursive: true });
+    }
+    return bucketDir;
   }
 
-  getPublicUrl(bucket: string, path: string): string {
-    return `/api/storage/${bucket}/${path}`;
+  async uploadFile(bucket: string, filePath: string, file: Buffer, contentType: string) {
+    try {
+      const bucketDir = this.ensureBucketDir(bucket);
+      const fullPath = path.join(bucketDir, filePath);
+      
+      const dir = path.dirname(fullPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      fs.writeFileSync(fullPath, file);
+
+      const key = `${bucket}/${filePath}`;
+      this.storage.set(key, { buffer: file, contentType });
+
+      const url = `/api/storage/${bucket}/${filePath}`;
+      return { url };
+    } catch (error: any) {
+      console.error(`Upload error for ${bucket}/${filePath}:`, error);
+      return { url: '', error: error.message };
+    }
+  }
+
+  async deleteFile(bucket: string, filePath: string) {
+    try {
+      const fullPath = path.join(this.baseDir, bucket, filePath);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+      }
+
+      const key = `${bucket}/${filePath}`;
+      this.storage.delete(key);
+
+      return {};
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  }
+
+  getPublicUrl(bucket: string, filePath: string): string {
+    return `/api/storage/${bucket}/${filePath}`;
   }
 
   async listFiles(bucket: string, prefix?: string) {
-    const files: string[] = [];
-    const searchPrefix = prefix ? `${bucket}/${prefix}` : `${bucket}/`;
-    
-    for (const [key] of Array.from(this.storage.entries())) {
-      if (key.startsWith(searchPrefix)) {
-        const fileName = key.substring(searchPrefix.length);
-        files.push(fileName);
+    try {
+      const bucketDir = path.join(this.baseDir, bucket);
+      if (!fs.existsSync(bucketDir)) {
+        return { files: [] };
       }
+
+      const searchDir = prefix ? path.join(bucketDir, prefix) : bucketDir;
+      if (!fs.existsSync(searchDir)) {
+        return { files: [] };
+      }
+
+      const files = fs.readdirSync(searchDir);
+      return { files };
+    } catch (error: any) {
+      return { files: [], error: error.message };
     }
-    
-    return { files };
   }
 
-  getFile(bucket: string, path: string) {
-    const key = `${bucket}/${path}`;
-    return this.storage.get(key);
+  getFile(bucket: string, filePath: string): { buffer: Buffer; contentType: string } | undefined {
+    const key = `${bucket}/${filePath}`;
+    
+    if (this.storage.has(key)) {
+      return this.storage.get(key);
+    }
+
+    const fullPath = path.join(this.baseDir, bucket, filePath);
+    if (fs.existsSync(fullPath)) {
+      const buffer = fs.readFileSync(fullPath);
+      const contentType = 'application/octet-stream';
+      this.storage.set(key, { buffer, contentType });
+      return { buffer, contentType };
+    }
+
+    return undefined;
   }
 }
 
-const mockStorage = new MockStorageService();
+const localStorage = new LocalStorageService();
 
 export function getStorageService(): StorageService {
-  // Always use mock storage in development mode
-  if (process.env.NODE_ENV === 'development') {
-    return mockStorage;
-  }
-  
-  if (isSupabaseConfigured()) {
-    return new SupabaseStorageService();
-  }
-  return mockStorage;
+  return localStorage;
 }
 
 export function getMockStorage() {
-  return mockStorage;
+  return localStorage;
 }
