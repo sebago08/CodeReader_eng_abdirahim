@@ -40,7 +40,7 @@ import {
 
 export default function AdminDashboard() {
   const { toast } = useToast();
-  const { logoutMutation, user: currentUser } = useAuth();
+  const { logout, user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -147,7 +147,7 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
-    logoutMutation.mutate();
+    logout();
   };
 
   const filteredUsers = users?.filter(user => {
@@ -185,7 +185,7 @@ export default function AdminDashboard() {
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <div className="text-sm font-medium text-card-foreground">{currentUser?.username}</div>
+              <div className="text-sm font-medium text-card-foreground">{currentUser?.firstName || currentUser?.email}</div>
               <Badge variant={isSuperAdmin ? "default" : "secondary"} className={isSuperAdmin ? "bg-purple-600" : ""}>
                 {isSuperAdmin && <Crown className="w-3 h-3 mr-1" />}
                 {isSuperAdmin ? "Super Admin" : "Admin"}
@@ -277,7 +277,7 @@ export default function AdminDashboard() {
                       >
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-2">
-                            <h3 className="font-semibold text-card-foreground">{user.username}</h3>
+                            <h3 className="font-semibold text-card-foreground">{user.firstName || user.email}</h3>
                             {user.isSuperAdmin && (
                               <Badge className="bg-purple-600">
                                 <Crown className="w-3 h-3 mr-1" />
@@ -414,7 +414,7 @@ export default function AdminDashboard() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the user "{userToDelete?.username}"? 
+              Are you sure you want to delete the user "{userToDelete?.firstName || userToDelete?.email}"? 
               This action cannot be undone and will permanently remove all their data.
             </AlertDialogDescription>
           </AlertDialogHeader>
