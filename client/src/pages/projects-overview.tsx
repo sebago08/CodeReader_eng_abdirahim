@@ -12,7 +12,7 @@ import type { ProjectWithRoads } from "@shared/schema";
 export default function ProjectsOverview() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectWithRoads | null>(null);
-  const { logoutMutation, user } = useAuth();
+  const { logout, user } = useAuth();
   const { toast } = useToast();
 
   const { data: projects, isLoading } = useQuery<ProjectWithRoads[]>({
@@ -90,7 +90,7 @@ export default function ProjectsOverview() {
   };
 
   const handleLogout = () => {
-    logoutMutation.mutate();
+    logout();
   };
 
   return (
@@ -112,7 +112,7 @@ export default function ProjectsOverview() {
               {user && (
                 <div className="text-white hidden md:block" data-testid="text-current-username">
                   <span className="text-sm text-white/60">Signed in as:</span>
-                  <span className="ml-2 font-medium">{user.username}</span>
+                  <span className="ml-2 font-medium">{user.firstName || user.email}</span>
                 </div>
               )}
               <Button

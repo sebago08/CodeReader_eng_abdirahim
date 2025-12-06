@@ -59,7 +59,7 @@ export default function Dashboard() {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [selectedIncident, setSelectedIncident] = useState<IncidentItem | null>(null);
   const [selectedGrievance, setSelectedGrievance] = useState<GrievanceItem | null>(null);
-  const { logoutMutation, user } = useAuth();
+  const { logout, user } = useAuth();
   const { toast } = useToast();
 
   const { data: metrics, isLoading } = useQuery<DashboardMetrics>({
@@ -109,7 +109,7 @@ export default function Dashboard() {
   });
 
   const handleLogout = () => {
-    logoutMutation.mutate();
+    logout();
   };
 
   const handleDuplicate = (projectId: string) => {
@@ -172,7 +172,7 @@ export default function Dashboard() {
                 {user && (
                   <div className="text-white hidden sm:block" data-testid="text-current-username">
                     <span className="text-xs md:text-sm text-white/60">Signed in as:</span>
-                    <span className="ml-1 md:ml-2 font-medium text-sm md:text-base">{user.username}</span>
+                    <span className="ml-1 md:ml-2 font-medium text-sm md:text-base">{user.firstName || user.email}</span>
                   </div>
                 )}
                 <Button

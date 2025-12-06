@@ -138,10 +138,10 @@ export default function TeamTab({ projectId, isOwner }: TeamTabProps) {
               >
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-                    {teamData.owner.username.charAt(0).toUpperCase()}
+                    {(teamData.owner.firstName || teamData.owner.email || "U").charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-medium">{teamData.owner.username}</p>
+                    <p className="font-medium">{teamData.owner.firstName || teamData.owner.email}</p>
                     <p className="text-sm text-muted-foreground">{teamData.owner.email}</p>
                   </div>
                 </div>
@@ -162,10 +162,10 @@ export default function TeamTab({ projectId, isOwner }: TeamTabProps) {
                 >
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center font-semibold">
-                      {member.user.username.charAt(0).toUpperCase()}
+                      {(member.user.firstName || member.user.email || "U").charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-medium">{member.user.username}</p>
+                      <p className="font-medium">{member.user.firstName || member.user.email}</p>
                       <p className="text-sm text-muted-foreground">{member.user.email}</p>
                     </div>
                   </div>

@@ -23,7 +23,7 @@ import type { ProjectWithRoads, ProjectDocument } from "@shared/schema";
 
 export default function ProjectDetail() {
   const { toast } = useToast();
-  const { logoutMutation, user } = useAuth();
+  const { logout, user } = useAuth();
   const [, params] = useRoute("/projects/:id");
   const [, setLocation] = useLocation();
   const projectId = params?.id;
@@ -109,7 +109,7 @@ export default function ProjectDetail() {
   };
 
   const handleLogout = () => {
-    logoutMutation.mutate();
+    logout();
   };
 
   if (isLoading) {
@@ -169,7 +169,7 @@ export default function ProjectDetail() {
                 {user && (
                   <div className="text-white hidden sm:block" data-testid="text-current-username">
                     <span className="text-xs md:text-sm text-white/60">Signed in as:</span>
-                    <span className="ml-1 md:ml-2 font-medium text-sm md:text-base">{user.username}</span>
+                    <span className="ml-1 md:ml-2 font-medium text-sm md:text-base">{user.firstName || user.email}</span>
                   </div>
                 )}
                 <Button
