@@ -19,43 +19,12 @@ import {
   insertActionPointSchema
 } from "@shared/schema";
 import { ZodError, z } from "zod";
-import { setupAuth, supabaseAuthMiddleware } from "./auth";
+import { setupAuth, isAuthenticated, isAdmin, isSuperAdmin, supabaseAuthMiddleware } from "./auth";
 import { supabase } from "./supabase";
 import multer from "multer";
 import { getStorageService, getMockStorage } from "./storage-service";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-
-// Passport authentication middleware - checks session cookie
-const isAuthenticated: RequestHandler = (req: any, res, next) => {
-  console.log("Auth check - isAuthenticated:", req.isAuthenticated(), "sessionID:", req.sessionID, "user:", req.user?.id);
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  next();
-};
-
-// Middleware to check if user is admin (works after isAuthenticated)
-const isAdmin: RequestHandler = (req: any, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  if (!req.user.isAdmin && !req.user.isSuperAdmin) {
-    return res.status(403).json({ message: "Forbidden - Admin access required" });
-  }
-  next();
-};
-
-// Middleware to check if user is super admin (for user management)
-const isSuperAdmin: RequestHandler = (req: any, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  if (!req.user.isSuperAdmin) {
-    return res.status(403).json({ message: "Forbidden - Super Admin access required" });
-  }
-  next();
-};
 
 export function registerRoutes(app: Express): Server {
   // Setup authentication (includes /api/register, /api/login, /api/logout, /api/user routes)
