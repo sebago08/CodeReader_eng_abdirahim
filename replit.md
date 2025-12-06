@@ -30,23 +30,37 @@ The frontend employs TanStack Query for server state management and React Hook F
 - **World Bank Grievance Redress Mechanism (GRM)**: Comprehensive, ESF-compliant grievance tracking system with multi-channel intake, complainant management (including anonymous support), 9 categories, status workflow, priority levels, satisfaction tracking, and escalation/appeal mechanisms. Detailed grievance views are accessible from the overview.
 - **Financial Tracking**: Management of payment certificates and financial progress.
 - **Team Collaboration**: Role-based access control.
-- **File Storage**: Abstracted file management.
+- **File Storage**: Abstracted file management via Supabase Storage.
 
 **Authentication & Authorization:**
-The system uses Passport Local authentication with session-based cookies. Users register with username, email, and password. Frontend hooks manage session state. Backend uses Passport.js with LocalStrategy for email authentication. Sessions are stored server-side with `express-session`.
+The system uses **Supabase Auth** for authentication. Users register with email and password through Supabase's authentication system. The backend verifies Supabase JWT tokens and maintains user profiles in the `users` table with role and approval status.
+
+**How Authentication Works:**
+1. Frontend uses `@supabase/supabase-js` client for login/register/logout
+2. Supabase handles password hashing, email verification, and session management
+3. Backend verifies JWT tokens using `supabase.auth.getUser(token)`
+4. User profiles (with roles and approval status) are stored in the `users` table, linked by `auth_id`
 
 **User Approval System:**
-- New users register but are NOT automatically approved (isApproved = false by default)
-- Users must wait for admin approval before they can log in
-- When unapproved users try to login, they receive a clear message about pending approval
+- New users register through Supabase Auth but are NOT automatically approved
+- A profile is created in the `users` table with `is_approved = false`
+- Users must wait for admin approval before they can access the app
+- When unapproved users try to access protected routes, they receive a pending approval message
 
 **Role Hierarchy:**
 - **Regular Users**: Can access their own projects and collaborate on shared projects
 - **Admin**: Can view all users in the admin dashboard
 - **Super Admin**: Full user management capabilities - approve/deactivate users, promote/demote admins, delete accounts
 
-**Managing Users via Supabase Dashboard:**
-User approvals and role management can be done directly in the Supabase database:
+**Managing Users:**
+User approvals and role management can be done in two ways:
+
+**Option 1: In-App Admin Dashboard (Recommended)**
+1. Log in as a Super Admin
+2. Navigate to the Admin Dashboard
+3. Approve, promote, demote, or delete users through the UI
+
+**Option 2: Direct Database Access via Supabase Dashboard**
 1. Log in to your Supabase dashboard at https://supabase.com
 2. Navigate to your project > Table Editor > users table
 3. To approve a user: Set `is_approved` to `true`
@@ -54,24 +68,33 @@ User approvals and role management can be done directly in the Supabase database
 5. To make someone a super admin: Set both `is_admin` and `is_super_admin` to `true`
 
 **User Table Fields:**
-- `is_approved`: Controls whether user can log in (false = pending approval)
+- `auth_id`: Links to Supabase Auth user
+- `is_approved`: Controls whether user can access the app (false = pending approval)
 - `is_admin`: Grants access to admin dashboard
 - `is_super_admin`: Grants full user management capabilities
 
 **Security Notes:**
 - All admin endpoints prevent self-modification (can't deactivate/demote/delete yourself)
 - The last super admin cannot be deactivated, demoted, or deleted through the API
+- JWT tokens are verified on every protected API request
 - When modifying roles directly in Supabase, ensure at least one super admin remains active
 
 Role-based access control is implemented via `isAuthenticated`, `isAdmin`, and `isSuperAdmin` middleware for protected API endpoints, ensuring data isolation and appropriate access levels.
 
 ## System Design Choices
 
-The application uses a PostgreSQL database with a normalized schema for all core entities including users, projects, work plans, progress trackers, incident reports, and grievances. **Supabase PostgreSQL is now the primary database** for better scalability and production readiness. The system falls back to Replit's PostgreSQL if Supabase is not configured. Configuration is managed through environment variables (SUPABASE_DATABASE_URL takes priority over DATABASE_URL).
+The application uses a PostgreSQL database with a normalized schema for all core entities including users, projects, work plans, progress trackers, incident reports, and grievances. **Supabase PostgreSQL is the primary database** for better scalability and production readiness. Configuration is managed through environment variables.
+
+**Required Environment Variables:**
+- `SUPABASE_URL`: Your Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY`: Server-side service role key (never expose to client)
+- `SUPABASE_DATABASE_URL`: PostgreSQL connection string
+- `VITE_SUPABASE_URL`: Client-side Supabase URL
+- `VITE_SUPABASE_ANON_KEY`: Client-side anonymous key
+- `SESSION_SECRET`: For session management
 
 # External Dependencies
 
--   **Supabase**: Primary PostgreSQL database for scalability and production use, also provides file storage.
--   **PostgreSQL**: Database layer (Supabase PostgreSQL primary, Replit PostgreSQL fallback).
--   **Passport.js**: Authentication library using LocalStrategy for email/password login with session management.
--   **Vercel**: Production hosting platform.
+- **Supabase**: Primary database (PostgreSQL), authentication, and file storage
+- **PostgreSQL**: Database layer via Supabase
+- **Vercel**: Production hosting platform
