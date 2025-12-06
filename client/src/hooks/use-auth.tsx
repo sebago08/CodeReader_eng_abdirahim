@@ -1,19 +1,18 @@
-// Passport Local Auth implementation
 import { createContext, ReactNode, useContext, useState, useEffect } from "react";
-import {
-  useMutation,
-  UseMutationResult,
-} from "@tanstack/react-query";
+import { useMutation, UseMutationResult } from "@tanstack/react-query";
 import { User as SelectUser } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 type AuthContextType = {
   user: SelectUser | null;
+  supabaseUser: SupabaseUser | null;
   isLoading: boolean;
   error: Error | null;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
+  registerMutation: UseMutationResult<{ pendingApproval: boolean; message: string } | SelectUser, Error, RegisterData>;
 };
 
 type LoginData = {
@@ -34,54 +33,115 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [user, setUser] = useState<SelectUser | null>(null);
+  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Check for existing session on mount
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const res = await fetch('/api/user', {
-          credentials: 'include', // Important: include session cookie
-        });
+  const fetchUserProfile = async (accessToken: string): Promise<SelectUser | null> => {
+    try {
+      const res = await fetch('/api/user', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
 
-        if (res.ok) {
-          const userData = await res.json();
-          setUser(userData);
-        } else if (res.status === 401) {
-          // Not authenticated - this is fine
-          setUser(null);
-        } else {
-          throw new Error('Failed to check authentication');
+      if (res.ok) {
+        return await res.json();
+      } else if (res.status === 403) {
+        const data = await res.json();
+        if (data.pendingApproval) {
+          toast({
+            title: "Account Pending Approval",
+            description: "Your account is waiting for administrator approval. You'll be notified when approved.",
+            duration: 10000,
+          });
+        }
+        return null;
+      }
+      return null;
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
+
+    const client = supabase;
+
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await client.auth.getSession();
+        
+        if (session?.user) {
+          setSupabaseUser(session.user);
+          const profile = await fetchUserProfile(session.access_token);
+          setUser(profile);
         }
       } catch (err) {
-        console.error('Session check error:', err);
+        console.error('Auth initialization error:', err);
         setError(err as Error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkSession();
+    initAuth();
+
+    const { data: { subscription } } = client.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        setSupabaseUser(session.user);
+        const profile = await fetchUserProfile(session.access_token);
+        setUser(profile);
+      } else if (event === 'SIGNED_OUT') {
+        setSupabaseUser(null);
+        setUser(null);
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        setSupabaseUser(session.user);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Important: include session cookie
-        body: JSON.stringify(credentials),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: 'Invalid username or password' }));
-        throw new Error(errorData.message || 'Login failed');
+      if (!supabase) {
+        throw new Error('Authentication service not available');
       }
 
-      const userData = await res.json();
-      setUser(userData);
-      return userData;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data.session) {
+        throw new Error('No session returned');
+      }
+
+      setSupabaseUser(data.user);
+
+      const profile = await fetchUserProfile(data.session.access_token);
+      
+      if (!profile) {
+        await supabase.auth.signOut();
+        throw new Error('Your account is pending approval. Please wait for an administrator to approve your access.');
+      }
+
+      setUser(profile);
+      return profile;
     },
     onSuccess: () => {
       toast({
@@ -101,32 +161,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Important: include session cookie
-        body: JSON.stringify(credentials),
+      if (!supabase) {
+        throw new Error('Authentication service not available');
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password,
+        options: {
+          data: {
+            username: credentials.username,
+            first_name: credentials.firstName || null,
+            last_name: credentials.lastName || null,
+          },
+        },
       });
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || 'Registration failed');
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const data = await res.json();
-      
-      // Check if this is a pending approval response
-      if (data.pendingApproval) {
-        // Don't set user - they need to be approved first
-        return { pendingApproval: true, message: data.message } as any;
+      if (!data.user) {
+        throw new Error('Registration failed');
       }
-      
-      // For approved users (shouldn't happen with new flow)
-      setUser(data);
-      return data;
+
+      if (data.session) {
+        setSupabaseUser(data.user);
+        
+        const res = await fetch('/api/auth/create-profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${data.session.access_token}`,
+          },
+          body: JSON.stringify({
+            username: credentials.username,
+            firstName: credentials.firstName,
+            lastName: credentials.lastName,
+          }),
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'Failed to create user profile');
+        }
+
+        await supabase.auth.signOut();
+        setSupabaseUser(null);
+      }
+
+      return { 
+        pendingApproval: true, 
+        message: "Registration successful. Please wait for an administrator to approve your account." 
+      };
     },
-    onSuccess: (data: any) => {
-      if (data?.pendingApproval) {
+    onSuccess: (data) => {
+      if ('pendingApproval' in data && data.pendingApproval) {
         toast({
           title: "Registration successful",
           description: "Your account has been created. Please wait for an administrator to approve your access.",
@@ -135,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         toast({
           title: "Registration successful",
-          description: "Welcome to ConstructTrack! You're now logged in.",
+          description: "Welcome to ConstructTrack!",
         });
       }
     },
@@ -151,16 +241,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/logout', {
-        method: 'POST',
-        credentials: 'include', // Important: include session cookie
-      });
+      if (!supabase) {
+        throw new Error('Authentication service not available');
+      }
 
-      if (!res.ok) {
-        throw new Error('Logout failed');
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw new Error(error.message);
       }
 
       setUser(null);
+      setSupabaseUser(null);
     },
     onSuccess: () => {
       toast({
@@ -182,6 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        supabaseUser,
         isLoading,
         error,
         loginMutation,
