@@ -1,4 +1,3 @@
-// Based on blueprint:javascript_auth_all_persistance
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
@@ -26,6 +25,14 @@ export function ProtectedRoute({
     return (
       <Route path={path}>
         <Redirect to="/" />
+      </Route>
+    );
+  }
+
+  if (!user.isApproved) {
+    return (
+      <Route path={path}>
+        <Redirect to="/auth" />
       </Route>
     );
   }
