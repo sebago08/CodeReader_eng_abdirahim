@@ -33,19 +33,20 @@ The frontend employs TanStack Query for server state management and React Hook F
 - **File Storage**: Abstracted file management via Supabase Storage.
 
 **Authentication & Authorization:**
-The system uses **Supabase Auth** for authentication. Users register with email and password through Supabase's authentication system. The backend verifies Supabase JWT tokens and maintains user profiles in the `users` table with role and approval status.
+The system uses **Replit Auth** (OpenID Connect) for authentication. Users sign in using their Replit account, which provides a seamless, platform-native authentication experience. User profiles are stored in the `users` table with role and approval status.
 
 **How Authentication Works:**
-1. Frontend uses `@supabase/supabase-js` client for login/register/logout
-2. Supabase handles password hashing, email verification, and session management
-3. Backend verifies JWT tokens using `supabase.auth.getUser(token)`
-4. User profiles (with roles and approval status) are stored in the `users` table, linked by `auth_id`
+1. Frontend redirects to `/api/login` which initiates OIDC flow with Replit
+2. Replit handles authentication and returns user claims (sub, email, first_name, last_name, profile_image_url)
+3. Backend receives the OIDC callback and creates/updates user profile in the database
+4. Session-based authentication stores user state in PostgreSQL `sessions` table
+5. User profiles are identified by `id` field which stores the Replit `sub` claim
 
 **User Approval System:**
-- New users register through Supabase Auth but are NOT automatically approved
+- New users sign in via Replit Auth but are NOT automatically approved
 - A profile is created in the `users` table with `is_approved = false`
 - Users must wait for admin approval before they can access the app
-- When unapproved users try to access protected routes, they receive a pending approval message
+- Unapproved users see a "Pending Approval" message and cannot access protected routes
 
 **Role Hierarchy:**
 - **Regular Users**: Can access their own projects and collaborate on shared projects
@@ -68,7 +69,10 @@ User approvals and role management can be done in two ways:
 5. To make someone a super admin: Set both `is_admin` and `is_super_admin` to `true`
 
 **User Table Fields:**
-- `auth_id`: Links to Supabase Auth user
+- `id`: Primary key, stores Replit's `sub` claim (unique user identifier)
+- `email`: User's email from Replit profile
+- `firstName`, `lastName`: User's name from Replit profile
+- `profileImageUrl`: User's profile picture from Replit
 - `is_approved`: Controls whether user can access the app (false = pending approval)
 - `is_admin`: Grants access to admin dashboard
 - `is_super_admin`: Grants full user management capabilities
@@ -76,10 +80,10 @@ User approvals and role management can be done in two ways:
 **Security Notes:**
 - All admin endpoints prevent self-modification (can't deactivate/demote/delete yourself)
 - The last super admin cannot be deactivated, demoted, or deleted through the API
-- JWT tokens are verified on every protected API request
+- Session tokens are verified on every protected API request via Express session middleware
 - When modifying roles directly in Supabase, ensure at least one super admin remains active
 
-Role-based access control is implemented via `isAuthenticated`, `isAdmin`, and `isSuperAdmin` middleware for protected API endpoints, ensuring data isolation and appropriate access levels.
+Role-based access control is implemented via `isAuthenticated`, `isApproved`, `isAdmin`, and `isSuperAdmin` middleware for protected API endpoints, ensuring data isolation and appropriate access levels.
 
 ## System Design Choices
 
@@ -95,6 +99,7 @@ The application uses a PostgreSQL database with a normalized schema for all core
 
 # External Dependencies
 
-- **Supabase**: Primary database (PostgreSQL), authentication, and file storage
+- **Replit Auth**: OpenID Connect authentication via Replit platform
+- **Supabase**: Primary database (PostgreSQL) and file storage
 - **PostgreSQL**: Database layer via Supabase
 - **Vercel**: Production hosting platform
