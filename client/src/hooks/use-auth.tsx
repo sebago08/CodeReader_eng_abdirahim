@@ -133,8 +133,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setSupabaseUser(data.user);
 
-      const profile = await fetchUserProfile(data.session.access_token);
+      let profile = await fetchUserProfile(data.session.access_token);
       
+      if (!profile) {
+        const linkRes = await fetch('/api/auth/link-profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${data.session.access_token}`,
+          },
+        });
+
+        if (linkRes.ok) {
+          const linkData = await linkRes.json();
+          if (linkData.pendingApproval) {
+            await supabase.auth.signOut();
+            throw new Error('Your account is pending approval. Please wait for an administrator to approve your access.');
+          }
+          profile = linkData.user || linkData;
+        } else {
+          await supabase.auth.signOut();
+          throw new Error('Your account is pending approval. Please wait for an administrator to approve your access.');
+        }
+      }
+
       if (!profile) {
         await supabase.auth.signOut();
         throw new Error('Your account is pending approval. Please wait for an administrator to approve your access.');
