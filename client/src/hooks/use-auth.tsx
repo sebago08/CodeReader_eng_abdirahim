@@ -144,22 +144,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         });
 
-        if (linkRes.ok) {
-          const linkData = await linkRes.json();
-          if (linkData.pendingApproval) {
-            await supabase.auth.signOut();
-            throw new Error('Your account is pending approval. Please wait for an administrator to approve your access.');
-          }
-          profile = linkData.user || linkData;
-        } else {
+        if (!linkRes.ok) {
+          const errorData = await linkRes.json().catch(() => ({}));
+          await supabase.auth.signOut();
+          throw new Error(errorData.message || 'Unable to link your account. Please try again.');
+        }
+
+        const linkData = await linkRes.json();
+
+        if (linkData.pendingApproval) {
           await supabase.auth.signOut();
           throw new Error('Your account is pending approval. Please wait for an administrator to approve your access.');
         }
+        
+        profile = linkData.user || linkData;
       }
 
       if (!profile) {
         await supabase.auth.signOut();
-        throw new Error('Your account is pending approval. Please wait for an administrator to approve your access.');
+        throw new Error('Unable to load your profile. Please try again or contact support.');
       }
 
       setUser(profile);

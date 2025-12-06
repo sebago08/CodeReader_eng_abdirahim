@@ -293,8 +293,8 @@ export class MemStorage implements IStorage {
     const now = new Date();
     const id = Math.random().toString(36).substr(2, 9);
     
-    if (!userData.username || !userData.password || !userData.email) {
-      throw new Error('Username, password, and email are required');
+    if (!userData.username || !userData.email) {
+      throw new Error('Username and email are required');
     }
     
     const user: User = {

@@ -67,9 +67,27 @@ export function setupAuth(app: Express) {
         return res.status(200).json({ user: updatedUser });
       }
 
-      return res.status(404).json({
-        message: "No account found. Please register first.",
-        needsRegistration: true,
+      const metadata = supabaseUser.user_metadata || {};
+      const emailPrefix = supabaseUser.email.split('@')[0];
+      const timestamp = Date.now().toString(36);
+      const generatedUsername = metadata.username || `${emailPrefix}_${timestamp}`;
+
+      const newUser = await storage.createUser({
+        authId: supabaseUser.id,
+        username: generatedUsername,
+        email: supabaseUser.email,
+        firstName: metadata.first_name || null,
+        lastName: metadata.last_name || null,
+        password: null,
+        isAdmin: false,
+        isSuperAdmin: false,
+        isApproved: false,
+      });
+
+      return res.status(201).json({
+        user: newUser,
+        pendingApproval: true,
+        message: "Profile created. Please wait for an administrator to approve your account.",
       });
     } catch (error) {
       console.error("Link profile error:", error);
