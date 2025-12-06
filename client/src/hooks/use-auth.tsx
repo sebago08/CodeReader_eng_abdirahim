@@ -39,11 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserProfile = async (accessToken: string): Promise<SelectUser | null> => {
     try {
+      console.log('[Auth] Fetching profile with token:', accessToken ? `${accessToken.substring(0, 20)}...` : 'NO TOKEN');
       const res = await fetch('/api/user', {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
         },
       });
+      console.log('[Auth] Profile fetch response:', res.status);
 
       if (res.ok) {
         return await res.json();
